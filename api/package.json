@@ -1,0 +1,37 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx watch --env-file=.env --clear-screen=false server.ts",
+    "test": "jest --watch",
+    "prisma:generate": "prisma generate --schema=src/infrastructure/database/prisma/schema.prisma",
+    "prisma:migrate": "prisma migrate dev --schema=src/infrastructure/database/prisma/schema.prisma",
+    "prisma:deploy": "prisma migrate deploy --schema=src/infrastructure/database/prisma/schema.prisma",
+    "prisma:reset": "prisma migrate reset --schema=src/infrastructure/database/prisma/schema.prisma",
+    "prisma:studio": "prisma studio --schema=src/infrastructure/database/prisma/schema.prisma"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@fastify/cors": "^11.2.0",
+    "@prisma/client": "^6.19.2",
+    "dotenv": "^17.2.4",
+    "fastify": "^5.7.4"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.2.3",
+    "jest": "^30.2.0",
+    "prisma": "^6.19.2",
+    "ts-jest": "^29.4.6",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.3"
+  },
+  "prisma": {
+    "schema": "src/infrastructure/database/prisma/schema.prisma"
+  }
+}

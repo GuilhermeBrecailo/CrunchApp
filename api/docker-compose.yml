@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  # Serviço da sua API Node.js
+  app:
+    build: .
+    container_name: api-igreja
+    ports:
+      - "3333:3333" # Mapeia porta 3333 do container para sua máquina
+    volumes:
+      - .:/usr/src/app           # Sincroniza código em tempo real (Hot Reload)
+      - /usr/src/app/node_modules # Evita conflito do node_modules
+    environment:
+      - DATABASE_URL=postgresql://admin:admin123@db:5432/igreja_db?schema=public
+    depends_on:
+      - db
+    command: sh -c "npx prisma generate && npm run dev" # Garante prisma atualizado ao subir
+
+  # Serviço do Banco de Dados PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: db-igreja
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: igreja_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data # Persiste os dados mesmo se desligar o container
+
+volumes:
+  pgdata:
