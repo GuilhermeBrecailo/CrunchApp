@@ -6,7 +6,7 @@ services:
     build: .
     container_name: api-igreja
     ports:
-      - "3333:3333" # Mapeia porta 3333 do container para sua máquina
+      - "8000:8000" # Mapeia porta 3333 do container para sua máquina
     volumes:
       - .:/usr/src/app           # Sincroniza código em tempo real (Hot Reload)
       - /usr/src/app/node_modules # Evita conflito do node_modules
@@ -14,7 +14,7 @@ services:
       - DATABASE_URL=postgresql://admin:admin123@db:5432/igreja_db?schema=public
     depends_on:
       - db
-    command: sh -c "npx prisma generate && npm run dev" # Garante prisma atualizado ao subir
+    command: sh -c "npx prisma generate && npx prisma db push && npm run dev" # Garante prisma atualizado ao subir
 
   # Serviço do Banco de Dados PostgreSQL
   db:

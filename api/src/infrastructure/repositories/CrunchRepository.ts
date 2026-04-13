@@ -77,40 +77,7 @@ export class CrunchRepository implements ICrunchRepository {
       throw new DomainError("Falha ao deletar usuario");
     }
   }
-  public async getAllCrunchs(): Promise<Crunch[]> {
-    try {
-      const result = await $prismaClient.crunch.findMany({
-        where: {},
-        orderBy: {
-          createdAt: "desc",
-        },
-        include: {
-          users: true,
-          departments: true,
-        },
-      });
 
-      if (!result) {
-        return [];
-      }
-
-      return result.map(
-        (crunch) =>
-          new Crunch({
-            id: crunch.id,
-            name: crunch.name,
-            slug: crunch.slug,
-            isActive: crunch.isActive,
-            createdAt: crunch.createdAt,
-            users: crunch.users,
-            departaments: crunch.departments.map((dept) => dept.id),
-          }),
-      );
-    } catch (error) {
-      console.error("Falha ao tentar buscar usuarios", error);
-      throw new DomainError("Falha ao tentar buscar usuarios");
-    }
-  }
   public async getCrunchById(id: string): Promise<Crunch> {
     try {
       const result = await $prismaClient.crunch.findUnique({
@@ -129,6 +96,39 @@ export class CrunchRepository implements ICrunchRepository {
     } catch (error) {
       console.error("Falha ao tentar buscar crunch", error);
       throw new DomainError("Falha ao tentar buscar crunch");
+    }
+  }
+  public async getAllCrunchs() {
+    try {
+      const results = await $prismaClient.crunch.findMany({
+        orderBy: {
+          createdAt: "desc",
+        },
+        include: {
+          users: true,
+          departments: true,
+        },
+      });
+
+      return results.map((crunch) => {
+        if (!crunch.id) {
+          throw new DomainError("Crunch sem ID encontrado");
+        }
+
+        return Crunch.restore({
+          id: crunch.id,
+          name: crunch.name,
+          slug: crunch.slug,
+          isActive: crunch.isActive,
+          createdAt: crunch.createdAt,
+          users: crunch.users,
+          departaments: crunch.departments.map((dept) => dept.id),
+        });
+      });
+    } catch (error) {
+      throw new DomainError(
+        "Erro ao buscar todos os crunchs: " + (error as Error).message,
+      );
     }
   }
 }

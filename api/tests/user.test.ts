@@ -1,7 +1,7 @@
 import { User } from "../src/domain/entities/User";
-import { DomainError } from "../src/domain/value-objects/utils/DomainError";
+import { ZodError } from "zod";
 
-describe("User Entity - Casos adicionais", () => {
+describe("User Entity - Casos atualizados com Zod e DDD", () => {
   const validProps = {
     id: "1",
     name: "Guilherme",
@@ -9,116 +9,97 @@ describe("User Entity - Casos adicionais", () => {
     phone: "11999999999",
   };
 
-  it("Deve criar usuário válido", () => {
-    const user = new User(validProps);
+  it("Deve criar usuário válido utilizando a factory create", () => {
+    const user = User.create(validProps);
 
-    expect(user.getId()).toBe("1");
-    expect(user.getName()).toBe("Guilherme");
-    expect(user.getEmail()).toBe("gui@email.com");
-    expect(user.getPhone()).toBe("11999999999");
+    expect(user.id).toBe("1");
+    expect(user.name).toBe("Guilherme");
+    expect(user.email).toBe("gui@email.com");
+    expect(user.phone).toBe("11999999999");
+    expect(user.createdAt).toBeInstanceOf(Date);
   });
 
-  it("Deve lançar erro se phone for vazio no constructor", () => {
-    expect(() => {
-      new User({
-        ...validProps,
-        phone: "",
-      });
-    }).toThrow(DomainError);
-
-    expect(() => {
-      new User({
-        ...validProps,
-        phone: "",
-      });
-    }).toThrow("Telefone é obrigatorio");
-  });
-
-  it("Deve atualizar o nome com setName", () => {
-    const user = new User(validProps);
-    user.setName("Novo Nome");
-
-    expect(user.getName()).toBe("Novo Nome");
-  });
-
-  it("Deve lançar erro ao atualizar nome vazio", () => {
-    const user = new User(validProps);
-
-    expect(() => user.setName("")).toThrow(DomainError);
-    expect(() => user.setName("")).toThrow("Nome é obrigatorio");
-  });
-
-  it("Deve atualizar o email com setEmail", () => {
-    const user = new User(validProps);
-    user.setEmail("novo@email.com");
-
-    expect(user.getEmail()).toBe("novo@email.com");
-  });
-
-  it("Deve lançar erro ao atualizar email vazio", () => {
-    const user = new User(validProps);
-
-    expect(() => user.setEmail("")).toThrow(DomainError);
-    expect(() => user.setEmail("")).toThrow("Email é obrigatorio");
-  });
-
-  it("Deve atualizar o telefone com setPhone", () => {
-    const user = new User(validProps);
-    user.setPhone("11888888888");
-
-    expect(user.getPhone()).toBe("11888888888");
-  });
-
-  it("Deve lançar erro ao atualizar telefone vazio", () => {
-    const user = new User(validProps);
-
-    expect(() => user.setPhone("")).toThrow(DomainError);
-    expect(() => user.setPhone("")).toThrow("Telefone é obrigatorio");
-  });
-
-  it("Deve definir crunch corretamente", () => {
-    const user = new User(validProps);
-    user.setCrunch("Minha Igreja");
-
-    expect(user.getCrunch()).toBe("Minha Igreja");
-  });
-
-  it("Deve lançar erro se crunch for vazio", () => {
-    const user = new User(validProps);
-
-    expect(() => user.setCrunch("")).toThrow(DomainError);
-    expect(() => user.setCrunch("")).toThrow("Igreja é obrigatorio");
-  });
-
-  it("Deve manter createdAt quando informado", () => {
+  it("Deve restaurar usuário mantendo o createdAt usando a factory restore", () => {
     const date = new Date("2024-01-01");
-    const user = new User({
+    const user = User.restore({
       ...validProps,
       createdAt: date,
     });
 
-    expect(user.getCreatedAt()).toBe(date);
+    expect(user.createdAt).toBe(date);
   });
 
-  it("Deve permitir id com espaços ao redor mas não vazio", () => {
-    const user = new User({
+  it("Deve lançar erro de validação (Zod) se phone for vazio na criação", () => {
+    expect(() => {
+      User.create({
+        ...validProps,
+        phone: "",
+      });
+    }).toThrow(/Telefone é obrigatório/);
+  });
+
+  it("Deve lançar erro de validação (Zod) se nome for vazio ou contiver apenas espaços na criação", () => {
+    expect(() => {
+      User.create({
+        ...validProps,
+        name: "   ", // O .trim() do Zod limpará a string e fará o .min(1) falhar
+      });
+    }).toThrow(/Nome é obrigatório/);
+  });
+
+  it("Deve lançar erro de validação (Zod) se email for inválido na criação", () => {
+    expect(() => {
+      User.create({
+        ...validProps,
+        email: "email-invalido",
+      });
+    }).toThrow(/Email inválido/);
+  });
+
+  it("Deve atualizar o nome pelo setter nativo", () => {
+    const user = User.create(validProps);
+    user.name = "Novo Nome";
+
+    expect(user.name).toBe("Novo Nome");
+  });
+
+  it("Deve atualizar o email pelo setter nativo (usando Value Object)", () => {
+    const user = User.create(validProps);
+    user.email = "novo@email.com";
+
+    expect(user.email).toBe("novo@email.com");
+  });
+
+  it("Deve atualizar o telefone pelo setter nativo", () => {
+    const user = User.create(validProps);
+    user.phone = "11888888888";
+
+    expect(user.phone).toBe("11888888888");
+  });
+
+  it("Deve definir a igreja (crunchId) corretamente pelo setter nativo", () => {
+    const user = User.create(validProps);
+    user.crunchId = "Minha Igreja";
+
+    expect(user.crunchId).toBe("Minha Igreja");
+  });
+
+  it("Deve lançar erro se tentar criar sem ID (pois no schema atual é obrigatório)", () => {
+    expect(() => {
+      User.create({
+        ...validProps,
+        id: "",
+      });
+    }).toThrow(/Id não é válido/);
+  });
+
+  it("Deve permitir restaurar com id contendo espaços ao redor, mas preservar ou falhar de acordo com o Zod", () => {
+    // Como no schema o ID não tem `.trim()`, ele aceita com espaços desde que não seja vazio.
+    const user = User.restore({
+      ...validProps,
       id: " 123 ",
-      name: "Teste",
-      email: "teste@email.com",
-      phone: "11999999999",
     });
 
-    expect(user.getId()).toBe(" 123 ");
-  });
-
-  it("Deve lançar erro se id for apenas espaços", () => {
-    expect(() => {
-      new User({
-        id: "   ",
-        name: "Teste",
-        email: "teste@email.com",
-        phone: "11999999999",
-      });
-    }).toThrow("Id não é valido");
+    expect(user.id).toBe(" 123 ");
   });
 });

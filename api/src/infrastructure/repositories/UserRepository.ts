@@ -1,5 +1,5 @@
 import { $prismaClient } from "../../../config/database";
-import { User, UserDto } from "../../domain/entities/User";
+import { User } from "../../domain/entities/User";
 import { IUserRespository } from "../../domain/repositories/IUserRepository";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
 
@@ -8,13 +8,13 @@ export class UserRepository implements IUserRespository {
     try {
       const result = await $prismaClient.user.create({
         data: {
-          id: user.getId(),
-          name: user.getName(),
-          email: user.getEmail(),
-          phone: user.getPhone(),
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
           crunch: {
             connect: {
-              id: user.getCrunchId(),
+              id: user.crunchId,
             },
           },
         },
@@ -35,11 +35,12 @@ export class UserRepository implements IUserRespository {
     try {
       const result = await $prismaClient.user.update({
         where: {
-          id: user.getId(),
+          id: user.id,
         },
         data: {
-          name: user.getName(),
-          email: user.getEmail(),
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
         },
       });
 
@@ -67,56 +68,56 @@ export class UserRepository implements IUserRespository {
       throw new DomainError("Falha ao deletar usuario");
     }
   }
+
   public async getUserbyId(id: string): Promise<User> {
     try {
       const result = await $prismaClient.user.findFirst({
-        where: {
-          id: id,
-        },
+        where: { id },
       });
 
-      if (!result) {
-        throw new DomainError("Nenhum usuario encontrado");
+      if (!result || !result.id) {
+        throw new DomainError("Usuario não encontrado");
       }
 
-      return new User({
+      return User.restore({
         id: result.id,
         name: result.name,
         email: result.email,
         phone: result.phone,
         createdAt: result.createdAt,
       });
-    } catch (err) {
-      console.log("Erro ao procurar usuario pelo id:", err);
-      throw new DomainError("Erro ao buscar usuario");
+    } catch (error) {
+      throw new DomainError(
+        "Erro ao buscar usuario por ID: " + (error as Error).message,
+      );
     }
   }
+
   public async getAllUsers(): Promise<User[]> {
     try {
-      const result = await $prismaClient.user.findMany({
-        where: {},
+      const results = await $prismaClient.user.findMany({
         orderBy: {
           createdAt: "desc",
         },
       });
 
-      if (!result) {
-        return [];
-      }
+      return results.map((user) => {
+        if (!user.id) {
+          throw new DomainError("Usuario sem ID encontrado");
+        }
 
-      return result.map(
-        (user) =>
-          new User({
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            phone: user.phone,
-            createdAt: user.createdAt,
-          }),
+        return User.restore({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          createdAt: user.createdAt,
+        });
+      });
+    } catch (error) {
+      throw new DomainError(
+        "Erro ao buscar todos os usuarios: " + (error as Error).message,
       );
-    } catch (err) {
-      console.error("Falha ao buscar todos os usuarios:", err);
-      throw new DomainError("Falha ao buscar todos os usuarioss");
     }
   }
 }

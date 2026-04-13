@@ -1,102 +1,112 @@
-import { DomainError } from "../value-objects/utils/DomainError";
+import { z } from "zod";
+import { Email } from "../value-objects/Email";
 
+// 1. Schema de Validação
+export const userSchema = z.object({
+  id: z.string().min(1, "Id não é válido"),
+  name: z.string().min(1, "Nome é obrigatório").trim(),
+  email: z.string().email("Email inválido").trim(),
+  phone: z.string().min(1, "Telefone é obrigatório").trim(),
+  crunchId: z.string().min(1, "Igreja é obrigatório").trim().optional(),
+  role: z.string().min(1, "Cargo é obrigatório").trim().optional(),
+  createdAt: z.date().optional(),
+});
+
+// 2. Tipo Inferido
+export type UserDTO = z.infer<typeof userSchema>;
+
+// 3. Entidade de Domínio
 export class User {
-  private id: string | undefined = undefined;
-  private name: string = "";
-  private email: string = "";
-  private phone: string = "";
-  private crunchId?: string;
-  private role?: string;
+  private _id: string;
+  private _name: string;
+  private _email: Email;
+  private _phone: string;
+  private _crunchId?: string;
+  private _role?: string;
+  private _createdAt: Date;
 
-  private createdAt?: Date = new Date();
+  private constructor(props: UserDTO) {
+    this._id = props.id;
+    this._name = props.name;
+    this._email = new Email(props.email);
+    this._phone = props.phone;
+    this._crunchId = props.crunchId;
+    this._role = props.role;
+    this._createdAt = props.createdAt || new Date();
+  }
 
-  constructor(props: UserDto) {
-    if (!props.id?.trim()) {
-      throw new DomainError("Id não é valido");
+  // =================
+  // FACTORIES (CREATE / RESTORE)
+  // =================
+
+  static create(props: Omit<UserDTO, "createdAt">): User {
+    const data = userSchema.omit({ createdAt: true }).parse(props);
+    return new User({ ...data, createdAt: new Date() });
+  }
+
+  static restore(props: UserDTO): User {
+    const data = userSchema.parse(props);
+
+    if (!data.id) {
+      throw new Error("Usuário precisa de ID");
     }
 
-    if (props.id) this.id = props.id;
-    this.setPhone(props.phone);
-    this.createdAt = props.createdAt;
-    this.setName(props.name);
-    this.setEmail(props.email);
+    return new User(data);
   }
 
-  public getId(): string {
-    if (!this.id?.trim()) {
-      throw new DomainError(
-        "Esse id ainda não foi definido para nenhum contratante",
-      );
-    }
-    return this.id;
+  // =================
+  // GETTERS
+  // =================
+
+  get id() {
+    return this._id;
   }
 
-  public getName(): string {
-    return this.name;
+  get name() {
+    return this._name;
   }
 
-  public getEmail(): string {
-    return this.email;
+  get email() {
+    return this._email.getValue();
   }
 
-  public getPhone(): string {
-    return this.phone;
+  get phone() {
+    return this._phone;
   }
 
-  public getCrunchId(): string | undefined {
-    return this.crunchId;
+  get crunchId() {
+    return this._crunchId;
   }
 
-  public getCreatedAt(): Date | undefined {
-    return this.createdAt;
+  get role() {
+    return this._role;
   }
 
-  getRole(): string | undefined {
-    return this.role;
+  get createdAt() {
+    return this._createdAt;
   }
 
-  public setName(name: string): void {
-    if (!name?.trim()) {
-      throw new DomainError("Nome é obrigatorio");
-    }
-    this.name = name;
+  // =================
+  // SETTERS
+  // =================
+
+  set name(value: string) {
+    this._name = value;
   }
 
-  public setEmail(email: string): void {
-    if (!email?.trim()) {
-      throw new DomainError("Email é obrigatorio");
-    }
-    this.email = email;
+  set email(value: string) {
+    this._email = new Email(value);
   }
 
-  public setPhone(phone: string) {
-    if (!phone?.trim()) {
-      throw new DomainError("Telefone é obrigatorio");
-    }
-    this.phone = phone;
+  set phone(value: string) {
+    this._phone = value;
   }
 
-  public setCrunchId(crunchId: string | undefined) {
-    if (!crunchId?.trim()) {
-      throw new DomainError("Igreja é obrigatorio");
-    }
-    this.crunchId = crunchId;
+  set crunchId(value: string | undefined) {
+    this._crunchId = value;
   }
 
-  public setRole(role: string | undefined) {
-    if (!role?.trim()) {
-      throw new DomainError("Cargo é obrigatorio");
-    }
-    this.role = role;
+  set role(value: string | undefined) {
+    this._role = value;
   }
-}
-
-export interface UserDto {
-  id?: string;
-  name: string;
-  email: string;
-  phone: string;
-  createdAt?: Date;
-  crunchId?: string;
-  role?: string;
 }

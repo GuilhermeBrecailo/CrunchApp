@@ -1,5 +1,5 @@
 import { FastifyRequest } from "fastify";
-import { User, UserDto } from "../../domain/entities/User";
+import { User, UserDTO } from "../../domain/entities/User";
 import { JwtDecoded } from "../../application/use-cases/Auth/JwtValidationUseCase";
 
 import { UpdateUserService } from "../../application/Services/User/UpdateUserService";
@@ -18,12 +18,17 @@ export class UserController {
   ) {}
 
   async create(request: FastifyRequest): Promise<{ id: string }> {
-    const { id } = request.user as JwtDecoded;
-    const { name, email, phone } = request.body as UserDto;
+    const { id } = (request as any).user as JwtDecoded;
+    const { name, email, phone } = request.body as UserDTO;
 
-    const user = new User({ id, name, email, phone });
+    const userEntity = User.create({
+      id,
+      name,
+      email,
+      phone,
+    });
 
-    return await this.createUserUseCase.execute(user);
+    return await this.createUserUseCase.execute(userEntity);
   }
 
   async delete(request: FastifyRequest): Promise<{ success: boolean }> {
@@ -45,8 +50,7 @@ export class UserController {
   }
 
   async update(request: FastifyRequest): Promise<void> {
-    const { id } = request.body as { id: string };
-    const { name, email, phone } = request.body as UserDto;
+    const { id, name, email, phone } = request.body as UserDTO;
 
     const payload = {
       id,

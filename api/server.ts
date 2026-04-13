@@ -19,6 +19,6 @@ server.get("/status", async () => {
 await server.register(UserRoutes, { prefix: "/" });
 await server.register(CrunchRoutes, { prefix: "/" });
 
-await server.listen({ port: 3000, host: "0.0.0.0" });
+await server.listen({ port: 8000, host: "0.0.0.0" });
 
-console.log("🚀 Server running on http://localhost:3000");
+console.log("🚀 Server running on http://localhost:8000");

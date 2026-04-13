@@ -9,7 +9,7 @@ export async function CrunchRoutes(app: FastifyInstance) {
     "/api/crunch/create",
     controllerHandler(adapters.createCrunch.bind(adapters)),
   );
-  app.delete(
+  app.post(
     "/api/crunch/delete",
     controllerHandler(adapters.deleteCrunch.bind(adapters)),
   );

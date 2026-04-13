@@ -1,7 +1,7 @@
-import { ChurchDto, Crunch } from "../src/domain/entities/Crunch";
-import { DomainError } from "../src/domain/value-objects/utils/DomainError";
+import { Crunch, CrunchDTO } from "../src/domain/entities/Crunch";
+import { ZodError } from "zod";
 
-const makeValidChurchProps = (): ChurchDto => ({
+const makeValidCrunchProps = (): CrunchDTO => ({
   id: "any_id",
   name: "Igreja Central",
   slug: "igreja-central",
@@ -11,67 +11,58 @@ const makeValidChurchProps = (): ChurchDto => ({
   departaments: ["Jovens", "Música"],
 });
 
-describe("Crunch (Church) Entity", () => {
+describe("Crunch (Church) Entity - Casos atualizados com Zod e DDD", () => {
   describe("Success Cases", () => {
-    it("should create a new instance with valid data", () => {
-      const props = makeValidChurchProps();
-      const sut = new Crunch(props);
+    it("should create a new instance with valid data using create factory", () => {
+      const props = makeValidCrunchProps();
+      const sut = Crunch.create(props);
 
-      expect(sut.getId()).toBe(props.id);
-      expect(sut.getName()).toBe(props.name);
-      expect(sut.getIsActive()).toBe(true);
-      expect(sut.getDepartaments()).toContain("Jovens");
+      expect(sut.id).toBe(props.id);
+      expect(sut.name).toBe(props.name);
+      expect(sut.isActive).toBe(true);
+      expect(sut.departaments).toContain("Jovens");
+      expect(sut.createdAt).toBeInstanceOf(Date);
     });
 
-    it("should allow updating the name and slug via setters", () => {
-      const sut = new Crunch(makeValidChurchProps());
+    it("should allow updating the name and slug via native setters", () => {
+      const sut = Crunch.create(makeValidCrunchProps());
 
-      sut.setName("Novo Nome");
-      sut.setSlug("novo-slug");
+      sut.name = "Novo Nome";
+      sut.slug = "novo-slug";
 
-      expect(sut.getName()).toBe("Novo Nome");
-      expect(sut.getSlug()).toBe("novo-slug");
+      expect(sut.name).toBe("Novo Nome");
+      expect(sut.slug).toBe("novo-slug");
     });
   });
 
   describe("Validation (Error) Cases", () => {
-    it("should throw DomainError if name is empty in constructor", () => {
-      const props = makeValidChurchProps();
-      props.name = "   ";
+    it("should throw validation error (Zod) if name is empty during creation", () => {
+      const props = makeValidCrunchProps();
+      props.name = "   "; // O .trim() do Zod limpará a string e fará o .min(1) falhar
 
-      expect(() => new Crunch(props)).toThrow(
-        new DomainError("Nome é obrigatorio"),
-      );
+      expect(() => Crunch.create(props)).toThrow(/Nome é obrigatório/);
     });
 
-    it("should throw DomainError if id is invalid in constructor", () => {
-      const props = makeValidChurchProps();
+    it("should throw validation error (Zod) if id is invalid during creation", () => {
+      const props = makeValidCrunchProps();
       props.id = "";
 
-      expect(() => new Crunch(props)).toThrow(
-        new DomainError("Id não é valido"),
-      );
+      expect(() => Crunch.create(props)).toThrow(/Id não é válido/);
     });
 
-    it("should throw DomainError when trying to set an empty name", () => {
-      const sut = new Crunch(makeValidChurchProps());
-      expect(() => sut.setName("")).toThrow("Nome é obrigatorio");
+    it("should throw validation error (Zod) if slug is empty during creation", () => {
+      const props = makeValidCrunchProps();
+      props.slug = "  ";
+
+      expect(() => Crunch.create(props)).toThrow(/Slug é obrigatório/);
     });
 
-    it("should throw DomainError when trying to set an empty slug", () => {
-      const sut = new Crunch(makeValidChurchProps());
-      expect(() => sut.setSlug("  ")).toThrow("Slug é obrigatorio");
-    });
+    it("should throw Error if id is completely missing during restore", () => {
+      const props = makeValidCrunchProps();
+      delete (props as any).id;
 
-    it("should throw DomainError if getId is called but id is undefined", () => {
-      const props = makeValidChurchProps();
-      const sut = new Crunch(props);
-
-      (sut as any).id = undefined;
-
-      expect(() => sut.getId()).toThrow(
-        "Esse id ainda não foi definido para nenhum contratante",
-      );
+      // O Zod vai capturar primeiro a ausência da string e disparar o erro configurado no schema
+      expect(() => Crunch.restore(props)).toThrow(/Id não é válido/);
     });
   });
 });
