@@ -5,5 +5,5 @@ export interface ICrunchRepository {
   updateCrunch(crunch: Crunch): Promise<void>;
   deleteCrunch(id: string): Promise<void>;
   getAllCrunchs(): Promise<Crunch[]>;
-  getCrunchById(id: string): Promise<Crunch>;
+  getCrunchById(id: string): Promise<Crunch | null>;
 }

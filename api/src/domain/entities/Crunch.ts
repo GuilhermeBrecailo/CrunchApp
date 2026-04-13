@@ -1,94 +1,112 @@
-import { DomainError } from "../value-objects/utils/DomainError";
-import { UserDto } from "./User";
+import { z } from "zod";
+import { UserDTO } from "./User"; // Importando o DTO da classe User refatorada
 
+// 1. Schema de Validação
+export const crunchSchema = z.object({
+  id: z.string().min(1, "Id não é válido"),
+  name: z.string().min(1, "Nome é obrigatório").trim(),
+  slug: z.string().min(1, "Slug é obrigatório").trim(),
+  isActive: z.boolean().default(false),
+  users: z.array(z.custom<UserDTO>()).optional().default([]),
+  departaments: z.array(z.string()).optional().default([]),
+  createdAt: z.date().optional(),
+});
+
+// 2. Tipo Inferido
+export type CrunchDTO = z.infer<typeof crunchSchema>;
+
+// 3. Entidade de Domínio
 export class Crunch {
-  private id?: string;
-  private name: string = "";
-  private slug: string = "";
-  private isActive: boolean = false;
+  private _id: string;
+  private _name: string;
+  private _slug: string;
+  private _isActive: boolean;
+  private _users: UserDTO[];
+  private _departaments: string[];
+  private _createdAt: Date;
 
-  private createdAt?: Date = new Date();
+  private constructor(props: CrunchDTO) {
+    this._id = props.id;
+    this._name = props.name;
+    this._slug = props.slug;
+    this._isActive = props.isActive;
+    this._users = props.users ?? [];
+    this._departaments = props.departaments ?? [];
+    this._createdAt = props.createdAt || new Date();
+  }
 
-  private users: UserDto[] = [];
-  private departaments: string[] = [];
+  // =================
+  // FACTORIES (CREATE / RESTORE)
+  // =================
 
-  constructor(props: ChurchDto) {
-    if (!props.name?.trim()) {
-      throw new DomainError("Nome é obrigatorio");
+  static create(props: Omit<CrunchDTO, "createdAt">): Crunch {
+    const data = crunchSchema.omit({ createdAt: true }).parse(props);
+    return new Crunch({ ...data, createdAt: new Date() });
+  }
+
+  static restore(props: CrunchDTO): Crunch {
+    const data = crunchSchema.parse(props);
+
+    if (!data.id) {
+      throw new Error("Crunch (Igreja) precisa de ID");
     }
 
-    if (!props.id?.trim()) {
-      throw new DomainError("Id não é valido");
-    }
-
-    if (props.id) this.id = props.id;
-    this.setName(props.name);
-    this.setSlug(props.slug);
-    this.setIsActive(props.isActive);
-    this.users = props.users || [];
-    this.departaments = props.departaments || [];
-    this.createdAt = props.createdAt;
+    return new Crunch(data);
   }
 
-  public getId(): string {
-    if (!this.id?.trim()) {
-      throw new DomainError(
-        "Esse id ainda não foi definido para nenhum contratante",
-      );
-    }
-    return this.id;
+  // =================
+  // GETTERS
+  // =================
+
+  get id() {
+    return this._id;
   }
 
-  public getName(): string {
-    return this.name;
+  get name() {
+    return this._name;
   }
 
-  public getSlug(): string {
-    return this.slug;
+  get slug() {
+    return this._slug;
   }
 
-  public getIsActive(): boolean {
-    return this.isActive;
+  get isActive() {
+    return this._isActive;
   }
 
-  public getUsers(): UserDto[] {
-    return this.users;
+  get users() {
+    return this._users;
   }
 
-  public getDepartaments(): string[] {
-    return this.departaments;
+  get departaments() {
+    return this._departaments;
   }
 
-  public getCreatedAt(): Date | undefined {
-    return this.createdAt;
+  get createdAt() {
+    return this._createdAt;
   }
 
-  public setName(name: string): void {
-    if (!name?.trim()) {
-      throw new DomainError("Nome é obrigatorio");
-    }
-    this.name = name;
+  // =================
+  // SETTERS
+  // =================
+
+  set name(value: string) {
+    this._name = value;
   }
 
-  public setSlug(slug: string): void {
-    if (!slug?.trim()) {
-      throw new DomainError("Slug é obrigatorio");
-    }
-    this.slug = slug;
+  set slug(value: string) {
+    this._slug = value;
   }
 
-  public setIsActive(isActive: boolean): void {
-    this.isActive = isActive;
+  set isActive(value: boolean) {
+    this._isActive = value;
   }
-}
 
-export interface ChurchDto {
-  id: string;
-  name: string;
-  slug: string;
-  isActive: boolean;
-  createdAt: Date;
+  set users(value: UserDTO[]) {
+    this._users = value;
+  }
 
-  users?: UserDto[];
-  departaments?: string[];
+  set departaments(value: string[]) {
+    this._departaments = value;
+  }
 }
