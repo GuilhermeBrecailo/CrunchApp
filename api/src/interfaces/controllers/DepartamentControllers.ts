@@ -1,8 +1,8 @@
 import { Department } from "../../domain/entities/Departament"; // Ajuste o caminho se o arquivo se chamar Department.ts
-import { IDepartmentRepository } from "../../domain/repositories/IDepartament";
+import { IDepartamentRepository } from "../../domain/repositories/IDepartamentRepository";
 
-export class DepartmentController implements IDepartmentRepository {
-  constructor(private departmentRepository: IDepartmentRepository) {}
+export class DepartmentController implements IDepartamentRepository {
+  constructor(private departmentRepository: IDepartamentRepository) {}
 
   async createDepartment(department: Department): Promise<{ id: string }> {
     const result = await this.departmentRepository.createDepartment(department);

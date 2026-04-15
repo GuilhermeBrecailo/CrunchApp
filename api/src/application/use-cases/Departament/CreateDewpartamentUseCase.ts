@@ -1,5 +1,5 @@
 import { Department } from "../../../domain/entities/Departament";
-import { IDepartmentRepository } from "../../../domain/repositories/IDepartament";
+import { IDepartmentRepository } from "../../../domain/repositories/IDepartamentRepositorya";
 
 export class CreateDepartmentUseCase {
   constructor(private repository: IDepartmentRepository) {}

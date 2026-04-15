@@ -1,9 +1,9 @@
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
 import { Department } from "../../domain/entities/Departament"; // Mantenha o seu caminho
-import { IDepartmentRepository } from "../../domain/repositories/IDepartament";
+import { IDepartamentRepository } from "../../domain/repositories/IDepartamentRepository";
 
-export class DepartmentRepository implements IDepartmentRepository {
+export class DepartmentRepository implements IDepartamentRepository {
   public async createDepartment(
     department: Department,
   ): Promise<{ id: string }> {
