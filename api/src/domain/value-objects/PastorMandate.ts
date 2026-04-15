@@ -1,3 +1,16 @@
+import { z } from "zod";
+
+// 1. Schema de Validação (usado pelos DTOs externos)
+export const pastorMandateSchema = z.object({
+  pastorId: z.string().uuid("ID do pastor inválido"),
+  pastorName: z.string().min(1, "O nome do pastor é obrigatório"),
+  startDate: z.date().min(new Date(), "A data de início é obrigatória"),
+  endDate: z.date().nullable().optional(),
+});
+
+export type PastorMandateDTO = z.infer<typeof pastorMandateSchema>;
+
+// 2. Propriedades de Criação Interna
 interface PastorMandateProps {
   pastorId: string;
   pastorName: string;
@@ -5,6 +18,7 @@ interface PastorMandateProps {
   endDate?: Date | null;
 }
 
+// 3. Objeto de Valor (Value Object)
 export class PastorMandate {
   private readonly _pastorId: string;
   private readonly _pastorName: string;
@@ -26,7 +40,9 @@ export class PastorMandate {
 
   // Factory de criação
   static create(props: PastorMandateProps): PastorMandate {
-    return new PastorMandate(props);
+    // Validando os dados brutos com o Zod antes de instanciar
+    const data = pastorMandateSchema.parse(props);
+    return new PastorMandate(data);
   }
 
   get pastorId() {

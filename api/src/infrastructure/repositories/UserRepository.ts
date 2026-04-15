@@ -83,7 +83,7 @@ export class UserRepository implements IUserRespository {
         id: result.id,
         name: result.name,
         email: result.email,
-        phone: result.phone,
+        phone: result.phone ?? "",
         createdAt: result.createdAt,
       });
     } catch (error) {
@@ -110,7 +110,7 @@ export class UserRepository implements IUserRespository {
           id: user.id,
           name: user.name,
           email: user.email,
-          phone: user.phone,
+          phone: user.phone ?? "",
           createdAt: user.createdAt,
         });
       });

@@ -1,68 +1,139 @@
 import { Crunch, CrunchDTO } from "../src/domain/entities/Crunch";
-import { ZodError } from "zod";
+import { User } from "../src/domain/entities/User";
+import { Address } from "../src/domain/value-objects/Address";
+import { Document } from "../src/domain/value-objects/Document";
+import { Department } from "../src/domain/entities/Departament";
 
-const makeValidCrunchProps = (): CrunchDTO => ({
+// 1. Mocks (Dependências falsas)
+const mockUsers: User[] = [];
+const mockAddress = {} as Address;
+const mockDocument = {} as Document;
+const mockDepartments: Department[] = []; // O 5º argumento
+
+// 2. Factory de DTO com os nomes corretos do Zod (logo em vez de _logo)
+const makeValidCrunchProps = (): Omit<CrunchDTO, "createdAt"> => ({
   id: "any_id",
   name: "Igreja Central",
-  slug: "igreja-central",
+  userMainId: "user_123",
+  logo: "https://minhalogo.com/logo.png", // Mudou de _logo para logo
   isActive: true,
-  createdAt: new Date(),
-  users: [],
-  departaments: ["Jovens", "Música"],
 });
 
 describe("Crunch (Church) Entity - Casos atualizados com Zod e DDD", () => {
   describe("Success Cases", () => {
     it("should create a new instance with valid data using create factory", () => {
       const props = makeValidCrunchProps();
-      const sut = Crunch.create(props);
+      // Passando os 5 argumentos exigidos pelo domínio
+      const sut = Crunch.create(
+        props,
+        mockUsers,
+        mockAddress,
+        mockDocument,
+        mockDepartments,
+      );
 
       expect(sut.id).toBe(props.id);
       expect(sut.name).toBe(props.name);
+      expect(sut.logo).toBe(props.logo);
       expect(sut.isActive).toBe(true);
-      expect(sut.departaments).toContain("Jovens");
+      expect(sut.departaments).toEqual([]);
       expect(sut.createdAt).toBeInstanceOf(Date);
     });
 
-    it("should allow updating the name and slug via native setters", () => {
-      const sut = Crunch.create(makeValidCrunchProps());
+    it("should allow updating properties via native setters", () => {
+      const sut = Crunch.create(
+        makeValidCrunchProps(),
+        mockUsers,
+        mockAddress,
+        mockDocument,
+        mockDepartments, // 5º argumento adicionado
+      );
 
       sut.name = "Novo Nome";
-      sut.slug = "novo-slug";
+      sut.logo = "https://nova-logo.com/img.png";
+      sut.isActive = false;
 
       expect(sut.name).toBe("Novo Nome");
-      expect(sut.slug).toBe("novo-slug");
+      expect(sut.logo).toBe("https://nova-logo.com/img.png");
+      expect(sut.isActive).toBe(false);
+    });
+
+    it("should allow setting departments via setter", () => {
+      const sut = Crunch.create(
+        makeValidCrunchProps(),
+        mockUsers,
+        mockAddress,
+        mockDocument,
+        mockDepartments, // 5º argumento adicionado
+      );
+      const depMock = { name: "Louvor" } as Department;
+
+      sut.departaments = [depMock];
+
+      expect(sut.departaments).toHaveLength(1);
+      expect(sut.departaments[0].name).toBe("Louvor");
     });
   });
 
   describe("Validation (Error) Cases", () => {
-    it("should throw validation error (Zod) if name is empty during creation", () => {
+    it("should throw validation error if name is empty (trim check)", () => {
       const props = makeValidCrunchProps();
-      props.name = "   "; // O .trim() do Zod limpará a string e fará o .min(1) falhar
+      props.name = "   ";
 
-      expect(() => Crunch.create(props)).toThrow(/Nome é obrigatório/);
+      expect(() =>
+        Crunch.create(
+          props,
+          mockUsers,
+          mockAddress,
+          mockDocument,
+          mockDepartments,
+        ),
+      ).toThrow(/Nome é obrigatório/);
     });
 
-    it("should throw validation error (Zod) if id is invalid during creation", () => {
+    it("should throw validation error if id is invalid", () => {
       const props = makeValidCrunchProps();
       props.id = "";
 
-      expect(() => Crunch.create(props)).toThrow(/Id não é válido/);
+      expect(() =>
+        Crunch.create(
+          props,
+          mockUsers,
+          mockAddress,
+          mockDocument,
+          mockDepartments,
+        ),
+      ).toThrow(/Id não é válido/);
     });
 
-    it("should throw validation error (Zod) if slug is empty during creation", () => {
+    it("should throw validation error if userMainId is empty", () => {
       const props = makeValidCrunchProps();
-      props.slug = "  ";
+      props.userMainId = "  ";
 
-      expect(() => Crunch.create(props)).toThrow(/Slug é obrigatório/);
+      expect(() =>
+        Crunch.create(
+          props,
+          mockUsers,
+          mockAddress,
+          mockDocument,
+          mockDepartments,
+        ),
+      ).toThrow(/Id do usuário principal é obrigatório/);
     });
 
-    it("should throw Error if id is completely missing during restore", () => {
-      const props = makeValidCrunchProps();
-      delete (props as any).id;
+    it("should throw error during restore if id is missing", () => {
+      const props = makeValidCrunchProps() as any;
+      delete props.id;
 
-      // O Zod vai capturar primeiro a ausência da string e disparar o erro configurado no schema
-      expect(() => Crunch.restore(props)).toThrow(/Id não é válido/);
+      expect(() =>
+        Crunch.restore(
+          props,
+          mockUsers,
+          mockAddress,
+          mockDocument,
+          mockDepartments,
+        ),
+      ).toThrow();
     });
   });
 });

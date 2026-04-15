@@ -1,4 +1,4 @@
-import { User, UserDto } from "../entities/User";
+import { User } from "../entities/User";
 
 export interface IUserRespository {
   createUser(user: User): Promise<{ id: string }>;

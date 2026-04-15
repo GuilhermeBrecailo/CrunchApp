@@ -1,4 +1,4 @@
-import { UpdateCrunchService } from "../../application/Services/User/UpdateCrunchService";
+import { UpdateCrunchService } from "../../application/Services/Crunch/UpdateCrunchService";
 import { CreateCrunchUseCase } from "../../application/use-cases/Crunch/CreateCrunchUseCase";
 import { DeleteCrunchUseCase } from "../../application/use-cases/Crunch/DeleteCrunchUseCase";
 import { GetAllCrunchUseCase } from "../../application/use-cases/Crunch/GetAllCrunchUseCase";
@@ -9,7 +9,11 @@ import { FastifyRequest } from "fastify/types/request";
 
 // Adicione os imports da sua Entidade e DTO referentes ao Crunch
 import { Crunch, CrunchDTO } from "../../domain/entities/Crunch";
-import { JwtDecoded } from "../../application/use-cases/Auth/JwtValidationUseCase";
+
+import { Address } from "../../domain/value-objects/Address";
+import { Document } from "../../domain/value-objects/Document";
+import { User } from "../../domain/entities/User";
+import { Department } from "../../domain/entities/Departament";
 
 const crunchRepository = new CrunchRepository();
 const createCrunchUseCase = new CreateCrunchUseCase(crunchRepository);
@@ -23,16 +27,85 @@ const updateCrunchService = new UpdateCrunchService(
   updateCrunchUseCase,
 );
 
+export interface CreateCrunchHttpBody {
+  id: string;
+  name: string;
+  userMainId: string;
+  logo: string;
+  isActive: boolean;
+
+  city: string;
+  road: string;
+  number?: string;
+  localZipCode: string;
+  state: string;
+  complement?: string;
+
+  document: Document;
+
+  departaments: {
+    id: string;
+    name: string;
+    leaderId: string;
+    isActive?: boolean;
+  }[];
+
+  users: {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+  }[];
+}
+
 export class CrunchAdapters {
   async createCrunch(request: FastifyRequest): Promise<{ id: string }> {
-    const bodyData = request.body as Omit<CrunchDTO, "id" | "created_at">;
+    const bodyData = request.body as CreateCrunchHttpBody;
 
     const novoId = crypto.randomUUID();
     const props = {
       ...bodyData,
       id: novoId,
     };
-    const crunchEntity = Crunch.create(props);
+
+    const address = Address.create({
+      city: bodyData.city ?? "",
+      road: bodyData.road ?? "",
+      number: bodyData.number ?? "",
+      localZipCode: bodyData.localZipCode ?? "",
+      state: bodyData.state ?? "",
+      complement: bodyData.complement ?? "",
+    });
+
+    const document = bodyData.document;
+
+    const users = bodyData.users.map((user) =>
+      User.create({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone ?? "",
+      }),
+    );
+
+    const departaments = bodyData.departaments.map(
+      (dept) =>
+        new Department({
+          id: dept.id,
+          name: dept.name,
+          leaderId: dept.leaderId,
+          isActive: dept.isActive ?? true,
+          crunchId: novoId,
+        }),
+    );
+
+    const crunchEntity = Crunch.create(
+      props,
+      users,
+      address,
+      document,
+      departaments,
+    );
 
     return await createCrunchUseCase.execute(crunchEntity);
   }
@@ -76,12 +149,53 @@ export class CrunchAdapters {
   }
 
   async updateCrunch(request: FastifyRequest): Promise<void> {
-    const props = request.body as CrunchDTO;
+    const bodyData = request.body as CreateCrunchHttpBody;
 
-    if (!props.id) {
+    if (!bodyData.id) {
       throw new Error("O ID é obrigatório para realizar a atualização.");
     }
 
-    await updateCrunchService.handle(props);
+    const props = {
+      ...bodyData,
+    };
+
+    const address = Address.create({
+      city: bodyData.city ?? "",
+      road: bodyData.road ?? "",
+      number: bodyData.number ?? "",
+      localZipCode: bodyData.localZipCode ?? "",
+      state: bodyData.state ?? "",
+      complement: bodyData.complement ?? "",
+    });
+
+    const document = bodyData.document;
+
+    const users = bodyData.users.map((user) =>
+      User.create({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone ?? "",
+      }),
+    );
+
+    const departaments = bodyData.departaments.map(
+      (dept) =>
+        new Department({
+          id: dept.id,
+          name: dept.name,
+          leaderId: dept.leaderId,
+          isActive: dept.isActive ?? true,
+          crunchId: bodyData.id,
+        }),
+    );
+
+    await updateCrunchService.handle(
+      props,
+      users,
+      address,
+      document,
+      departaments,
+    );
   }
 }
