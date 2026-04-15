@@ -1,4 +1,4 @@
-import { IDepartmentRepository } from "../../../domain/repositories/IDepartament";
+import { IDepartmentRepository } from "../../../domain/repositories/IDepartamentRepositorya";
 
 export class DeleteDepartmentUseCase {
   constructor(private repository: IDepartmentRepository) {}
