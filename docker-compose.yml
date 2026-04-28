@@ -1,0 +1,88 @@
+services:
+  # -----------------------------------
+  # SERVIÇO DA API (Backend)
+  # -----------------------------------
+  api:
+    build: ./api
+    container_name: api-igreja
+    ports:
+      - "${API_PORT}:${API_PORT}"
+    volumes:
+      - ./api:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - NODE_ENV=${NODE_ENV}
+      - API_PORT=${API_PORT}
+    depends_on:
+      - db
+    command: sh -c "npx prisma generate && npx prisma db push && npx tsx watch --clear-screen=false server.ts"
+
+  # -----------------------------------
+  # SERVIÇO WEB (Frontend)
+  # -----------------------------------
+  web:
+    build: ./web
+    container_name: web-igreja
+    ports:
+      - "${WEB_PORT:-3000}:${WEB_PORT:-3000}"
+    volumes:
+      - ./web:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      - NODE_ENV=${NODE_ENV}
+    command: npm run dev
+    depends_on:
+      - api
+
+  # -----------------------------------
+  # BANCO DE DADOS DA APLICAÇÃO (Prisma)
+  # -----------------------------------
+  db:
+    image: postgres:15-alpine
+    container_name: db-igreja
+    ports:
+      - "${DB_PORT}:5432"
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # ===================================
+  # NOVOS SERVIÇOS DO KEYCLOAK
+  # ===================================
+
+  # Banco de Dados isolado para o Keycloak
+  keycloak-db:
+    image: postgres:15-alpine
+    container_name: keycloak-db-igreja
+    environment:
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak_password
+      POSTGRES_DB: keycloak_db
+    volumes:
+      - keycloak_pgdata:/var/lib/postgresql/data
+
+  # Servidor Keycloak
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.2 # Versão super recente e estável
+    container_name: keycloak-igreja
+    command: start-dev # Inicia em modo de desenvolvimento
+    ports:
+      - "8080:8080" # O painel do Keycloak ficará nesta porta
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak_db
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak_password
+      # Credenciais para você acessar o painel de admin do Keycloak:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    depends_on:
+      - keycloak-db
+
+volumes:
+  pgdata:
+  keycloak_pgdata:

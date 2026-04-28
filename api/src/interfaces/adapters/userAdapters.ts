@@ -9,6 +9,7 @@ import { FastifyRequest } from "fastify/types/request";
 import crypto from "node:crypto";
 import { User, UserDTO } from "../../domain/entities/User";
 import { JwtDecoded } from "../../application/use-cases/Auth/JwtValidationUseCase";
+import { KeycloakProvider } from "../../infrastructure/identity/KeycloakProvider";
 
 const userRepository = new UserRepository();
 const createUserUseCase = new CreateUserUseCase(userRepository);
@@ -23,6 +24,30 @@ const updateUserService = new UpdateUserService(
 );
 
 export class UserAdapters {
+  async createPastor(request: FastifyRequest) {
+    // Pegamos tudo do body.
+    // Como é o Pastor, a role a gente fixa como 'ADMIN' ou 'PASTOR' por segurança.
+    const { email, name, phone, password } = request.body as any;
+
+    const identityProvider = new KeycloakProvider();
+
+    // 1. Criar no Keycloak (Gera o ID oficial)
+    const keycloakId = await identityProvider.createUser(email, name, password);
+
+    // 2. Criar a Entidade de Domínio
+    const userEntity = User.create({
+      id: keycloakId,
+      name,
+      email,
+      phone,
+      role: "ADMIN", // Fixamos aqui porque essa rota é só para o "dono"
+      crunchId: "PASTOR-INITIAL-SETUP", // Placeholder temporário já que ignoramos igreja agora
+    });
+
+    // 3. Salva no seu banco (Prisma/UserRepository)
+    return await createUserUseCase.execute(userEntity);
+  }
+
   async createUser(request: FastifyRequest): Promise<{ id: string }> {
     const bodyData = request.body as Omit<UserDTO, "id" | "created_at">;
 
