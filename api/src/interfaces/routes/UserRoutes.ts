@@ -6,6 +6,11 @@ export async function UserRoutes(app: FastifyInstance) {
   const adapters = new UserAdapters();
 
   app.post(
+    "/api/pastor/signup",
+    controllerHandler(adapters.createPastor.bind(adapters)),
+  );
+
+  app.post(
     "/api/user/create",
     controllerHandler(adapters.createUser.bind(adapters)),
   );

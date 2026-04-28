@@ -1,64 +1,130 @@
-import { FastifyRequest } from "fastify";
-import { User, UserDTO } from "../../domain/entities/User";
+import { FastifyRequest, FastifyReply } from "fastify";
+import { z } from "zod";
+import { User, userSchema } from "../../domain/entities/User";
 import { JwtDecoded } from "../../application/use-cases/Auth/JwtValidationUseCase";
+import { DomainError } from "../../domain/value-objects/utils/DomainError";
+import {
+  authenticateKeycloakAdmin,
+  kcAdminClient,
+} from "../../infrastructure/keycloack";
 
-import { UpdateUserService } from "../../application/Services/User/UpdateUserService";
-import { CreateUserUseCase } from "../../application/use-cases/User/CreateUserUseCase";
-import { DeleteUserUseCase } from "../../application/use-cases/User/DeleteUserUseCase";
-import { GetUserByIdUseCase } from "../../application/use-cases/User/GetUserByIdUseCase";
-import { GetAllUserUseCase } from "../../application/use-cases/User/GetAllUserUseCase";
+// ==========================================
+// SCHEMAS DE VALIDAÇÃO (Derivados do Domínio)
+// ==========================================
+
+// Para CRIAR: omitimos os IDs e Data, e adicionamos a senha que o Keycloak exige
+const createUserRequestSchema = userSchema
+  .omit({ id: true, createdAt: true, crunchId: true })
+  .extend({ password: z.string().min(6, "Senha muito curta") });
+
+// Para ATUALIZAR: exigimos o 'id', omitimos o resto que não deve ser alterado aqui
+const updateUserRequestSchema = userSchema.omit({
+  createdAt: true,
+  crunchId: true,
+});
+
+// Validar ID na URL
+const idParamSchema = z.object({
+  id: z.string().min(1, "ID na URL é obrigatório"),
+});
 
 export class UserController {
-  constructor(
-    private createUserUseCase: CreateUserUseCase,
-    private deleteUserUseCase: DeleteUserUseCase,
-    private getUserByIdUseCase: GetUserByIdUseCase,
-    private getAllUserUseCase: GetAllUserUseCase,
-    private updateUserService: UpdateUserService,
-  ) {}
+  // POST /api/user
+  async create(request: FastifyRequest, reply: FastifyReply) {
+    const props = createUserRequestSchema.parse(request.body);
+    const { tenant_id } = request.user as JwtDecoded;
 
-  async create(request: FastifyRequest): Promise<{ id: string }> {
-    const { id } = (request as any).user as JwtDecoded;
-    const { name, email, phone } = request.body as UserDTO;
+    // Extrai o UseCase do container do Fastify (padrão igual ao seu AuthController)
+    const { createUserUseCase } = request.server.app.user;
 
-    const userEntity = User.create({
-      id,
-      name,
-      email,
-      phone,
+    // ==========================================
+    // INTEGRAÇÃO COM KEYCLOAK
+    // ==========================================
+    await authenticateKeycloakAdmin();
+
+    const existingUsers = await kcAdminClient.users.find({
+      email: props.email,
+    });
+    if (existingUsers.length > 0) {
+      throw new DomainError("Este email já está cadastrado no sistema.");
+    }
+
+    const keycloakUser = await kcAdminClient.users.create({
+      username: props.email,
+      email: props.email,
+      firstName: props.name,
+      enabled: true,
+      credentials: [
+        {
+          type: "password",
+          value: props.password,
+          temporary: true,
+        },
+      ],
     });
 
-    return await this.createUserUseCase.execute(userEntity);
+    let keycloakId = keycloakUser.id;
+
+    if (!keycloakId) {
+      const userCreated = await kcAdminClient.users.find({
+        email: props.email,
+      });
+      keycloakId = userCreated[0].id ?? "";
+    }
+
+    // ==========================================
+    // CRIAÇÃO DA ENTIDADE E SALVAMENTO
+    // ==========================================
+    const userEntity = User.create({
+      id: keycloakId,
+      name: props.name,
+      email: props.email,
+      phone: props.phone,
+      crunchId: tenant_id,
+      role: props.role ?? "MEMBER",
+    });
+
+    const result = await createUserUseCase.execute(userEntity);
+    return reply.status(201).send(result);
   }
 
-  async delete(request: FastifyRequest): Promise<{ success: boolean }> {
-    const { id } = request.body as { id: string };
+  // DELETE /api/user/:id
+  async delete(request: FastifyRequest, reply: FastifyReply) {
+    const { id } = idParamSchema.parse(request.params);
+    const { deleteUserUseCase } = request.server.app.user;
 
-    await this.deleteUserUseCase.execute(id);
-
-    return { success: true };
+    await deleteUserUseCase.execute(id);
+    return reply
+      .status(200)
+      .send({ success: true, message: "Usuário deletado com sucesso" });
   }
 
-  async get(request: FastifyRequest): Promise<User> {
-    const { id } = request.body as { id: string };
+  // GET /api/user/:id
+  async get(request: FastifyRequest, reply: FastifyReply) {
+    const { id } = idParamSchema.parse(request.params);
+    const { getUserByIdUseCase } = request.server.app.user;
 
-    return await this.getUserByIdUseCase.execute(id);
+    const user = await getUserByIdUseCase.execute(id);
+    return reply.status(200).send(user);
   }
 
-  async getAll(): Promise<User[]> {
-    return await this.getAllUserUseCase.execute();
+  // GET /api/user
+  async getAll(request: FastifyRequest, reply: FastifyReply) {
+    const { getAllUserUseCase } = request.server.app.user;
+
+    // const { tenant_id } = request.user as JwtDecoded;
+    const users = await getAllUserUseCase.execute();
+    return reply.status(200).send(users);
   }
 
-  async update(request: FastifyRequest): Promise<void> {
-    const { id, name, email, phone } = request.body as UserDTO;
+  // PUT /api/user
+  async update(request: FastifyRequest, reply: FastifyReply) {
+    const payload = updateUserRequestSchema.parse(request.body);
+    const { updateUserService } = request.server.app.user;
 
-    const payload = {
-      id,
-      name,
-      email,
-      phone,
-    };
-
-    await this.updateUserService.handle(payload);
+    await updateUserService.handle(payload);
+    return reply
+      .status(200)
+      .send({ success: true, message: "Usuário atualizado" });
   }
 }
