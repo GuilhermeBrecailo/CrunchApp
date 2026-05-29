@@ -10,6 +10,7 @@ import crypto from "node:crypto";
 import { User, UserDTO } from "../../domain/entities/User";
 import { JwtDecoded } from "../../application/use-cases/Auth/JwtValidationUseCase";
 import { KeycloakProvider } from "../../infrastructure/identity/KeycloakProvider";
+import { $prismaClient } from "../../../config/database";
 
 const userRepository = new UserRepository();
 const createUserUseCase = new CreateUserUseCase(userRepository);
@@ -23,6 +24,8 @@ const updateUserService = new UpdateUserService(
   updateUserUseCase,
 );
 
+const INITIAL_PASTOR_CRUNCH_ID = "PASTOR-INITIAL-SETUP";
+
 export class UserAdapters {
   async createPastor(request: FastifyRequest) {
     // Pegamos tudo do body.
@@ -34,6 +37,27 @@ export class UserAdapters {
     // 1. Criar no Keycloak (Gera o ID oficial)
     const keycloakId = await identityProvider.createUser(email, name, password);
 
+    await $prismaClient.crunch.upsert({
+      where: {
+        id: INITIAL_PASTOR_CRUNCH_ID,
+      },
+      update: {
+        userMainId: keycloakId,
+      },
+      create: {
+        id: INITIAL_PASTOR_CRUNCH_ID,
+        name: "Igreja inicial",
+        userMainId: keycloakId,
+        city: "",
+        road: "",
+        localZipCode: "",
+        state: "",
+        number: "",
+        complement: "",
+        document: "",
+      },
+    });
+
     // 2. Criar a Entidade de Domínio
     const userEntity = User.create({
       id: keycloakId,
@@ -41,7 +65,7 @@ export class UserAdapters {
       email,
       phone,
       role: "ADMIN", // Fixamos aqui porque essa rota é só para o "dono"
-      crunchId: "PASTOR-INITIAL-SETUP", // Placeholder temporário já que ignoramos igreja agora
+      crunchId: INITIAL_PASTOR_CRUNCH_ID, // Placeholder temporário já que ignoramos igreja agora
     });
 
     // 3. Salva no seu banco (Prisma/UserRepository)
@@ -49,13 +73,22 @@ export class UserAdapters {
   }
 
   async createUser(request: FastifyRequest): Promise<{ id: string }> {
-    const bodyData = request.body as Omit<UserDTO, "id" | "created_at">;
+    const bodyData = request.body as Omit<UserDTO, "id" | "created_at"> & {
+      password?: string;
+    };
 
-    const novoId = crypto.randomUUID();
+    const identityProvider = new KeycloakProvider();
+    const userId = bodyData.password
+      ? await identityProvider.createUser(
+          bodyData.email,
+          bodyData.name,
+          bodyData.password,
+        )
+      : crypto.randomUUID();
 
     const props = {
       ...bodyData,
-      id: novoId,
+      id: userId,
     };
 
     const userEntity = User.create(props);

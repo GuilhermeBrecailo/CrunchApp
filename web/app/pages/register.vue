@@ -6,9 +6,9 @@
     >
       <div class="flex flex-col items-center mb-8">
         <div class="p-4 bg-purple-100 rounded-full mb-4">
-          <v-icon size="48" color="purple-darken-3"
-            >mdi-account-plus-outline</v-icon
-          >
+          <v-icon size="48" color="purple-darken-3">
+            mdi-account-plus-outline
+          </v-icon>
         </div>
         <h1 class="text-3xl font-extrabold text-purple-900 tracking-tight">
           Criar Conta
@@ -22,12 +22,13 @@
         <v-text-field
           v-model="form.name"
           label="Nome Completo"
-          placeholder="João da Silva"
+          placeholder="Joao da Silva"
           prepend-inner-icon="mdi-account-outline"
           variant="outlined"
           color="purple-darken-3"
           class="mb-4"
-        ></v-text-field>
+          :disabled="loading"
+        />
 
         <v-text-field
           v-model="form.email"
@@ -37,7 +38,8 @@
           variant="outlined"
           color="purple-darken-3"
           class="mb-4"
-        ></v-text-field>
+          :disabled="loading"
+        />
 
         <v-text-field
           v-model="form.phone"
@@ -47,33 +49,46 @@
           variant="outlined"
           color="purple-darken-3"
           class="mb-4"
-        ></v-text-field>
+          :disabled="loading"
+        />
 
         <v-text-field
           v-model="form.password"
           label="Senha"
           :type="showPassword ? 'text' : 'password'"
-          placeholder="••••••••"
+          placeholder="********"
           prepend-inner-icon="mdi-lock-outline"
           :append-inner-icon="
             showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'
           "
-          @click:append-inner="showPassword = !showPassword"
           variant="outlined"
           color="purple-darken-3"
           class="mb-4"
-        ></v-text-field>
+          :disabled="loading"
+          @click:append-inner="showPassword = !showPassword"
+        />
 
         <v-text-field
           v-model="form.confirmPassword"
           label="Confirmar Senha"
           :type="showPassword ? 'text' : 'password'"
-          placeholder="••••••••"
+          placeholder="********"
           prepend-inner-icon="mdi-lock-check-outline"
           variant="outlined"
           color="purple-darken-3"
           class="mb-8"
-        ></v-text-field>
+          :disabled="loading"
+        />
+
+        <v-alert
+          v-if="errorMessage"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          {{ errorMessage }}
+        </v-alert>
 
         <v-btn
           type="submit"
@@ -83,32 +98,38 @@
           class="text-none font-bold tracking-wide"
           rounded="xl"
           elevation="2"
+          :loading="loading"
+          :disabled="loading"
         >
           Cadastrar
         </v-btn>
       </v-form>
 
       <div class="mt-6 text-center">
-        <span class="text-sm text-gray-500">Já tem uma conta? </span>
-        <a
-          href="#"
+        <span class="text-sm text-gray-500">Ja tem uma conta? </span>
+        <NuxtLink
+          to="/login"
           class="text-sm text-purple-700 hover:text-purple-900 font-bold transition-colors duration-200"
         >
-          Faça login
-        </a>
+          Faca login
+        </NuxtLink>
       </div>
     </v-card>
   </div>
 </template>
 
-<script setup>
-import { ref, reactive } from "vue";
+<script setup lang="ts">
+import { reactive, ref } from "vue";
+import { useRouter } from "vue-router";
+import { useAuth } from "../../composables/useAuth";
 
 definePageMeta({
-  layout: "notAppBottom",
+  layout: "not-app-bottom",
 });
 
-// Agrupei os campos em um objeto reativo para facilitar o envio para a API
+const router = useRouter();
+const { registerPastor } = useAuth();
+
 const form = reactive({
   name: "",
   email: "",
@@ -118,25 +139,43 @@ const form = reactive({
 });
 
 const showPassword = ref(false);
+const loading = ref(false);
+const errorMessage = ref("");
 
-const handleRegister = () => {
-  // Validação básica de frontend antes de chamar a API
-  if (form.password !== form.confirmPassword) {
-    alert("As senhas não coincidem!");
+const handleRegister = async () => {
+  errorMessage.value = "";
+
+  if (!form.name || !form.email || !form.phone || !form.password) {
+    errorMessage.value = "Preencha todos os campos obrigatorios.";
     return;
   }
 
-  // Aqui você enviaria os dados para a sua API.
-  // Sua API, no backend, provavelmente fará algo como:
-  // 1. Validar a senha (Auth)
-  // 2. Gerar um UUID para o banco
-  // 3. User.create({ id: gerado, name, email, phone... })
-  console.log("Tentativa de registro com:", form);
+  if (form.password !== form.confirmPassword) {
+    errorMessage.value = "As senhas nao coincidem.";
+    return;
+  }
+
+  loading.value = true;
+
+  const { error } = await registerPastor({
+    name: form.name,
+    email: form.email,
+    phone: form.phone,
+    password: form.password,
+  });
+
+  loading.value = false;
+
+  if (error) {
+    errorMessage.value = error;
+    return;
+  }
+
+  await router.push("/login");
 };
 </script>
 
 <style>
-/* Corrige o fundo de preenchimento automático (autofill) do navegador */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,

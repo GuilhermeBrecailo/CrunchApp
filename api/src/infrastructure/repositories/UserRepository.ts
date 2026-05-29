@@ -12,6 +12,7 @@ export class UserRepository implements IUserRespository {
           name: user.name,
           email: user.email,
           phone: user.phone,
+          role: user.role,
           crunch: {
             connect: {
               id: user.crunchId,
