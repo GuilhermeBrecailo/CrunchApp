@@ -10,11 +10,16 @@ export class KeycloakProvider implements IIdentityProvider {
   ): Promise<string> {
     await authenticateKeycloakAdmin();
 
+    const [firstName, ...lastNameParts] = name.trim().split(/\s+/);
+
     const user = await kcAdminClient.users.create({
       username: email,
       email,
-      firstName: name,
+      firstName: firstName || name,
+      lastName: lastNameParts.join(" ") || "Usuario",
       enabled: true,
+      emailVerified: true,
+      requiredActions: [],
       credentials: [
         {
           type: "password",

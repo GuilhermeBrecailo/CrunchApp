@@ -1,9 +1,9 @@
 // types/nuxt.d.ts
 import type { FetchOptions } from "ofetch";
-import { ApiResponse } from "../composables/useTypes";
+import type { ApiResponse } from "../composables/useTypes";
 
 export interface CustomFetch {
-  (url: string, options?: FetchOptions): Promise<ApiResponse>;
+  <T = any>(url: string, options?: FetchOptions): Promise<ApiResponse<T>>;
 }
 
 declare module "#app" {

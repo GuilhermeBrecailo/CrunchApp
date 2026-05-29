@@ -1,5 +1,6 @@
 import { fastify } from "fastify";
 import cors from "@fastify/cors";
+import { AuthRoutes } from "./src/interfaces/routes/AuthRoutes.ts";
 import { UserRoutes } from "./src/interfaces/routes/UserRoutes.ts";
 import { CrunchRoutes } from "./src/interfaces/routes/CrunchRoutes.ts";
 
@@ -8,7 +9,8 @@ const server = fastify({
 });
 
 await server.register(cors, {
-  origin: "*",
+  origin: true,
+  credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 });
 
@@ -16,6 +18,7 @@ server.get("/status", async () => {
   return { success: true };
 });
 
+await server.register(AuthRoutes, { prefix: "/" });
 await server.register(UserRoutes, { prefix: "/" });
 await server.register(CrunchRoutes, { prefix: "/" });
 

@@ -11,11 +11,21 @@ services:
       - ./api:/usr/src/app
       - /usr/src/app/node_modules
     environment:
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?schema=public
       - NODE_ENV=${NODE_ENV}
       - API_PORT=${API_PORT}
+      - KEYCLOAK_BASE_URL=http://keycloak:8080
+      - KEYCLOAK_ENDPOINT_BASE=http://keycloak:8080
+      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID:-admin-cli}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM}
+      - KEYCLOAK_ADMIN_REALM=${KEYCLOAK_ADMIN_REALM:-master}
+      - KEYCLOAK_USER=${KEYCLOAK_USER}
+      - KEYCLOAK_PASSWORD=${KEYCLOAK_PASSWORD}
+      - KEYCLOAK_GRANT_TYPE=${KEYCLOAK_GRANT_TYPE:-password}
+      - KEYCLOAK_SECRET_KEY=${KEYCLOAK_SECRET_KEY}
     depends_on:
       - db
+      - keycloak
     command: sh -c "npx prisma generate && npx prisma db push && npx tsx watch --clear-screen=false server.ts"
 
   # -----------------------------------

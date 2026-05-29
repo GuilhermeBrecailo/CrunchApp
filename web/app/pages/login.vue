@@ -25,6 +25,7 @@
           variant="outlined"
           color="purple-darken-3"
           class="mb-4"
+          :disabled="loading"
         ></v-text-field>
 
         <v-text-field
@@ -40,7 +41,18 @@
           variant="outlined"
           color="purple-darken-3"
           class="mb-6"
+          :disabled="loading"
         ></v-text-field>
+
+        <v-alert
+          v-if="errorMessage"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          {{ errorMessage }}
+        </v-alert>
 
         <v-btn
           type="submit"
@@ -50,6 +62,8 @@
           class="text-none font-bold tracking-wide"
           rounded="xl"
           elevation="2"
+          :loading="loading"
+          :disabled="loading"
         >
           Entrar
         </v-btn>
@@ -77,19 +91,53 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
+import { useAuth } from "../../composables/useAuth";
 
 definePageMeta({
-  layout: "notAppBottom",
+  layout: "not-app-bottom",
 });
+
+const route = useRoute();
+const router = useRouter();
+const { login, session, setSessionFromToken, access_token } = useAuth();
 
 const email = ref("");
 const password = ref("");
 const showPassword = ref(false);
+const loading = ref(false);
+const errorMessage = ref("");
 
-const handleLogin = () => {
-  console.log("Login:", email.value, password.value);
+const handleLogin = async () => {
+  loading.value = true;
+  errorMessage.value = "";
+
+  const { data, error } = await login({
+    email: email.value,
+    password: password.value,
+  });
+
+  if (error) {
+    errorMessage.value = error;
+    loading.value = false;
+    return;
+  }
+
+  if (data?.access_token) {
+    setSessionFromToken(data.access_token);
+  } else {
+    await session();
+  }
+
+  loading.value = false;
+
+  if (!access_token.value) {
+    errorMessage.value = "Nao foi possivel iniciar a sessao.";
+    return;
+  }
+
+  await router.push((route.query.redirect as string) || "/");
 };
 </script>
 
