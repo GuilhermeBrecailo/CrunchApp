@@ -4,18 +4,16 @@ import { Address } from "../src/domain/value-objects/Address";
 import { Document } from "../src/domain/value-objects/Document";
 import { Department } from "../src/domain/entities/Departament";
 
-// 1. Mocks (Dependências falsas)
 const mockUsers: User[] = [];
 const mockAddress = {} as Address;
 const mockDocument = {} as Document;
-const mockDepartments: Department[] = []; // O 5º argumento
+const mockDepartments: Department[] = [];
 
-// 2. Factory de DTO com os nomes corretos do Zod (logo em vez de _logo)
 const makeValidCrunchProps = (): Omit<CrunchDTO, "createdAt"> => ({
   id: "any_id",
   name: "Igreja Central",
   userMainId: "user_123",
-  logo: "https://minhalogo.com/logo.png", // Mudou de _logo para logo
+  logo: "https://minhalogo.com/logo.png",
   isActive: true,
 });
 
@@ -23,7 +21,6 @@ describe("Crunch (Church) Entity - Casos atualizados com Zod e DDD", () => {
   describe("Success Cases", () => {
     it("should create a new instance with valid data using create factory", () => {
       const props = makeValidCrunchProps();
-      // Passando os 5 argumentos exigidos pelo domínio
       const sut = Crunch.create(
         props,
         mockUsers,
