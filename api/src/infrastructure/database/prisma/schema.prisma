@@ -37,6 +37,7 @@ model User {
     role      String   @default("MEMBER")
     createdAt DateTime @default(now())
     canManageMembers Boolean @default(false)
+    mustChangePassword Boolean @default(false)
     profileSuggestion String?
 
     crunchId String?

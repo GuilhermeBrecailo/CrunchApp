@@ -73,7 +73,7 @@
       <section v-if="activeTab === 'schedules'">
         <div class="d-flex justify-end mb-4">
           <v-btn
-            v-if="canManageDepartment"
+            v-if="canManageSchedules"
             color="#A855F7"
             class="rounded-lg text-none"
             @click="isScheduleDialogOpen = true"
@@ -115,7 +115,7 @@
             <v-divider class="my-3"></v-divider>
             <div class="d-flex justify-center align-center ga-2">
               <v-btn
-                v-if="canManageDepartment"
+                v-if="canManageSchedules"
                 variant="text"
                 color="primary"
                 class="text-none font-weight-medium"
@@ -126,7 +126,7 @@
                 Adicionar voluntário
               </v-btn>
               <v-btn
-                v-if="canManageDepartment"
+                v-if="canManageSchedules"
                 icon
                 variant="text"
                 color="grey-darken-1"
@@ -136,7 +136,7 @@
                 <Pencil size="16" />
               </v-btn>
               <v-btn
-                v-if="canManageDepartment"
+                v-if="canManageSchedules"
                 icon
                 variant="text"
                 color="red-darken-2"
@@ -471,7 +471,7 @@
             :disabled="isCreatingSchedule"
           />
 
-          <div class="d-flex ga-3 mb-4">
+          <div class="ministery-field-grid mb-4">
             <v-text-field
               v-model="scheduleForm.date"
               label="Data"
@@ -508,7 +508,7 @@
             {{ createScheduleError }}
           </v-alert>
 
-          <div class="d-flex justify-end ga-3">
+          <div class="dialog-actions">
             <v-btn
               variant="text"
               color="grey-darken-1"
@@ -794,7 +794,7 @@
           </div>
         </div>
 
-        <div class="d-flex ga-3 mb-4">
+        <div class="ministery-field-grid mb-4">
           <v-select
             v-model="assignmentForm.userId"
             label="Voluntário"
@@ -806,7 +806,7 @@
             density="comfortable"
             color="purple-darken-3"
             bg-color="white"
-            class="ministery-input flex-grow-1"
+            class="ministery-input"
             hide-details="auto"
             :disabled="isSavingAssignments"
           />
@@ -818,7 +818,7 @@
             density="comfortable"
             color="purple-darken-3"
             bg-color="white"
-            class="ministery-input flex-grow-1"
+            class="ministery-input"
             hide-details="auto"
             :disabled="isSavingAssignments"
           />
@@ -884,7 +884,7 @@
           {{ assignmentsError }}
         </v-alert>
 
-        <div class="d-flex justify-end ga-3">
+        <div class="dialog-actions">
           <v-btn
             variant="text"
             color="grey-darken-1"
@@ -1121,6 +1121,11 @@ const pendingDelete = ref<{
 } | null>(null);
 
 const canManageDepartment = computed(
+  () =>
+    user.value?.isTitularPastor === true ||
+    department.value?.leaderId === user.value?.id,
+);
+const canManageSchedules = computed(
   () =>
     user.value?.isTitularPastor === true ||
     department.value?.leaderId === user.value?.id,
@@ -1832,5 +1837,29 @@ onMounted(async () => {
   min-height: 48px;
   padding-top: 10px;
   padding-bottom: 10px;
+}
+.ministery-field-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.dialog-actions .v-btn {
+  min-width: 112px;
+}
+@media (min-width: 560px) {
+  .ministery-field-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 420px) {
+  .dialog-actions .v-btn {
+    flex: 1 1 100%;
+  }
 }
 </style>

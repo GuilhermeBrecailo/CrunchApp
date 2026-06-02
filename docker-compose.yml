@@ -1,7 +1,5 @@
 services:
-  # -----------------------------------
-  # SERVIÇO DA API (Backend)
-  # -----------------------------------
+ 
   api:
     build: ./api
     container_name: api-igreja
@@ -29,22 +27,22 @@ services:
       - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
       - VAPID_SUBJECT=${VAPID_SUBJECT}
     depends_on:
-      - db
-      - keycloak
+      db:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
     command: >-
       sh -c "npx prisma generate &&
       (npx prisma migrate deploy --schema=src/infrastructure/database/prisma/schema.prisma ||
       (echo 'Prisma migrate deploy falhou; marcando migrations locais como aplicadas' &&
       for migration in src/infrastructure/database/prisma/migrations/*; do
-        [ -d \"$migration\" ] || continue;
-        npx prisma migrate resolve --applied \"$(basename \"$migration\")\" --schema=src/infrastructure/database/prisma/schema.prisma || exit 1;
+        [ -d \"$$migration\" ] || continue;
+        npx prisma migrate resolve --applied \"$$(basename \"$$migration\")\" --schema=src/infrastructure/database/prisma/schema.prisma || exit 1;
       done &&
       npx prisma migrate deploy --schema=src/infrastructure/database/prisma/schema.prisma)) &&
       npx tsx watch --clear-screen=false server.ts"
 
-  # -----------------------------------
-  # SERVIÇO WEB (Frontend)
-  # -----------------------------------
+
   web:
     build: ./web
     container_name: web-igreja
@@ -60,9 +58,7 @@ services:
     depends_on:
       - api
 
-  # -----------------------------------
-  # BANCO DE DADOS DA APLICAÇÃO (Prisma)
-  # -----------------------------------
+
   db:
     image: postgres:15-alpine
     container_name: db-igreja
@@ -74,12 +70,13 @@ services:
       POSTGRES_DB: ${DB_NAME}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-  # ===================================
-  # NOVOS SERVIÇOS DO KEYCLOAK
-  # ===================================
-
-  # Banco de Dados isolado para o Keycloak
+  
   keycloak-db:
     image: postgres:15-alpine
     container_name: keycloak-db-igreja
@@ -90,19 +87,17 @@ services:
     volumes:
       - keycloak_pgdata:/var/lib/postgresql/data
 
-  # Servidor Keycloak
   keycloak:
-    image: quay.io/keycloak/keycloak:24.0.2 # Versão super recente e estável
+    image: quay.io/keycloak/keycloak:24.0.2 
     container_name: keycloak-igreja
-    command: start-dev # Inicia em modo de desenvolvimento
+    command: start-dev 
     ports:
-      - "8080:8080" # O painel do Keycloak ficará nesta porta
+      - "8080:8080" 
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak_db
       KC_DB_USERNAME: keycloak
       KC_DB_PASSWORD: keycloak_password
-      # Credenciais para você acessar o painel de admin do Keycloak:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
     depends_on:

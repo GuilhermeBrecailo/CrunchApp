@@ -71,6 +71,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return navigateTo("/");
   }
 
+  if (user.value?.mustChangePassword && to.path !== "/user") {
+    return navigateTo("/user");
+  }
+
   if (user.value?.hasChurch && isOnboardingRoute) {
     return navigateTo("/");
   }

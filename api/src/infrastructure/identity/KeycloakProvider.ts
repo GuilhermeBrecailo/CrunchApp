@@ -7,6 +7,7 @@ export class KeycloakProvider implements IIdentityProvider {
     email: string,
     name: string,
     password?: string,
+    temporaryPassword = false,
   ): Promise<string> {
     await authenticateKeycloakAdmin();
 
@@ -29,12 +30,24 @@ export class KeycloakProvider implements IIdentityProvider {
         {
           type: "password",
           value: password,
-          temporary: false, // Pastor já define a senha final dele no cadastro
+          temporary: temporaryPassword,
         },
       ],
     });
 
     return user.id!;
+  }
+
+  async updatePassword(externalId: string, password: string): Promise<void> {
+    await authenticateKeycloakAdmin();
+    await kcAdminClient.users.resetPassword({
+      id: externalId,
+      credential: {
+        type: "password",
+        value: password,
+        temporary: false,
+      },
+    });
   }
 
   async deleteUser(externalId: string): Promise<void> {

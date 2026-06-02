@@ -11,6 +11,7 @@ interface AuthUser {
   hasChurch?: boolean;
   isTitularPastor?: boolean;
   canManageMembers?: boolean;
+  mustChangePassword?: boolean;
   is_admin: boolean;
   role?: string;
   phone?: string;
@@ -64,6 +65,7 @@ export const useAuth = () => {
       hasChurch: false,
       isTitularPastor: false,
       canManageMembers: false,
+      mustChangePassword: false,
       is_admin: payload.is_admin === true,
       role: payload.role,
       phone: user.value?.phone,
@@ -86,10 +88,15 @@ export const useAuth = () => {
 
     if (error || !data) return null;
 
+    const role = data.role || user.value?.role;
+
     user.value = {
       ...user.value,
       ...data,
-      is_admin: data.is_admin ?? data.role === "PASTOR",
+      is_admin:
+        data.is_admin === true ||
+        role === "ADMIN" ||
+        role === "SUPER_ADMIN",
     };
 
     return user.value;

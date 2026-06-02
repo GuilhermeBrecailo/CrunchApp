@@ -151,6 +151,7 @@ export class UserAdapters {
       role: user.role,
       crunchId: user.crunchId,
       canManageMembers: user.canManageMembers,
+      mustChangePassword: user.mustChangePassword,
       church,
       hasChurch: Boolean(user.crunchId),
       isTitularPastor: user.role === "PASTOR" && church?.userMainId === user.id,
@@ -201,6 +202,7 @@ export class UserAdapters {
       phone: user.phone,
       role: user.role,
       profileSuggestion: user.profileSuggestion,
+      mustChangePassword: user.mustChangePassword,
       primaryDepartmentId: primaryMembership?.departmentId || null,
       ministryFunction: primaryMembership?.function || "",
       primaryDepartment: primaryMembership?.department || null,
@@ -309,6 +311,52 @@ export class UserAdapters {
     });
 
     return await this.getMyProfile(request);
+  }
+
+  async updateMyPassword(request: FastifyRequest) {
+    const userId = getAuthUserId(request);
+    const body = request.body as {
+      password?: string;
+      passwordConfirmation?: string;
+    };
+
+    if (!body.password || body.password.length < 6) {
+      throw new DomainError("A nova senha deve ter pelo menos 6 caracteres");
+    }
+
+    if (
+      body.passwordConfirmation !== undefined &&
+      body.passwordConfirmation !== body.password
+    ) {
+      throw new DomainError("A confirmação da senha não confere");
+    }
+
+    const user = await $prismaClient.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!user) {
+      throw new DomainError("Usuário não encontrado");
+    }
+
+    const identityProvider = new KeycloakProvider();
+    await identityProvider.updatePassword(user.id, body.password);
+
+    await $prismaClient.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        mustChangePassword: false,
+      },
+    });
+
+    return { success: true };
   }
 
   async createOwnChurch(request: FastifyRequest) {
@@ -483,8 +531,10 @@ export class UserAdapters {
 
     const isTitularPastor =
       user.role === "PASTOR" && user.crunch.userMainId === user.id;
+    const isPlatformAdmin =
+      user.role === "ADMIN" || user.role === "SUPER_ADMIN";
 
-    if (!isTitularPastor && !user.canManageMembers) {
+    if (!isPlatformAdmin && !isTitularPastor && !user.canManageMembers) {
       throw new DomainError("Usuário não possui permissão para gerenciar membros");
     }
 
@@ -581,6 +631,7 @@ export class UserAdapters {
           phone: body.phone.trim(),
           role: "MEMBER",
           canManageMembers: false,
+          mustChangePassword: true,
           crunchId: manager.crunchId,
         },
         select: {
@@ -590,6 +641,7 @@ export class UserAdapters {
           phone: true,
           role: true,
           canManageMembers: true,
+          mustChangePassword: true,
           createdAt: true,
         },
       });

@@ -20,6 +20,7 @@ export interface MyProfileDTO {
   phone?: string | null;
   role: string;
   profileSuggestion?: string | null;
+  mustChangePassword?: boolean;
   primaryDepartmentId?: string | null;
   ministryFunction?: string;
   primaryDepartment?: {
@@ -89,9 +90,24 @@ export const useUser = () => {
     );
   };
 
+  const updateMyPassword = async (passwords: {
+    password: string;
+    passwordConfirmation: string;
+  }): Promise<ApiResponse<{ success: boolean }>> => {
+    return await $customFetch<{ success: boolean }>(
+      `${config.public.URL_BACKEND}/api/me/password`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+        body: passwords,
+      },
+    );
+  };
+
   return {
     createPastor,
     getMyProfile,
     updateMyProfile,
+    updateMyPassword,
   };
 };

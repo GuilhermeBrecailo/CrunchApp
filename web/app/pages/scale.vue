@@ -94,7 +94,7 @@
             :disabled="isCreatingSchedule"
           />
 
-          <div class="d-flex gap-3 mb-4">
+          <div class="scale-field-grid mb-4">
             <v-text-field
               v-model="scheduleForm.date"
               label="Data"
@@ -147,7 +147,7 @@
             {{ createScheduleError }}
           </v-alert>
 
-          <div class="d-flex justify-end gap-3">
+          <div class="dialog-actions">
             <v-btn
               variant="text"
               color="grey-darken-1"
@@ -187,7 +187,7 @@
           </div>
         </div>
 
-        <div class="d-flex gap-3 mb-4">
+        <div class="scale-field-grid mb-4">
           <v-select
             v-model="assignmentForm.userId"
             label="Voluntário"
@@ -199,7 +199,7 @@
             density="comfortable"
             color="purple-darken-3"
             bg-color="white"
-            class="scale-input flex-grow-1"
+            class="scale-input"
             hide-details="auto"
             :disabled="isSavingAssignments"
           />
@@ -211,7 +211,7 @@
             density="comfortable"
             color="purple-darken-3"
             bg-color="white"
-            class="scale-input flex-grow-1"
+            class="scale-input"
             hide-details="auto"
             :disabled="isSavingAssignments"
           />
@@ -277,7 +277,7 @@
           {{ assignmentsError }}
         </v-alert>
 
-        <div class="d-flex justify-end gap-3">
+        <div class="dialog-actions">
           <v-btn
             variant="text"
             color="grey-darken-1"
@@ -376,8 +376,16 @@ const filters = computed(() => [
   ...departments.value.map((department) => department.name),
 ]);
 
+const manageableDepartments = computed(() => {
+  if (user.value?.isTitularPastor === true) {
+    return departments.value;
+  }
+
+  return departments.value.filter((department) => department.leaderId === user.value?.id);
+});
+
 const departmentOptions = computed(() =>
-  departments.value.map((department) => ({
+  manageableDepartments.value.map((department) => ({
     label: department.name,
     value: department.id,
   })),
@@ -413,7 +421,9 @@ type ScheduleEvent = {
   canManage: boolean;
 };
 
-const canCreateChurchSchedule = computed(() => user.value?.isTitularPastor === true);
+const canCreateChurchSchedule = computed(
+  () => manageableDepartments.value.length > 0,
+);
 
 const canManageSchedule = (schedule: DepartmentSchedule) =>
   user.value?.isTitularPastor === true ||
@@ -782,5 +792,34 @@ watch(schedules, async () => {
   min-height: 48px;
   padding-top: 10px;
   padding-bottom: 10px;
+}
+
+.scale-field-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.dialog-actions .v-btn {
+  min-width: 112px;
+}
+
+@media (min-width: 560px) {
+  .scale-field-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .dialog-actions .v-btn {
+    flex: 1 1 100%;
+  }
 }
 </style>

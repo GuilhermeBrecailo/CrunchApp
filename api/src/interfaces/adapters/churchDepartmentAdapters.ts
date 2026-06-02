@@ -202,6 +202,24 @@ export class ChurchDepartmentAdapters {
     return department;
   }
 
+  private async assertCanManageScheduleDepartment(
+    user: CurrentUser,
+    departmentId: string,
+  ) {
+    const department = await this.getDepartmentFromCurrentChurch(
+      departmentId,
+      user.crunchId!,
+    );
+
+    if (!this.isTitularPastor(user) && department.leaderId !== user.id) {
+      throw new DomainError(
+        "Apenas o pastor titular ou o lider do ministerio pode gerenciar escalas",
+      );
+    }
+
+    return department;
+  }
+
   private async getDepartmentFromCurrentChurch(
     departmentId: string,
     crunchId: string,
@@ -371,11 +389,11 @@ export class ChurchDepartmentAdapters {
       throw new DomainError("Ministerio nao informado");
     }
 
-    if (!this.isTitularPastor(user)) {
-      throw new DomainError("Apenas o pastor titular pode editar ministerios");
-    }
+    await this.assertCanManageDepartment(user, id);
 
-    await this.getDepartmentFromCurrentChurch(id, user.crunchId!);
+    if (body.leaderId && !this.isTitularPastor(user)) {
+      throw new DomainError("Apenas o pastor titular pode alterar o lider do ministerio");
+    }
 
     if (body.leaderId) {
       const leader = await $prismaClient.user.findFirst({
@@ -672,7 +690,7 @@ export class ChurchDepartmentAdapters {
       throw new DomainError("Ministério não informado");
     }
 
-    return await this.createSchedule(id, user.crunchId!, request.body);
+    return await this.createSchedule(user, id, request.body);
   }
 
   async createChurchSchedule(request: FastifyRequest) {
@@ -683,12 +701,12 @@ export class ChurchDepartmentAdapters {
       throw new DomainError("Ministério da escala é obrigatório");
     }
 
-    return await this.createSchedule(body.departmentId, user.crunchId!, body);
+    return await this.createSchedule(user, body.departmentId, body);
   }
 
   private async createSchedule(
+    user: CurrentUser,
     departmentId: string,
-    crunchId: string,
     rawBody: unknown,
   ) {
     const body = rawBody as {
@@ -706,7 +724,7 @@ export class ChurchDepartmentAdapters {
       throw new DomainError("Data da escala é obrigatória");
     }
 
-    await this.getDepartmentFromCurrentChurch(departmentId, crunchId);
+    await this.assertCanManageScheduleDepartment(user, departmentId);
 
     const scheduleDate = new Date(
       `${body.date}T${body.time || "00:00"}:00.000`,
@@ -745,10 +763,10 @@ export class ChurchDepartmentAdapters {
     const schedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
     const targetDepartmentId = body.departmentId || schedule.departmentId;
 
-    await this.assertCanManageDepartment(user, schedule.departmentId);
+    await this.assertCanManageScheduleDepartment(user, schedule.departmentId);
 
     if (targetDepartmentId !== schedule.departmentId) {
-      await this.assertCanManageDepartment(user, targetDepartmentId);
+      await this.assertCanManageScheduleDepartment(user, targetDepartmentId);
     }
 
     const data: Prisma.ScheduleUpdateInput = {};
@@ -804,7 +822,7 @@ export class ChurchDepartmentAdapters {
     }
 
     const schedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
-    await this.assertCanManageDepartment(user, schedule.departmentId);
+    await this.assertCanManageScheduleDepartment(user, schedule.departmentId);
 
     await $prismaClient.schedule.delete({
       where: {
@@ -836,7 +854,7 @@ export class ChurchDepartmentAdapters {
     }
 
     const schedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
-    await this.assertCanManageDepartment(user, schedule.departmentId);
+    await this.assertCanManageScheduleDepartment(user, schedule.departmentId);
 
     const normalizedAssignments = assignments
       .map((assignment) => ({

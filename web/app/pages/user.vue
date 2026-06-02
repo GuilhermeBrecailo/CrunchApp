@@ -38,6 +38,16 @@
     </v-card>
 
     <v-alert
+      v-if="mustChangePassword"
+      type="warning"
+      variant="tonal"
+      density="comfortable"
+      class="mb-4"
+    >
+      Redefina sua senha para continuar usando sua conta com segurança.
+    </v-alert>
+
+    <v-alert
       v-if="loadError"
       type="error"
       variant="tonal"
@@ -186,6 +196,28 @@
       />
     </v-card>
 
+    <v-card class="profile-card pa-4 mb-6 elevation-1 bg-white">
+      <div class="d-flex align-center justify-space-between ga-4">
+        <div class="min-w-0">
+          <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-1">
+            Segurança
+          </h3>
+          <p class="text-caption text-grey-darken-1 mb-0">
+            Atualize a senha de acesso da sua conta.
+          </p>
+        </div>
+        <v-btn
+          color="#A855F7"
+          variant="tonal"
+          class="text-none rounded-lg font-weight-medium"
+          :disabled="isLoading || isSavingPassword"
+          @click="openPasswordDialog"
+        >
+          Redefinir senha
+        </v-btn>
+      </div>
+    </v-card>
+
     <v-alert
       v-if="saveMessage"
       type="success"
@@ -230,6 +262,90 @@
     >
       Sair
     </v-btn>
+
+    <v-dialog
+      v-model="isPasswordDialogOpen"
+      max-width="480"
+      :persistent="mustChangePassword"
+    >
+      <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+        <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-1">
+          Redefinir senha
+        </h2>
+        <p class="text-body-2 text-grey-darken-1 mb-5">
+          Informe uma nova senha para acessar o aplicativo.
+        </p>
+
+        <v-text-field
+          v-model="passwordForm.password"
+          label="Nova senha"
+          type="password"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          bg-color="white"
+          class="profile-input mb-3"
+          hide-details="auto"
+          :disabled="isSavingPassword"
+        />
+
+        <v-text-field
+          v-model="passwordForm.passwordConfirmation"
+          label="Confirmar nova senha"
+          type="password"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          bg-color="white"
+          class="profile-input mb-4"
+          hide-details="auto"
+          :disabled="isSavingPassword"
+          @keyup.enter="handleUpdatePassword"
+        />
+
+        <v-alert
+          v-if="passwordError"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          {{ passwordError }}
+        </v-alert>
+
+        <v-alert
+          v-if="passwordMessage"
+          type="success"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          {{ passwordMessage }}
+        </v-alert>
+
+        <div class="password-dialog-actions">
+          <v-btn
+            v-if="!mustChangePassword"
+            variant="text"
+            color="grey-darken-1"
+            class="text-none"
+            :disabled="isSavingPassword"
+            @click="closePasswordDialog"
+          >
+            Cancelar
+          </v-btn>
+          <v-btn
+            color="#A855F7"
+            class="text-none rounded-lg font-weight-medium"
+            :loading="isSavingPassword"
+            :disabled="isSavingPassword"
+            @click="handleUpdatePassword"
+          >
+            Salvar nova senha
+          </v-btn>
+        </div>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -246,14 +362,18 @@ import { useUser, type MyProfileDTO } from "../../composables/useUser";
 const router = useRouter();
 const { logout, user, fetchMe } = useAuth();
 const { getDepartments } = useDepartments();
-const { getMyProfile, updateMyProfile } = useUser();
+const { getMyProfile, updateMyProfile, updateMyPassword } = useUser();
 
 const loadingLogout = ref(false);
 const isLoading = ref(true);
 const isSaving = ref(false);
+const isSavingPassword = ref(false);
 const loadError = ref("");
 const saveError = ref("");
 const saveMessage = ref("");
+const passwordError = ref("");
+const passwordMessage = ref("");
+const isPasswordDialogOpen = ref(false);
 const profile = ref<MyProfileDTO | null>(null);
 const departments = ref<ChurchDepartment[]>([]);
 const newUnavailableDate = ref("");
@@ -265,6 +385,17 @@ const form = reactive({
   profileSuggestion: "",
   phone: "",
 });
+
+const passwordForm = reactive({
+  password: "",
+  passwordConfirmation: "",
+});
+
+const mustChangePassword = computed(
+  () =>
+    profile.value?.mustChangePassword === true ||
+    user.value?.mustChangePassword === true,
+);
 
 const departmentOptions = computed(() =>
   departments.value.map((department) => ({
@@ -298,6 +429,10 @@ const applyProfile = (data: MyProfileDTO) => {
   form.profileSuggestion = data.profileSuggestion || "";
   form.phone = data.phone || "";
   unavailableDates.value = [...(data.unavailableDates || [])].sort();
+
+  if (data.mustChangePassword) {
+    openPasswordDialog();
+  }
 };
 
 const loadProfile = async () => {
@@ -369,6 +504,65 @@ const saveProfile = async () => {
   saveMessage.value = "Perfil salvo com sucesso.";
 };
 
+const resetPasswordForm = () => {
+  passwordForm.password = "";
+  passwordForm.passwordConfirmation = "";
+  passwordError.value = "";
+  passwordMessage.value = "";
+};
+
+const openPasswordDialog = () => {
+  resetPasswordForm();
+  isPasswordDialogOpen.value = true;
+};
+
+const closePasswordDialog = () => {
+  if (mustChangePassword.value || isSavingPassword.value) return;
+  isPasswordDialogOpen.value = false;
+  resetPasswordForm();
+};
+
+const handleUpdatePassword = async () => {
+  passwordError.value = "";
+  passwordMessage.value = "";
+
+  if (passwordForm.password.length < 6) {
+    passwordError.value = "A nova senha deve ter pelo menos 6 caracteres.";
+    return;
+  }
+
+  if (passwordForm.password !== passwordForm.passwordConfirmation) {
+    passwordError.value = "A confirmação da senha não confere.";
+    return;
+  }
+
+  isSavingPassword.value = true;
+
+  const { error } = await updateMyPassword({
+    password: passwordForm.password,
+    passwordConfirmation: passwordForm.passwordConfirmation,
+  });
+
+  isSavingPassword.value = false;
+
+  if (error) {
+    passwordError.value = error;
+    return;
+  }
+
+  if (profile.value) {
+    profile.value = {
+      ...profile.value,
+      mustChangePassword: false,
+    };
+  }
+
+  await fetchMe();
+  passwordMessage.value = "Senha redefinida com sucesso.";
+  resetPasswordForm();
+  isPasswordDialogOpen.value = false;
+};
+
 const handleLogout = async () => {
   loadingLogout.value = true;
   await logout();
@@ -407,7 +601,22 @@ onMounted(loadProfile);
 .profile-icon-btn {
   border-radius: 14px !important;
 }
+.password-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.password-dialog-actions .v-btn {
+  min-width: 128px;
+}
 .border-subtle {
   border: 1px solid #f3f4f6;
+}
+
+@media (max-width: 420px) {
+  .password-dialog-actions .v-btn {
+    flex: 1 1 100%;
+  }
 }
 </style>

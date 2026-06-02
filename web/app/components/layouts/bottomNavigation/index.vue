@@ -34,9 +34,9 @@
       <span class="nav-label mt-1">Usuário</span>
     </v-btn>
 
-    <v-btn v-if="hasChurch" to="/admin" class="flex-col custom-btn">
+    <v-btn v-if="showAdmin" to="/admin" class="flex-col custom-btn">
       <Cog size="20" />
-      <span class="nav-label mt-1">Admin</span>
+      <span class="nav-label mt-1">{{ adminLabel }}</span>
     </v-btn>
   </v-bottom-navigation>
 </template>
@@ -49,6 +49,14 @@ import { useAuth } from "../../../../composables/useAuth";
 const { user } = useAuth();
 
 const hasChurch = computed(() => user.value?.hasChurch === true);
+const isPlatformAdmin = computed(
+  () =>
+    user.value?.role === "ADMIN" ||
+    user.value?.role === "SUPER_ADMIN" ||
+    user.value?.is_admin === true,
+);
+const showAdmin = computed(() => hasChurch.value || isPlatformAdmin.value);
+const adminLabel = computed(() => (isPlatformAdmin.value ? "Plataforma" : "Admin"));
 </script>
 
 <style scoped>

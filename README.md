@@ -1,28 +1,23 @@
 # AppQuadrangular
 
-AppQuadrangular e um MVP fullstack para gestao de igrejas, ministerios, membros e escalas. O projeto nasceu para organizar a rotina interna de uma igreja: cadastro da igreja, criacao de ministerios, cadastro de membros, montagem de escalas, atribuicao de voluntarios, tarefas e recursos por ministerio.
+AppQuadrangular e um MVP fullstack para gestao de igrejas, ministerios, membros e escalas. A ideia do projeto e resolver uma dor real de organizacao interna: centralizar cadastro de igreja, membros, liderancas, ministerios, escalas de servico, disponibilidade dos voluntarios, tarefas e administracao.
 
-O sistema esta em desenvolvimento, mas o fluxo principal ja esta integrado entre frontend, backend, banco de dados e autenticacao.
+O projeto foi construido como uma aplicacao real, com autenticacao, permissoes, banco relacional, frontend responsivo, API estruturada, integracao com Keycloak e ambiente local via Docker Compose.
 
-## Status atual
+## Destaques
 
-O core do produto ja funciona:
-
-- autenticacao com Keycloak;
-- cadastro de pastor titular;
-- criacao da igreja;
-- onboarding para pastor sem igreja;
-- cadastro e listagem de membros;
-- criacao e listagem de ministerios;
-- criacao e listagem de escalas;
-- vinculo de voluntarios nas escalas;
-- tarefas e recursos por ministerio;
-- perfil do usuario;
-- painel administrativo da igreja;
-- painel de administracao da plataforma;
-- notificacoes push/PWA em base inicial.
-
-Ainda faltam fechamentos importantes para considerar o produto pronto para uso real: CRUD completo, regras de permissao mais profundas, fluxo melhor de convite/vinculo de membros e testes de integracao ponta a ponta.
+- Autenticacao com Keycloak e JWT.
+- Cadastro de pastor, igreja, membros e ministerios.
+- Painel administrativo da plataforma para visualizar igrejas e detalhes.
+- Painel administrativo da igreja para pastor e usuarios com permissao.
+- Regras por perfil: administrador da plataforma, pastor titular, lider de ministerio e membro.
+- Criacao e gerenciamento de escalas por ministerio.
+- Controle de voluntarios nas escalas.
+- Perfil do usuario com ministerio principal, funcao, telefone e indisponibilidade.
+- Redefinicao de senha obrigatoria para usuarios criados pelo pastor.
+- Estrutura de backend separada por dominio, aplicacao, infraestrutura e interfaces.
+- Testes unitarios de dominio e entidades.
+- Base para PWA e notificacoes push.
 
 ## Stack
 
@@ -33,9 +28,9 @@ Ainda faltam fechamentos importantes para considerar o produto pronto para uso r
 - TypeScript
 - Vuetify
 - Tailwind CSS
+- Vue Router
 - lucide-vue-next
-- PWA/service worker
-- Push Notifications
+- jwt-decode
 
 ### Backend
 
@@ -47,255 +42,203 @@ Ainda faltam fechamentos importantes para considerar o produto pronto para uso r
 - Keycloak
 - Zod
 - Jest
+- jsonwebtoken
+- jwks-rsa
+- web-push
 
 ### Infraestrutura local
 
 - Docker Compose
 - PostgreSQL da aplicacao
-- PostgreSQL separado para o Keycloak
-- Keycloak em modo de desenvolvimento
+- PostgreSQL separado para Keycloak
+- Keycloak em modo desenvolvimento
 
-## Estrutura do projeto
+## Arquitetura
 
 ```text
 .
-├── api/                 # API Fastify, dominio, adapters, Prisma e testes
-├── web/                 # Aplicacao Nuxt/Vue
-├── docs/                # Documentacao tecnica por contexto
-├── .env.example         # Exemplo das variaveis de ambiente
-├── docker-compose.yml   # Ambiente local com web, api, db e keycloak
-├── package.json         # Dependencias auxiliares da raiz
-└── README.md            # Visao geral do projeto
+├── api/
+│   ├── src/domain/                 # Entidades, value objects e regras de dominio
+│   ├── src/application/            # Casos de uso e servicos
+│   ├── src/infrastructure/         # Prisma, Keycloak e repositorios
+│   ├── src/interfaces/             # Rotas HTTP, adapters e plugins
+│   └── tests/                      # Testes unitarios
+├── web/
+│   ├── app/pages/                  # Paginas Nuxt
+│   ├── app/components/             # Componentes de UI
+│   ├── app/middleware/             # Middleware de autenticacao
+│   └── composables/                # Integracao com API e estado
+├── docs/                           # Documentacao interna
+├── docker-compose.yml              # Ambiente local
+├── .env.example                    # Variaveis de ambiente de exemplo
+└── package.json                    # Scripts de apoio da raiz
 ```
 
-## Contexto funcional
-
-O sistema usa a igreja como unidade central. Um pastor titular cria sua conta, cria a igreja e passa a gerenciar membros, ministerios e escalas. Os membros cadastrados podem ser vinculados a ministerios, receber permissoes administrativas e participar de escalas.
-
-Entidades principais:
-
-- Igreja
-- Usuario
-- Pastor titular
-- Membro
-- Ministerio
-- Tarefa de ministerio
-- Recurso de ministerio
-- Escala
-- Voluntario da escala
-- Inscricao de notificacao push
-
-## O que ja esta feito
+## Principais fluxos implementados
 
 ### Autenticacao e sessao
 
-- Login integrado ao Keycloak.
-- Refresh de sessao.
+- Login com Keycloak.
+- Refresh token via cookie HTTP only.
 - Logout.
 - Middleware global protegendo rotas privadas no frontend.
-- Busca de contexto do usuario em `GET /api/me`.
-- Redirecionamento baseado em usuario com ou sem igreja.
-- Suporte a roles administrativas (`ADMIN` e `SUPER_ADMIN`) no painel da plataforma.
-
-### Cadastro e onboarding
-
-- Cadastro de pastor titular.
-- Criacao da propria igreja pelo pastor.
-- Onboarding para pastor sem igreja.
-- Estado visual para membro sem igreja.
-- Arquivo `.env.example` com variaveis esperadas para ambiente local.
-
-### Igreja e membros
-
-- Listagem de membros da igreja.
-- Cadastro de membro ja vinculado a igreja.
-- Atualizacao de permissao para membro gerenciar outros membros.
-- Perfil do usuario autenticado.
-- Atualizacao do proprio perfil.
-- Datas de indisponibilidade do usuario.
-- Vinculo do usuario com ministerio principal.
-
-### Ministerios
-
-- Listagem de ministerios da igreja.
-- Criacao de ministerio.
-- Detalhe de ministerio.
-- Definicao de lider.
-- Tipos de ministerio como louvor, criancas, recepcao, midia, intercessao e outros.
-- Abas especificas no detalhe do ministerio para visao geral, escalas, tarefas, recursos e areas futuras.
-
-### Escalas
-
-- Listagem geral de escalas.
-- Criacao de escala.
-- Criacao de escala dentro de um ministerio especifico.
-- Filtro de escalas por ministerio.
-- Vinculo e atualizacao de voluntarios em uma escala.
-- Dashboard exibindo proximas escalas.
-- Deep link para destacar uma escala especifica.
-
-### Tarefas e recursos
-
-- Listagem de tarefas por ministerio.
-- Criacao de tarefa por ministerio.
-- Responsavel opcional para tarefa.
-- Prioridade da tarefa.
-- Listagem de recursos por ministerio.
-- Criacao de recurso com titulo, link, categoria e observacoes.
+- `GET /api/me` para carregar contexto do usuario autenticado.
+- Redirecionamento para onboarding quando o pastor ainda nao tem igreja.
+- Redirecionamento para perfil quando o usuario precisa redefinir a senha.
 
 ### Administracao
 
-- Painel administrativo da igreja para membros e ministerios.
-- Painel administrativo da plataforma para usuarios administradores.
-- Listagem de igrejas da plataforma.
-- Listagem global de ministerios.
-- Detalhe de uma igreja com usuarios, ministerios e historico pastoral.
-- Totais agregados no painel de plataforma.
+- Admin da plataforma visualiza todas as igrejas.
+- Lista de igrejas com scroll lateral e painel de detalhes com usuarios e ministerios.
+- Pastor administra a propria igreja.
+- Permissao separada para membros que podem gerenciar usuarios.
+- Clique em usuario abre detalhes.
 
-### Notificacoes e PWA
+### Membros e senha
 
-- Manifest web.
-- Service worker.
-- Modelo `PushSubscription` no Prisma.
-- Endpoint para chave publica VAPID.
-- Endpoint para registrar inscricao push.
-- Endpoint para remover inscricao push.
-- Composable `usePushNotifications` no frontend.
+- Pastor ou usuario autorizado cria membros.
+- Usuario criado pelo pastor recebe senha inicial e fica marcado com `mustChangePassword`.
+- Ao logar, esse usuario e levado para a pagina de perfil.
+- Modal persistente obriga a redefinicao da senha.
+- A nova senha e atualizada no Keycloak e a pendencia e removida no banco.
 
-### Backend, dominio e testes
+### Ministerios e escalas
 
-- Organizacao em camadas: dominio, aplicacao, infraestrutura e interfaces.
-- Entidades e value objects para regras de dominio.
-- Repositorios com Prisma.
-- Adapters HTTP para os fluxos principais.
-- Handler padronizado para respostas da API.
-- Testes unitarios para regras de dominio e entidades.
+- Criacao e listagem de ministerios.
+- Definicao de lider do ministerio.
+- Detalhe do ministerio com abas para escalas, tarefas e recursos.
+- Pastor titular e lider do ministerio podem gerenciar escalas.
+- Membro comum nao altera escalas.
+- Voluntarios podem ser vinculados a uma escala com uma funcao.
 
-## O que falta fazer
+### Perfil do usuario
 
-### Prioridade alta
+- Edicao de telefone.
+- Ministerio principal.
+- Funcao no ministerio.
+- Datas de indisponibilidade.
+- Sugestoes para liderancas.
+- Redefinicao manual de senha.
 
-- Fechar CRUD completo dos principais recursos:
-  - editar e deletar ministerios;
-  - editar e deletar escalas;
-  - editar e deletar tarefas;
-  - editar e deletar recursos;
-  - editar dados de membros;
-  - remover, arquivar ou desativar membros.
-- Substituir contadores fixos que ainda existem no painel administrativo da igreja, como totais de escalas e musicas.
-- Definir e aplicar permissoes mais granulares no backend:
-  - pastor titular;
-  - administrador da plataforma;
-  - lider de ministerio;
-  - membro com permissao administrativa;
-  - membro comum.
-- Validar o fluxo completo com Docker Compose e Keycloak:
-  - subir ambiente;
-  - configurar Keycloak;
-  - cadastrar pastor;
-  - criar igreja;
-  - cadastrar membro;
-  - criar ministerio;
-  - criar escala;
-  - adicionar voluntarios;
-  - atualizar perfil;
-  - testar logout/refresh.
-- Criar testes de integracao para os endpoints principais.
+## Como subir o app localmente
 
-### Prioridade media
+### 1. Requisitos
 
-- Criar fluxo melhor para membro sem igreja:
-  - convite por email;
-  - codigo de convite;
-  - solicitacao para entrar em uma igreja;
-  - aprovacao pelo pastor ou administrador.
-- Evoluir modulos especializados:
-  - repertorio e musicas para ministerio de louvor;
-  - aulas, materiais e faixas etarias para ministerio infantil.
-- Enviar notificacoes push em eventos reais do sistema, como nova escala ou alteracao de voluntarios.
-- Criar seed de desenvolvimento.
-- Melhorar estados de carregamento, vazio, erro e sucesso no frontend.
-- Atualizar a documentacao em `docs/frontend`, que ainda possui trechos antigos dizendo que tudo esta mockado.
-- Revisar nomenclaturas internas, como `Crunch`, `Departament` e `Ministery`.
+- Docker e Docker Compose
+- Node.js 20+ para rodar scripts fora do Docker
+- npm
 
-### Prioridade baixa
+### 2. Criar o `.env`
 
-- Melhorar o README especifico do frontend.
-- Criar pipeline de CI para build e testes.
-- Adicionar scripts padronizados para lint, format e teste CI.
-- Remover logs soltos de desenvolvimento.
-- Adicionar screenshots ou video curto de demonstracao.
-- Preparar deploy em ambiente externo.
-
-## Como rodar localmente
-
-### 1. Configurar ambiente
-
-Copie o arquivo de exemplo:
+Copie o exemplo:
 
 ```bash
 cp .env.example .env
 ```
 
-Depois ajuste os valores conforme seu ambiente local.
-
-Variaveis principais:
+Um exemplo funcional para desenvolvimento local:
 
 ```env
-DB_USER=
-DB_PASSWORD=
-DB_NAME=
-DB_PORT=
-DATABASE_URL=
-API_PORT=
-WEB_PORT=
-NODE_ENV=
-NUXT_PUBLIC_URL_BACKEND=
+DB_USER=igreja_user
+DB_PASSWORD=igreja_password
+DB_NAME=igreja_db
+DB_PORT=5432
+
+API_PORT=8000
+WEB_PORT=3000
+NODE_ENV=development
+NUXT_PUBLIC_URL_BACKEND=http://localhost:8000
+
+KEYCLOAK_REALM=clientA
+KEYCLOAK_ADMIN_REALM=master
+KEYCLOAK_CLIENT_ID=admin-cli
+KEYCLOAK_CLIENT_USER_ID=clientA
+KEYCLOAK_USER=admin
+KEYCLOAK_PASSWORD=admin
+KEYCLOAK_GRANT_TYPE=password
+KEYCLOAK_SECRET_KEY=
+KEYCLOAK_CLIENT_UUID=
+
 VAPID_PUBLIC_KEY=
 VAPID_PRIVATE_KEY=
 VAPID_SUBJECT=
-KEYCLOAK_CLIENT_UUID=
-KEYCLOAK_USER=
-KEYCLOAK_PASSWORD=
-KEYCLOAK_GRANT_TYPE=
-KEYCLOAK_SECRET_KEY=
-KEYCLOAK_REALM=
-KEYCLOAK_CLIENT_USER_ID=
-KEYCLOAK_CLIENT_ID=
-KEYCLOAK_ADMIN_REALM=
-TENANT_ID=
 ```
 
-Para gerar chaves VAPID:
+As variaveis VAPID podem ficar vazias no primeiro teste local. Para usar push notifications, gere as chaves:
 
 ```bash
 cd api
 npx web-push generate-vapid-keys
 ```
 
-### 2. Subir com Docker Compose
+### 3. Subir containers
 
 ```bash
 docker compose up --build
 ```
 
-Servicos esperados:
+Servicos:
 
-- Frontend: `http://localhost:3000`
-- API: `http://localhost:8000` ou porta definida em `API_PORT`
+- Web: `http://localhost:3000`
+- API: `http://localhost:8000`
 - Keycloak: `http://localhost:8080`
-- PostgreSQL da aplicacao: porta definida em `DB_PORT`
+- Banco da aplicacao: `localhost:5432`
 
-### 3. Rodar API fora do Docker
+### 4. Configurar Keycloak
+
+Entre no Keycloak:
+
+```text
+URL: http://localhost:8080
+Usuario: admin
+Senha: admin
+```
+
+Crie/configure:
+
+1. Realm: `clientA`
+2. Client: `clientA`
+3. Client authentication: desativado para fluxo publico local, ou ajuste as variaveis caso use secret.
+4. Standard flow: habilitado.
+5. Direct access grants: habilitado.
+6. Valid redirect URIs: `http://localhost:3000/*`
+7. Web origins: `http://localhost:3000` ou `*` em desenvolvimento.
+
+Depois disso, a API consegue autenticar usuarios e criar contas via Keycloak Admin.
+
+### 5. Acessar a aplicacao
+
+Abra:
+
+```text
+http://localhost:3000
+```
+
+Fluxo sugerido para demonstracao:
+
+1. Cadastre um pastor.
+2. Crie uma igreja no onboarding.
+3. Acesse o admin da igreja.
+4. Crie um membro com senha inicial.
+5. Faca login com esse membro.
+6. Veja a tela obrigatoria de redefinicao de senha.
+7. Crie ministerios e defina lider.
+8. Crie escalas e adicione voluntarios.
+9. Teste a visao de lider e membro comum.
+
+## Rodando sem Docker
+
+### API
 
 ```bash
 cd api
 npm install
 npm run prisma:generate
+npm run prisma:deploy
 npm run dev
 ```
 
-### 4. Rodar frontend fora do Docker
+### Web
 
 ```bash
 cd web
@@ -303,51 +246,60 @@ npm install
 npm run dev
 ```
 
-## Testes
+## Scripts uteis
 
-Para rodar os testes da API uma vez:
-
-```bash
-cd api
-npx jest --runInBand
-```
-
-O script `npm test` da API roda em modo watch. Para CI, o ideal e manter um comando separado, por exemplo:
-
-```json
-"test:ci": "jest --runInBand"
-```
-
-## Build
-
-Para gerar o build de producao do frontend:
+Na raiz do projeto:
 
 ```bash
-cd web
-npm run build
+npm run api:test
+npm run api:typecheck
+npm run web:build
+npm run validate
 ```
 
-## Documentacao interna
+Na API:
 
-- [Documentacao geral](docs/README.md)
-- [Backend](docs/backend/README.md)
-- [Frontend](docs/frontend/README.md)
+```bash
+npm run prisma:generate
+npm run prisma:migrate
+npm run prisma:deploy
+npm run prisma:studio
+npm run test:ci
+```
 
-Observacao: parte da documentacao do frontend esta desatualizada em relacao ao estado atual da integracao. O codigo ja possui mais fluxos conectados a API do que alguns documentos descrevem.
+## Testes e build
 
-## Roadmap sugerido
+Testes da API:
 
-1. Completar CRUD de ministerios, escalas, tarefas, recursos e membros.
-2. Substituir dados fixos do painel administrativo da igreja por dados reais.
-3. Fechar permissoes no backend.
-4. Validar o fluxo completo com Docker Compose e Keycloak.
-5. Criar testes de integracao.
-6. Implementar convite ou solicitacao de vinculo para membros.
-7. Enviar notificacoes push em eventos reais.
-8. Evoluir musicas/repertorio e aulas/materiais por ministerio.
-9. Atualizar documentacao interna.
-10. Preparar screenshots, video curto e deploy.
+```bash
+npm run api:test
+```
 
-## Resumo para portfolio
+Build do frontend:
 
-Este projeto demonstra uma aplicacao fullstack em TypeScript com Nuxt, Fastify, Prisma, PostgreSQL, Keycloak, Docker, PWA e notificacoes push. A arquitetura separa dominio, aplicacao, infraestrutura e interfaces, com testes cobrindo regras de negocio e uma integracao funcional entre frontend e backend para os principais fluxos de gestao de igreja.
+```bash
+npm run web:build
+```
+
+Validacao completa configurada na raiz:
+
+```bash
+npm run validate
+```
+
+Observacao: dependendo do ambiente, o build do Nuxt pode exibir warnings de CSS relacionados a Vuetify/Tailwind durante a minificacao. O build segue sendo gerado.
+
+## Roadmap
+
+- Criar seeds para demonstracao.
+- Automatizar configuracao inicial do Keycloak.
+- Criar testes de integracao para endpoints principais.
+- Criar pipeline de CI.
+- Evoluir notificacoes push para eventos reais de escala.
+- Melhorar convite/vinculo de membros por email ou codigo.
+- Adicionar screenshots e video curto de demonstracao.
+- Preparar deploy publico.
+
+## Resumo para recrutadores
+
+Este projeto demonstra uma aplicacao fullstack em TypeScript com frontend moderno em Nuxt/Vue, backend em Fastify, ORM com Prisma, banco PostgreSQL, autenticacao externa com Keycloak, controle de permissoes, Docker Compose, testes automatizados e uma estrutura de codigo organizada por responsabilidades. O foco foi construir um produto realista, com regras de negocio aplicadas no backend e uma interface funcional para diferentes tipos de usuario.
