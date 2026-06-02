@@ -10,19 +10,19 @@
     </div>
 
     <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
-      <div class="d-flex align-center">
+      <div class="profile-summary">
         <v-avatar
           size="56"
           color="#EEF2FF"
-          class="mr-4 text-purple-darken-3 font-weight-bold text-h6"
+          class="profile-avatar text-purple-darken-3 font-weight-bold text-h6"
         >
           {{ initials }}
         </v-avatar>
-        <div>
-          <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
+        <div class="profile-summary-copy">
+          <h2 class="profile-name text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
             {{ profile?.name || user?.name || "Usuário" }}
           </h2>
-          <p class="text-caption text-grey-darken-1 mb-1">
+          <p class="profile-email text-caption text-grey-darken-1 mb-1">
             {{ profile?.email || user?.email }}
           </p>
           <v-chip
@@ -108,7 +108,7 @@
         Marque as datas em que você não poderá servir.
       </p>
 
-      <div class="d-flex gap-2 mb-3 align-center">
+      <div class="unavailable-date-row mb-3">
         <v-text-field
           v-model="newUnavailableDate"
           type="date"
@@ -140,7 +140,7 @@
       >
         Nenhuma data bloqueada
       </div>
-      <div v-else class="d-flex flex-wrap gap-2 mt-3">
+      <div v-else class="unavailable-chip-list mt-3">
         <v-chip
           v-for="date in unavailableDates"
           :key="date"
@@ -148,11 +148,11 @@
           color="#A855F7"
           variant="tonal"
           size="small"
-          class="font-weight-medium"
+          class="unavailable-chip font-weight-medium"
           :disabled="isSaving"
           @click:close="removeUnavailableDate(date)"
         >
-          {{ formatDate(date) }}
+          <span>{{ formatDate(date) }}</span>
         </v-chip>
       </div>
     </v-card>
@@ -197,7 +197,7 @@
     </v-card>
 
     <v-card class="profile-card pa-4 mb-6 elevation-1 bg-white">
-      <div class="d-flex align-center justify-space-between ga-4">
+      <div class="security-row">
         <div class="min-w-0">
           <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-1">
             Segurança
@@ -583,9 +583,30 @@ onMounted(loadProfile);
 .gap-2 {
   gap: 8px;
 }
+.profile-summary {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 14px;
+}
+.profile-avatar {
+  flex: 0 0 auto;
+}
+.profile-summary-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.profile-name,
+.profile-email {
+  overflow-wrap: anywhere;
+}
+.profile-email {
+  line-height: 1.25;
+}
 .profile-card {
   border: 1px solid #f3f4f6;
   border-radius: 18px;
+  overflow: hidden;
 }
 .profile-input :deep(.v-field) {
   border-radius: 14px;
@@ -599,7 +620,34 @@ onMounted(loadProfile);
   min-height: 96px;
 }
 .profile-icon-btn {
+  flex: 0 0 auto;
   border-radius: 14px !important;
+}
+.unavailable-date-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px;
+  align-items: center;
+  gap: 8px;
+}
+.unavailable-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.unavailable-chip {
+  max-width: 100%;
+}
+.unavailable-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.security-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 .password-dialog-actions {
   display: flex;
@@ -615,8 +663,53 @@ onMounted(loadProfile);
 }
 
 @media (max-width: 420px) {
+  .profile-summary {
+    align-items: flex-start;
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .profile-avatar {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .profile-card {
+    border-radius: 14px;
+  }
+
+  .profile-name {
+    line-height: 1.2;
+  }
+
+  .profile-email {
+    margin-top: 2px;
+    margin-bottom: 6px !important;
+  }
+
+  .security-row {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .security-row .v-btn {
+    width: 100%;
+  }
+
   .password-dialog-actions .v-btn {
     flex: 1 1 100%;
+  }
+}
+
+@media (max-width: 340px) {
+  .unavailable-date-row {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-icon-btn {
+    width: 100% !important;
   }
 }
 </style>

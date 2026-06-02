@@ -15,6 +15,11 @@ export async function AuthRoutes(app: FastifyInstance) {
     controllerHandler(adapters.refreshToken.bind(adapters)),
   );
 
+  app.post(
+    "/public/auth/refresh-token",
+    controllerHandler(adapters.refreshToken.bind(adapters)),
+  );
+
   app.get(
     "/public/auth/logout",
     controllerHandler(adapters.logout.bind(adapters)),

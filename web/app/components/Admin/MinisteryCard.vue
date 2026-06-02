@@ -1,12 +1,12 @@
 <template>
   <v-card
-    class="rounded-xl pa-3 mb-3 elevation-1 bg-white d-flex align-center cursor-pointer"
+    class="ministry-card rounded-xl pa-3 mb-3 elevation-1 bg-white cursor-pointer"
   >
-    <v-avatar size="48" color="#EEF2FF" class="mr-3 rounded-lg">
+    <v-avatar size="48" color="#EEF2FF" class="ministry-avatar rounded-lg">
       <Users size="20" color="#6366F1" />
     </v-avatar>
 
-    <div class="flex-grow-1">
+    <div class="ministry-copy">
       <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
         {{ ministry.name }}
       </h3>
@@ -18,7 +18,7 @@
       </p>
     </div>
 
-    <div class="d-flex align-center">
+    <div class="ministry-status">
       <v-chip
         v-if="ministry.status === 'Ativo'"
         size="small"
@@ -42,11 +42,57 @@ defineProps({
 </script>
 
 <style scoped>
+.ministry-card {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.ministry-avatar {
+  align-self: start;
+}
+
+.ministry-copy {
+  min-width: 0;
+}
+
+.ministry-copy h3,
+.ministry-copy p {
+  overflow-wrap: anywhere;
+}
+
+.ministry-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
 .cursor-pointer {
   cursor: pointer;
   transition: transform 0.2s ease;
 }
 .cursor-pointer:active {
   transform: scale(0.98);
+}
+
+@media (max-width: 420px) {
+  .ministry-card {
+    grid-template-columns: 42px minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+  }
+
+  .ministry-avatar {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  .ministry-status {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
 }
 </style>

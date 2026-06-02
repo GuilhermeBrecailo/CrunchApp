@@ -18,17 +18,19 @@
       </v-btn>
     </div>
 
-    <div class="d-flex gap-2 horizontal-scroll hide-scrollbar mb-8">
-      <v-chip
-        v-for="filter in filters"
-        :key="filter"
-        :variant="activeFilter === filter ? 'flat' : 'outlined'"
-        :color="activeFilter === filter ? '#A855F7' : 'grey-darken-1'"
-        class="font-weight-medium px-4 cursor-pointer"
-        @click="activeFilter = filter"
-      >
-        {{ filter }}
-      </v-chip>
+    <div class="filter-strip mb-8">
+      <div class="filter-scroll hide-scrollbar">
+        <v-chip
+          v-for="filter in filters"
+          :key="filter"
+          :variant="activeFilter === filter ? 'flat' : 'outlined'"
+          :color="activeFilter === filter ? '#A855F7' : 'grey-darken-1'"
+          class="filter-chip cursor-pointer"
+          @click="activeFilter = filter"
+        >
+          <span class="filter-chip-label">{{ filter }}</span>
+        </v-chip>
+      </div>
     </div>
 
     <div>
@@ -765,11 +767,58 @@ watch(schedules, async () => {
   gap: 8px;
 }
 
-.horizontal-scroll {
+.filter-strip {
+  position: relative;
+  margin-right: -16px;
+  margin-left: -16px;
+}
+
+.filter-strip::before,
+.filter-strip::after {
+  position: absolute;
+  top: 0;
+  bottom: 4px;
+  z-index: 1;
+  width: 18px;
+  pointer-events: none;
+  content: "";
+}
+
+.filter-strip::before {
+  left: 0;
+  background: linear-gradient(90deg, #f5f5f5 0%, rgba(245, 245, 245, 0) 100%);
+}
+
+.filter-strip::after {
+  right: 0;
+  background: linear-gradient(270deg, #f5f5f5 0%, rgba(245, 245, 245, 0) 100%);
+}
+
+.filter-scroll {
+  display: flex;
+  gap: 8px;
   overflow-x: auto;
   flex-wrap: nowrap;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 4px; /* Espaço para o focus do chip */
+  padding: 0 16px 6px;
+  scroll-padding-inline: 16px;
+}
+
+.filter-chip {
+  flex: 0 0 auto;
+  max-width: min(64vw, 220px);
+  height: 34px !important;
+  padding-inline: 14px !important;
+  font-weight: 700;
+}
+
+.filter-chip-label {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hide-scrollbar::-webkit-scrollbar {
@@ -818,6 +867,25 @@ watch(schedules, async () => {
 }
 
 @media (max-width: 420px) {
+  .filter-strip {
+    margin-right: -12px;
+    margin-left: -12px;
+  }
+
+  .filter-scroll {
+    gap: 6px;
+    padding-right: 12px;
+    padding-left: 12px;
+    scroll-padding-inline: 12px;
+  }
+
+  .filter-chip {
+    max-width: 58vw;
+    height: 32px !important;
+    padding-inline: 12px !important;
+    font-size: 0.78rem;
+  }
+
   .dialog-actions .v-btn {
     flex: 1 1 100%;
   }

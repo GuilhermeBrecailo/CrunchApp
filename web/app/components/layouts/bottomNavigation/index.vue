@@ -1,19 +1,18 @@
 <template>
   <v-bottom-navigation
-    class="rounded-t-xl w-100 elevation-10"
-    height="70"
+    class="bottom-nav elevation-10"
+    height="64"
     bg-color="white"
-    grow
     app
   >
     <v-btn to="/" class="flex-col custom-btn" exact>
-      <House size="20" />
-      <span class="nav-label mt-1">Início</span>
+      <House class="nav-icon" />
+      <span class="nav-label">Início</span>
     </v-btn>
 
     <v-btn v-if="hasChurch" to="/scale" class="flex-col custom-btn">
-      <CalendarDays size="20" />
-      <span class="nav-label mt-1">Escalas</span>
+      <CalendarDays class="nav-icon" />
+      <span class="nav-label">Escalas</span>
     </v-btn>
 
     <v-btn
@@ -22,20 +21,20 @@
       class="flex-col custom-btn"
       :active="$route.path.startsWith('/ministery')"
     >
-      <Users size="20" />
-      <span class="nav-label mt-1">Ministérios</span>
+      <Users class="nav-icon" />
+      <span class="nav-label">Ministérios</span>
     </v-btn>
     <v-btn
       to="/user"
       class="flex-col custom-btn"
       :active="$route.path.startsWith('/user')"
     >
-      <User size="20" />
-      <span class="nav-label mt-1">Usuário</span>
+      <User class="nav-icon" />
+      <span class="nav-label">Usuário</span>
     </v-btn>
 
     <v-btn v-if="showAdmin" to="/admin" class="flex-col custom-btn">
-      <Cog size="20" />
+      <Cog class="nav-icon" />
       <span class="nav-label mt-1">{{ adminLabel }}</span>
     </v-btn>
   </v-bottom-navigation>
@@ -56,35 +55,94 @@ const isPlatformAdmin = computed(
     user.value?.is_admin === true,
 );
 const showAdmin = computed(() => hasChurch.value || isPlatformAdmin.value);
-const adminLabel = computed(() => (isPlatformAdmin.value ? "Plataforma" : "Admin"));
+const adminLabel = computed(() => "Admin");
 </script>
 
 <style scoped>
+.bottom-nav {
+  width: 100%;
+  max-width: 100vw;
+  border-radius: 14px 14px 0 0 !important;
+  padding: 4px max(4px, env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom))
+    max(4px, env(safe-area-inset-left));
+  overflow: hidden;
+}
+
 .nav-label {
-  font-size: 0.85rem;
-  font-weight: 500;
+  display: block;
+  width: 100%;
+  margin-top: 3px;
+  overflow: hidden;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.05;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
 }
 
 .custom-btn {
+  flex: 1 1 0;
+  min-width: 0 !important;
+  max-width: none;
   color: #757575 !important;
-  border-radius: 16px !important;
-  margin: 6px 4px;
-  height: calc(100% - 12px) !important;
-  transition: all 0.3s ease;
+  border-radius: 10px !important;
+  margin: 0 1px;
+  height: 54px !important;
+  padding: 4px 2px !important;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.custom-btn :deep(.v-btn__content) {
+  display: flex;
+  min-width: 0;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .custom-btn.v-btn--active {
-  color: #6366f1 !important; /* Tom de roxo/índigo */
-  background-color: rgba(var(--v-theme-#A855F7), 0.15) !important;
+  color: #4f46e5 !important;
+  background-color: #eef2ff !important;
 }
 
 .custom-btn:hover > .v-btn__overlay {
   opacity: 0 !important;
 }
 
-@media (max-width: 375px) {
+@media (max-width: 390px) {
+  .bottom-nav {
+    height: 60px !important;
+    padding-inline: 2px;
+  }
+
+  .custom-btn {
+    height: 50px !important;
+    padding-inline: 1px !important;
+  }
+
   .nav-label {
-    font-size: 0.65rem;
+    font-size: 0.62rem;
+  }
+
+  .nav-icon {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@media (max-width: 340px) {
+  .nav-label {
+    font-size: 0.58rem;
   }
 }
 </style>

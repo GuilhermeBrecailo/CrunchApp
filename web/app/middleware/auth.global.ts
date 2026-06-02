@@ -1,16 +1,33 @@
-import { defineNuxtRouteMiddleware, navigateTo } from "#app";
+import { defineNuxtRouteMiddleware, navigateTo, useCookie } from "#app";
 import { useAuth } from "../../composables/useAuth";
 
 const publicRoutes = ["/login", "/register", "/forgot-password"];
 const onboardingRoutes = ["/onboarding/church"];
 const noChurchAllowedRoutes = ["/", "/user", "/admin", ...onboardingRoutes];
+const refreshCookieName = "refresh_token";
 
 export default defineNuxtRouteMiddleware(async (to) => {
-  if (import.meta.server) return;
-
   const isPublicRoute = publicRoutes.some(
     (route) => to.path === route || to.path.startsWith(`${route}/`),
   );
+
+  if (import.meta.server) {
+    const hasRefreshCookie = Boolean(useCookie(refreshCookieName).value);
+
+    if (!isPublicRoute && !hasRefreshCookie) {
+      return navigateTo({
+        path: "/login",
+        query:
+          to.fullPath === "/"
+            ? undefined
+            : {
+                redirect: to.fullPath,
+              },
+      });
+    }
+
+    return;
+  }
 
   const { access_token, user, session, should_refresh, fetchMe } = useAuth();
 

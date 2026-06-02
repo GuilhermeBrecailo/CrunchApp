@@ -18,10 +18,10 @@
         size="small"
         color="grey-lighten-3"
         text-color="grey-darken-3"
-        class="font-weight-medium px-3"
+        class="schedule-time-chip"
       >
         <Clock size="14" class="mr-1" />
-        {{ event.time }}
+        <span>{{ event.time }}</span>
       </v-chip>
     </div>
 
@@ -231,6 +231,19 @@ const volunteerLabel = computed(() => {
   box-shadow: 0 10px 26px rgba(168, 85, 247, 0.18) !important;
 }
 
+.schedule-time-chip {
+  flex: 0 0 auto;
+  max-width: 100%;
+  padding-inline: 10px !important;
+  font-weight: 700;
+}
+
+.schedule-time-chip span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 420px) {
   .schedule-card-header {
     grid-template-columns: 1fr;
@@ -238,6 +251,7 @@ const volunteerLabel = computed(() => {
 
   .schedule-card-header :deep(.v-chip) {
     width: fit-content;
+    max-width: 100%;
   }
 
   .schedule-actions {

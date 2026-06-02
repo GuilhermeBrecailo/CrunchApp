@@ -8,6 +8,9 @@ export default defineNuxtConfig({
       title: "App Quadrangular",
       meta: [
         { name: "theme-color", content: "#4f46e5" },
+        { name: "apple-mobile-web-app-capable", content: "yes" },
+        { name: "apple-mobile-web-app-title", content: "Quadrangular" },
+        { name: "apple-mobile-web-app-status-bar-style", content: "default" },
         {
           name: "description",
           content: "Gestao de igrejas, ministerios e escalas.",
@@ -16,7 +19,7 @@ export default defineNuxtConfig({
       link: [
         { rel: "manifest", href: "/manifest.webmanifest" },
         { rel: "icon", href: "/pwa-icon.svg", type: "image/svg+xml" },
-        { rel: "apple-touch-icon", href: "/pwa-icon.svg" },
+        { rel: "apple-touch-icon", href: "/pwa-icon-192.png" },
       ],
     },
   },

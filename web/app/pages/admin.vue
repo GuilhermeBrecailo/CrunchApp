@@ -309,17 +309,19 @@
     </v-dialog>
   </div>
 
-  <div v-else-if="canAccessChurchAdmin" class="pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
-    <div class="mb-6">
-      <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">
-        Administração da igreja
-      </h1>
-      <p class="text-body-2 text-grey-darken-1 mb-0">
-        Gerencie membros, ministérios e dados operacionais da sua igreja
-      </p>
+  <div v-else-if="canAccessChurchAdmin" class="church-admin-page pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
+    <div class="church-admin-hero mb-6">
+      <div class="min-w-0">
+        <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">
+          Administração da igreja
+        </h1>
+        <p class="text-body-2 text-grey-darken-1 mb-0">
+          Gerencie membros, ministérios e dados operacionais da sua igreja
+        </p>
+      </div>
     </div>
 
-    <div class="stats-grid mb-8">
+    <div class="stats-grid church-stats-grid mb-8">
       <AdminStatCard
         title="Membros"
         :value="members.length"
@@ -350,8 +352,8 @@
       />
     </div>
 
-    <div class="mb-8">
-      <div class="d-flex justify-space-between align-center mb-4">
+    <section class="church-admin-section mb-8">
+      <div class="section-heading mb-4">
         <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
           Membros
         </h2>
@@ -377,27 +379,27 @@
         </p>
       </v-card>
 
-      <div v-else class="d-flex flex-column ga-3">
+      <div v-else class="church-list d-flex flex-column ga-3">
         <v-card
           v-for="member in members"
           :key="member.id"
-          class="member-card rounded-xl pa-4 elevation-1 bg-white d-flex align-center border-subtle"
+          class="member-card rounded-xl pa-4 elevation-1 bg-white border-subtle"
           @click="openMemberDetails(member)"
         >
-          <v-avatar color="#EEF2FF" size="44" class="mr-3">
+          <v-avatar color="#EEF2FF" size="44" class="member-avatar">
             <Users size="20" color="#6366F1" />
           </v-avatar>
 
-          <div class="flex-grow-1 min-w-0">
-            <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+          <div class="member-copy">
+            <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
               {{ member.name }}
             </h3>
-            <p class="text-caption text-grey-darken-1 mb-0 text-truncate">
+            <p class="text-caption text-grey-darken-1 mb-0">
               {{ member.email }}
             </p>
           </div>
 
-          <div class="d-flex align-center ga-2">
+          <div class="member-badges">
             <v-chip
               v-if="member.canManageMembers"
               size="small"
@@ -422,10 +424,10 @@
       >
         {{ membersError }}
       </v-alert>
-    </div>
+    </section>
 
-    <div>
-      <div class="d-flex justify-space-between align-center mb-4">
+    <section class="church-admin-section">
+      <div class="section-heading mb-4">
         <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
           Ministérios
         </h2>
@@ -451,10 +453,11 @@
         </p>
       </v-card>
 
-      <div v-else class="d-flex flex-column">
+      <div v-else class="d-flex flex-column ministry-list">
         <div
           v-for="department in departments"
           :key="department.id"
+          class="ministry-item"
         >
           <AdminMinisteryCard
             :ministry="{
@@ -465,7 +468,7 @@
               typeLabel: departmentTypeLabel(department.type),
             }"
           />
-          <div v-if="canManageDepartments" class="d-flex justify-end ga-2 mb-3">
+          <div v-if="canManageDepartments" class="ministry-actions">
             <v-btn
               icon
               variant="text"
@@ -497,7 +500,7 @@
       >
         {{ departmentsError }}
       </v-alert>
-    </div>
+    </section>
     <v-dialog v-model="isMemberDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="d-flex align-center mb-5">
@@ -588,7 +591,7 @@
             {{ createMemberError }}
           </v-alert>
 
-          <div class="d-flex justify-end ga-3">
+          <div class="admin-dialog-actions">
             <v-btn
               variant="text"
               color="grey-darken-1"
@@ -685,7 +688,7 @@
             {{ createDepartmentError }}
           </v-alert>
 
-          <div class="d-flex justify-end ga-3">
+          <div class="admin-dialog-actions">
             <v-btn
               variant="text"
               color="grey-darken-1"
@@ -782,7 +785,7 @@
 
         <v-divider class="mb-4" />
 
-        <div class="d-flex align-center justify-space-between ga-4">
+        <div class="member-permission-row">
           <div>
             <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-1">
               Pode adicionar pessoas
@@ -811,7 +814,7 @@
           {{ permissionError }}
         </v-alert>
 
-        <div class="d-flex justify-space-between align-center mt-6">
+        <div class="member-dialog-footer mt-6">
           <v-btn
             v-if="canAddMembers"
             variant="text"
@@ -822,7 +825,7 @@
           >
             Remover
           </v-btn>
-          <div class="d-flex ga-2">
+          <div class="member-dialog-actions">
             <v-btn
               variant="text"
               color="grey-darken-1"
@@ -1442,6 +1445,33 @@ onMounted(async () => {
   gap: 12px;
 }
 
+.church-admin-page {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.church-admin-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.church-admin-section {
+  min-width: 0;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.section-heading .v-btn {
+  flex: 0 0 auto;
+}
+
 .admin-input :deep(.v-field) {
   border-radius: 14px;
 }
@@ -1453,14 +1483,55 @@ onMounted(async () => {
 }
 
 .member-card {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
   cursor: pointer;
   transition:
     transform 0.18s ease,
     box-shadow 0.18s ease;
 }
 
+.member-avatar {
+  align-self: start;
+}
+
+.member-copy {
+  min-width: 0;
+}
+
+.member-copy h3,
+.member-copy p {
+  overflow-wrap: anywhere;
+}
+
+.member-badges {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
 .member-card:active {
   transform: scale(0.99);
+}
+
+.ministry-list {
+  gap: 10px;
+}
+
+.ministry-item {
+  min-width: 0;
+}
+
+.ministry-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: -6px 4px 14px 0;
 }
 
 .member-info {
@@ -1576,6 +1647,34 @@ onMounted(async () => {
   min-height: 320px;
 }
 
+.admin-dialog-actions,
+.member-dialog-actions,
+.member-dialog-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-dialog-actions {
+  justify-content: flex-end;
+}
+
+.member-dialog-footer {
+  justify-content: space-between;
+}
+
+.member-dialog-actions {
+  justify-content: flex-end;
+}
+
+.member-permission-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
 @media (min-width: 520px) {
   .member-info {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1587,6 +1686,10 @@ onMounted(async () => {
 }
 
 @media (min-width: 900px) {
+  .church-stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
   .platform-layout {
     grid-template-columns: minmax(320px, 0.85fr) minmax(0, 1.35fr);
     align-items: start;
@@ -1598,6 +1701,72 @@ onMounted(async () => {
   .platform-details {
     height: calc(100vh - 236px);
     max-height: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .church-admin-page {
+    padding-right: 12px !important;
+    padding-left: 12px !important;
+  }
+
+  .section-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .section-heading .v-btn {
+    width: 100%;
+  }
+
+  .member-card {
+    grid-template-columns: 40px minmax(0, 1fr);
+    align-items: start;
+    padding: 14px !important;
+  }
+
+  .member-avatar {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  .member-badges {
+    grid-column: 2;
+    justify-content: flex-start;
+    margin-top: 2px;
+  }
+
+  .member-badges :deep(.v-chip) {
+    max-width: 100%;
+  }
+
+  .ministry-actions {
+    justify-content: flex-start;
+    margin: -4px 0 16px 8px;
+  }
+
+  .admin-dialog-actions,
+  .member-dialog-actions,
+  .member-dialog-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-dialog-actions .v-btn,
+  .member-dialog-actions .v-btn,
+  .member-dialog-footer .v-btn {
+    width: 100%;
+  }
+
+  .member-permission-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 360px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
