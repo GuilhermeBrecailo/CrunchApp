@@ -15,14 +15,24 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const { access_token, user, session, should_refresh, fetchMe } = useAuth();
 
   if (isPublicRoute) {
-    if (access_token.value && to.path === "/login") {
+    if (access_token.value) {
       return navigateTo("/");
     }
 
     return;
   }
 
-  if (!access_token.value || should_refresh()) {
+  let needsSession = !access_token.value;
+
+  if (access_token.value) {
+    try {
+      needsSession = should_refresh();
+    } catch {
+      needsSession = true;
+    }
+  }
+
+  if (needsSession) {
     await session();
   }
 

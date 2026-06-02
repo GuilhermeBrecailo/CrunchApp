@@ -43,6 +43,7 @@ export interface AdminChurchDepartment {
   schedulesCount: number;
   tasksCount: number;
   resourcesCount: number;
+  songsCount?: number;
 }
 
 export interface AdminDepartment extends AdminChurchDepartment {

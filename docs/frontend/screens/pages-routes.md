@@ -14,7 +14,7 @@ Tela inicial do usuario logado. Renderiza:
 - `DashboardQuickAccess`;
 - `DashboardUpcomingEvents`.
 
-Hoje todos os dados sao mockados nos componentes.
+Os dados do dashboard devem refletir usuario, igreja e proximas escalas quando houver contexto autenticado.
 
 ## `/login`
 
@@ -30,7 +30,7 @@ Estado atual:
 - alternancia de visibilidade da senha;
 - `handleLogin` autentica e carrega `/api/me`;
 - link para `/register` orientado a pastor titular;
-- link para `/forgot-password`, mas essa rota ainda nao existe.
+- link para `/forgot-password`.
 
 ## `/register`
 
@@ -47,6 +47,22 @@ Estado atual:
 - validacao simples de igualdade entre senhas;
 - `handleRegister` chama a API e volta para `/login`;
 - membros devem ser criados pela area administrativa da igreja.
+
+## `/forgot-password`
+
+Arquivo:
+
+- `web/app/pages/forgot-password.vue`
+
+Tela publica para recuperacao de senha. Ainda depende do fluxo definitivo no backend/Keycloak.
+
+## `/onboarding/church`
+
+Arquivo:
+
+- `web/app/pages/onboarding/church.vue`
+
+Fluxo usado quando o pastor autenticado ainda nao possui igreja vinculada.
 
 ## `/scale`
 
@@ -66,9 +82,9 @@ Mostra:
 
 Estado atual:
 
-- dados mockados em `schedulesData`;
-- filtro local por categoria;
-- botao `Novo` ainda nao abre fluxo real.
+- lista e cria escalas usando composables de API;
+- permite filtro por ministerio;
+- permite editar, excluir e atribuir voluntarios conforme permissao do usuario.
 
 ## `/ministery`
 
@@ -80,9 +96,9 @@ Lista ministerios e permite navegar para o detalhe.
 
 Estado atual:
 
-- ministerios mockados;
-- botao `Ministerio` ainda nao abre cadastro;
-- clique em um item navega para `/ministery/{id}`.
+- lista e cria ministerios usando composables de API;
+- clique em um item navega para `/ministery/{id}`;
+- edicao e exclusao ficam disponiveis na administracao para pastor titular.
 
 ## `/ministery/[id]`
 
@@ -96,15 +112,14 @@ Mostra:
 
 - botao de voltar;
 - nome e lider do ministerio;
-- abas de `Escalas`, `Musicas` e `Tarefas`;
-- modal de criacao conforme a aba.
+- abas de escalas, musicas, tarefas e recursos;
+- modais de criacao conforme a aba.
 
 Estado atual:
 
-- dados do ministerio sao buscados em um objeto local;
-- musicas sao mockadas;
-- formularios dos modais ainda nao salvam;
-- os componentes dos modais parecem estar conectados em variaveis trocadas.
+- detalhe do ministerio, escalas, tarefas e recursos usam integracao com API;
+- pastor titular ou lider do ministerio pode criar, editar e excluir escalas, tarefas e recursos;
+- musicas/repertorio usam `MediaItem` com categoria interna de musica;
 
 ## `/user`
 
@@ -126,8 +141,9 @@ Mostra:
 
 Estado atual:
 
-- dados fixos;
-- salvar monta objeto local, escreve no console e mostra `alert`.
+- carrega dados do usuario autenticado;
+- permite atualizar perfil, telefone, ministerio principal, funcao, indisponibilidades e sugestao;
+- ainda precisa de refinamento de validacoes e estados de feedback.
 
 ## `/admin`
 
@@ -135,15 +151,17 @@ Arquivo:
 
 - `web/app/pages/admin.vue`
 
-Tela administrativa da igreja.
+Tela administrativa da igreja e, quando aplicavel, da plataforma.
 
 Mostra:
 
 - cards de estatisticas;
 - area de membros;
-- lista de ministerios.
+- lista de ministerios;
+- areas administrativas globais para perfis autorizados.
 
 Estado atual:
 
-- numeros e ministerios mockados;
-- botao convidar ainda nao abre fluxo real.
+- consome dados administrativos de igreja e plataforma;
+- ainda existem contadores e acoes que precisam ser ligados a dados reais;
+- fluxo de convite ou solicitacao de membro ainda precisa ser implementado.

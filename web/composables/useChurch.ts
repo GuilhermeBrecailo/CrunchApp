@@ -18,8 +18,21 @@ interface CreateOwnChurchDTO {
 interface ChurchResponse {
   id: string;
   name: string;
-  userMainId: string;
+  userMainId?: string | null;
+  city?: string;
+  road?: string;
+  number?: string | null;
+  localZipCode?: string;
+  state?: string;
+  complement?: string | null;
+  document?: string | null;
+  logo?: string | null;
+  isActive?: boolean;
 }
+
+type UpdateChurchDTO = Partial<CreateOwnChurchDTO> & {
+  isActive?: boolean;
+};
 
 export const useChurch = () => {
   const config = useRuntimeConfig();
@@ -65,7 +78,37 @@ export const useChurch = () => {
     return response;
   };
 
+  const updateOwnChurch = async (
+    church: UpdateChurchDTO,
+  ): Promise<ApiResponse<ChurchResponse>> => {
+    if (!access_token.value) {
+      return {
+        error: "Sessao expirada. Faca login novamente.",
+        status: 401,
+      };
+    }
+
+    const response = await $customFetch<ChurchResponse>(
+      `${config.public.URL_BACKEND}/api/church`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${access_token.value}`,
+        },
+        body: church,
+      },
+    );
+
+    if (!response.error) {
+      await fetchMe();
+    }
+
+    return response;
+  };
+
   return {
     createOwnChurch,
+    updateOwnChurch,
   };
 };

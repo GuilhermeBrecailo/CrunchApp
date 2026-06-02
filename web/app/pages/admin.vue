@@ -301,14 +301,14 @@
       />
       <AdminStatCard
         title="Escalas"
-        value="6"
+        :value="churchTotals.schedules"
         :icon="Calendar"
         iconColor="#14B8A6"
         bgColor="#F0FDFA"
       />
       <AdminStatCard
         title="Músicas"
-        value="10"
+        :value="churchTotals.songs"
         :icon="Music"
         iconColor="#EAB308"
         bgColor="#FEFCE8"
@@ -417,17 +417,40 @@
       </v-card>
 
       <div v-else class="d-flex flex-column">
-        <AdminMinisteryCard
+        <div
           v-for="department in departments"
           :key="department.id"
-          :ministry="{
-            name: department.name,
-            leader: department.leader.name,
-            status: department.isActive ? 'Ativo' : 'Inativo',
-            type: department.type,
-            typeLabel: departmentTypeLabel(department.type),
-          }"
-        />
+        >
+          <AdminMinisteryCard
+            :ministry="{
+              name: department.name,
+              leader: department.leader.name,
+              status: department.isActive ? 'Ativo' : 'Inativo',
+              type: department.type,
+              typeLabel: departmentTypeLabel(department.type),
+            }"
+          />
+          <div v-if="canManageDepartments" class="d-flex justify-end ga-2 mb-3">
+            <v-btn
+              icon
+              variant="text"
+              color="grey-darken-1"
+              size="small"
+              @click="openDepartmentEditDialog(department)"
+            >
+              <v-icon size="18">mdi-pencil-outline</v-icon>
+            </v-btn>
+            <v-btn
+              icon
+              variant="text"
+              color="red-darken-2"
+              size="small"
+              @click="handleDeleteDepartment(department)"
+            >
+              <v-icon size="18">mdi-delete-outline</v-icon>
+            </v-btn>
+          </div>
+        </div>
       </div>
 
       <v-alert
@@ -562,7 +585,7 @@
           </v-avatar>
           <div>
             <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-              Novo ministério
+              {{ editingDepartmentId ? "Editar ministério" : "Novo ministério" }}
             </h2>
             <p class="text-body-2 text-grey-darken-1 mb-0">
               Cadastre um ministério da sua igreja.
@@ -644,7 +667,7 @@
               :loading="isCreatingDepartment"
               :disabled="isCreatingDepartment"
             >
-              Criar ministério
+              {{ editingDepartmentId ? "Salvar ministério" : "Criar ministério" }}
             </v-btn>
           </div>
         </v-form>
@@ -682,6 +705,46 @@
           </div>
         </div>
 
+        <v-text-field
+          v-model="selectedMemberForm.name"
+          label="Nome"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          bg-color="white"
+          class="admin-input mb-3"
+          hide-details="auto"
+          :readonly="!canAddMembers"
+          :disabled="isUpdatingMember"
+        />
+
+        <v-text-field
+          v-model="selectedMemberForm.email"
+          label="Email"
+          type="email"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          bg-color="white"
+          class="admin-input mb-3"
+          hide-details="auto"
+          :readonly="!canAddMembers"
+          :disabled="isUpdatingMember"
+        />
+
+        <v-text-field
+          v-model="selectedMemberForm.phone"
+          label="Telefone"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          bg-color="white"
+          class="admin-input mb-4"
+          hide-details="auto"
+          :readonly="!canAddMembers"
+          :disabled="isUpdatingMember"
+        />
+
         <v-divider class="mb-4" />
 
         <div class="d-flex align-center justify-space-between ga-4">
@@ -713,19 +776,50 @@
           {{ permissionError }}
         </v-alert>
 
-        <div class="d-flex justify-end mt-6">
+        <div class="d-flex justify-space-between align-center mt-6">
           <v-btn
+            v-if="canAddMembers"
             variant="text"
-            color="purple-darken-3"
+            color="red-darken-2"
             class="text-none"
-            :disabled="isUpdatingPermissions"
-            @click="closeMemberDetails"
+            :disabled="isUpdatingMember || isUpdatingPermissions"
+            @click="handleDeleteMember"
           >
-            Fechar
+            Remover
           </v-btn>
+          <div class="d-flex ga-2">
+            <v-btn
+              variant="text"
+              color="grey-darken-1"
+              class="text-none"
+              :disabled="isUpdatingMember || isUpdatingPermissions"
+              @click="closeMemberDetails"
+            >
+              Fechar
+            </v-btn>
+            <v-btn
+              v-if="canAddMembers"
+              color="purple-darken-3"
+              class="text-none"
+              :loading="isUpdatingMember"
+              :disabled="isUpdatingMember || isUpdatingPermissions"
+              @click="handleUpdateMember"
+            >
+              Salvar
+            </v-btn>
+          </div>
         </div>
       </v-card>
     </v-dialog>
+
+    <UtilsConfirmDialog
+      v-model="isDeleteDialogOpen"
+      :title="deleteDialogTitle"
+      :message="deleteDialogMessage"
+      :loading="isConfirmingDelete"
+      @cancel="closeDeleteDialog"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 
@@ -755,8 +849,19 @@ import {
 } from "../../composables/useAdmin";
 
 const { user } = useAuth();
-const { getMembers, createMember, updateMemberPermissions } = useMembers();
-const { getDepartments, createDepartment } = useDepartments();
+const {
+  getMembers,
+  createMember,
+  updateMemberPermissions,
+  updateMember,
+  deleteMember,
+} = useMembers();
+const {
+  getDepartments,
+  createDepartment,
+  updateDepartment,
+  deleteDepartment,
+} = useDepartments();
 const {
   getChurches,
   getDepartments: getAdminDepartments,
@@ -779,6 +884,7 @@ const isMemberDetailsOpen = ref(false);
 const isDepartmentDialogOpen = ref(false);
 const isCreatingMember = ref(false);
 const isUpdatingPermissions = ref(false);
+const isUpdatingMember = ref(false);
 const isCreatingDepartment = ref(false);
 const createMemberError = ref("");
 const createDepartmentError = ref("");
@@ -786,6 +892,10 @@ const permissionError = ref("");
 const showPassword = ref(false);
 const selectedMember = ref<ChurchMember | null>(null);
 const selectedMemberCanManageMembers = ref(false);
+const editingDepartmentId = ref("");
+const pendingDeleteDepartment = ref<ChurchDepartment | null>(null);
+const pendingDeleteMember = ref<ChurchMember | null>(null);
+const isConfirmingDelete = ref(false);
 
 const isPlatformAdmin = computed(
   () =>
@@ -820,6 +930,43 @@ const platformTotals = computed(() => ({
   activeChurches: adminChurches.value.filter((church) => church.isActive).length,
 }));
 
+const churchTotals = computed(() => ({
+  schedules: departments.value.reduce(
+    (total, department) => total + (department.schedulesCount || 0),
+    0,
+  ),
+  songs: departments.value.reduce(
+    (total, department) => total + (department.songsCount || 0),
+    0,
+  ),
+}));
+
+const isDeleteDialogOpen = computed({
+  get: () => Boolean(pendingDeleteDepartment.value || pendingDeleteMember.value),
+  set: (value: boolean) => {
+    if (!value && !isConfirmingDelete.value) {
+      pendingDeleteDepartment.value = null;
+      pendingDeleteMember.value = null;
+    }
+  },
+});
+
+const deleteDialogTitle = computed(() =>
+  pendingDeleteDepartment.value ? "Remover ministerio" : "Remover membro",
+);
+
+const deleteDialogMessage = computed(() => {
+  if (pendingDeleteDepartment.value) {
+    return `O ministerio ${pendingDeleteDepartment.value.name} sera removido com suas escalas, tarefas, recursos e musicas.`;
+  }
+
+  if (pendingDeleteMember.value) {
+    return `O membro ${pendingDeleteMember.value.name} sera removido desta igreja.`;
+  }
+
+  return "Essa acao nao pode ser desfeita.";
+});
+
 const memberForm = reactive({
   name: "",
   email: "",
@@ -831,6 +978,12 @@ const departmentForm = reactive({
   name: "",
   type: "OTHER",
   leaderId: "",
+});
+
+const selectedMemberForm = reactive({
+  name: "",
+  email: "",
+  phone: "",
 });
 
 const departmentTypes = [
@@ -943,6 +1096,7 @@ const resetDepartmentForm = () => {
   departmentForm.name = "";
   departmentForm.type = "OTHER";
   departmentForm.leaderId = "";
+  editingDepartmentId.value = "";
 };
 
 const closeMemberDialog = () => {
@@ -960,6 +1114,9 @@ const closeDepartmentDialog = () => {
 const openMemberDetails = (member: ChurchMember) => {
   selectedMember.value = member;
   selectedMemberCanManageMembers.value = member.canManageMembers;
+  selectedMemberForm.name = member.name;
+  selectedMemberForm.email = member.email;
+  selectedMemberForm.phone = member.phone || "";
   permissionError.value = "";
   isMemberDetailsOpen.value = true;
 };
@@ -968,6 +1125,9 @@ const closeMemberDetails = () => {
   isMemberDetailsOpen.value = false;
   selectedMember.value = null;
   permissionError.value = "";
+  selectedMemberForm.name = "";
+  selectedMemberForm.email = "";
+  selectedMemberForm.phone = "";
 };
 
 const handleCreateMember = async () => {
@@ -1010,11 +1170,17 @@ const handleCreateDepartment = async () => {
 
   isCreatingDepartment.value = true;
 
-  const { data, error } = await createDepartment({
-    name,
-    type: departmentForm.type,
-    leaderId: departmentForm.leaderId,
-  });
+  const { data, error } = editingDepartmentId.value
+    ? await updateDepartment(editingDepartmentId.value, {
+        name,
+        type: departmentForm.type,
+        leaderId: departmentForm.leaderId,
+      })
+    : await createDepartment({
+        name,
+        type: departmentForm.type,
+        leaderId: departmentForm.leaderId,
+      });
 
   isCreatingDepartment.value = false;
 
@@ -1023,10 +1189,128 @@ const handleCreateDepartment = async () => {
     return;
   }
 
-  departments.value = [...departments.value, data].sort((first, second) =>
+  const nextDepartments = editingDepartmentId.value
+    ? departments.value.map((department) =>
+        department.id === data.id ? data : department,
+      )
+    : [...departments.value, data];
+
+  departments.value = nextDepartments.sort((first, second) =>
     first.name.localeCompare(second.name),
   );
   closeDepartmentDialog();
+};
+
+const openDepartmentEditDialog = (department: ChurchDepartment) => {
+  editingDepartmentId.value = department.id;
+  departmentForm.name = department.name;
+  departmentForm.type = department.type;
+  departmentForm.leaderId = department.leaderId;
+  createDepartmentError.value = "";
+  isDepartmentDialogOpen.value = true;
+};
+
+const handleDeleteDepartment = (department: ChurchDepartment) => {
+  pendingDeleteDepartment.value = department;
+};
+
+const closeDeleteDialog = () => {
+  if (!isConfirmingDelete.value) {
+    pendingDeleteDepartment.value = null;
+    pendingDeleteMember.value = null;
+  }
+};
+
+const confirmDelete = async () => {
+  if (pendingDeleteDepartment.value) {
+    await confirmDeleteDepartment();
+    return;
+  }
+
+  if (pendingDeleteMember.value) {
+    await confirmDeleteMember();
+  }
+};
+
+const confirmDeleteDepartment = async () => {
+  if (!pendingDeleteDepartment.value) return;
+
+  departmentsError.value = "";
+  isConfirmingDelete.value = true;
+  const departmentId = pendingDeleteDepartment.value.id;
+  const { error } = await deleteDepartment(departmentId);
+  isConfirmingDelete.value = false;
+
+  if (error) {
+    departmentsError.value = error;
+    return;
+  }
+
+  departments.value = departments.value.filter((item) => item.id !== departmentId);
+  pendingDeleteDepartment.value = null;
+};
+
+const handleUpdateMember = async () => {
+  if (!selectedMember.value) return;
+
+  permissionError.value = "";
+  const name = selectedMemberForm.name.trim();
+  const email = selectedMemberForm.email.trim().toLowerCase();
+
+  if (!name || !email) {
+    permissionError.value = "Informe nome e email.";
+    return;
+  }
+
+  isUpdatingMember.value = true;
+
+  const { data, error } = await updateMember(selectedMember.value.id, {
+    name,
+    email,
+    phone: selectedMemberForm.phone.trim(),
+  });
+
+  isUpdatingMember.value = false;
+
+  if (error || !data) {
+    permissionError.value = error || "Nao foi possivel salvar o membro.";
+    return;
+  }
+
+  selectedMember.value = data;
+  selectedMemberCanManageMembers.value = data.canManageMembers;
+  members.value = members.value.map((member) =>
+    member.id === data.id ? data : member,
+  );
+};
+
+const handleDeleteMember = () => {
+  if (!selectedMember.value) return;
+
+  pendingDeleteMember.value = selectedMember.value;
+};
+
+const confirmDeleteMember = async () => {
+  if (!pendingDeleteMember.value) return;
+
+  permissionError.value = "";
+  isConfirmingDelete.value = true;
+
+  const memberId = pendingDeleteMember.value.id;
+  const { error } = await deleteMember(memberId);
+
+  isConfirmingDelete.value = false;
+
+  if (error) {
+    permissionError.value = error;
+    return;
+  }
+
+  members.value = members.value.filter(
+    (member) => member.id !== memberId,
+  );
+  pendingDeleteMember.value = null;
+  closeMemberDetails();
 };
 
 const handleUpdateMemberPermissions = async (value: boolean | null) => {

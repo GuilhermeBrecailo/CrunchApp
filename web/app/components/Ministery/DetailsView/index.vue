@@ -254,7 +254,7 @@ const dialogEscala = ref(false);
 const dialogMusica = ref(false);
 const dialogTarefa = ref(false);
 
-// Dados Mockados da Aba de Músicas
+// Exemplo legado da aba de musicas; a pagina atual usa API em ministery/[id].
 const listaMusicas = [
   {
     id: 1,

@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "tsx watch --env-file=.env --clear-screen=false server.ts",
     "test": "jest --watch",
+    "test:ci": "jest --runInBand",
+    "typecheck": "npm run prisma:generate && tsc --noEmit",
+    "lint": "eslint .",
     "prisma:generate": "prisma generate --schema=src/infrastructure/database/prisma/schema.prisma",
     "prisma:migrate": "prisma migrate dev --schema=src/infrastructure/database/prisma/schema.prisma",
     "prisma:deploy": "prisma migrate deploy --schema=src/infrastructure/database/prisma/schema.prisma",

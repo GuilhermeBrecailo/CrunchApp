@@ -20,9 +20,8 @@ Configuracao atual:
 
 - habilita DevTools;
 - registra `@nuxtjs/tailwindcss`;
-- registra `vuetify-nuxt-module`.
-
-Hoje o `nuxt.config.ts` ainda nao define `runtimeConfig.public.URL_BACKEND`, embora `useAuth.ts` tente usar esse valor para montar chamadas HTTP.
+- registra `vuetify-nuxt-module`;
+- expoe `runtimeConfig.public.URL_BACKEND` a partir de `NUXT_PUBLIC_URL_BACKEND`.
 
 ## Estrutura principal
 
@@ -35,9 +34,18 @@ Hoje o `nuxt.config.ts` ainda nao define `runtimeConfig.public.URL_BACKEND`, emb
 
 ## Estado atual
 
-O front ja possui uma casca navegavel e consistente, mas ainda esta em fase de prototipo:
+O front ja possui uma experiencia navegavel com integracao real em fluxos principais:
 
-- dados de dashboard, ministerios, musicas, escalas e admin estao mockados;
-- a camada de API ainda nao esta consolidada;
-- formularios salvam com `console.log` ou `alert`;
-- nao ha middleware de autenticacao protegendo rotas internas.
+- autenticacao, refresh/logout e contexto do usuario;
+- middleware global protegendo rotas privadas;
+- onboarding de igreja;
+- membros, ministerios, escalas e painel admin conectados a composables de API;
+- base de PWA e notificacoes push.
+
+Pontos ainda em aberto:
+
+- CRUD completo para recursos principais;
+- alguns estados de loading, vazio, erro e sucesso;
+- repertorio de musicas em ministerios de louvor;
+- recursos especializados por ministerio;
+- permissoes mais granulares refletidas na UI.

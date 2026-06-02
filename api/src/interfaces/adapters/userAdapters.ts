@@ -130,6 +130,15 @@ export class UserAdapters {
       ? {
           id: user.crunch.id,
           name: user.crunch.name,
+          city: user.crunch.city,
+          road: user.crunch.road,
+          number: user.crunch.number,
+          localZipCode: user.crunch.localZipCode,
+          state: user.crunch.state,
+          complement: user.crunch.complement,
+          document: user.crunch.document,
+          logo: user.crunch.logo,
+          isActive: user.crunch.isActive,
           userMainId: user.crunch.userMainId,
         }
       : null;
@@ -374,6 +383,86 @@ export class UserAdapters {
     };
   }
 
+  async updateOwnChurch(request: FastifyRequest) {
+    const userId = getAuthUserId(request);
+    const body = request.body as {
+      name?: string;
+      city?: string;
+      road?: string;
+      number?: string | null;
+      localZipCode?: string;
+      state?: string;
+      complement?: string | null;
+      document?: string | null;
+      logo?: string | null;
+      isActive?: boolean;
+    };
+
+    const user = await $prismaClient.user.findUnique({
+      where: {
+        id: userId,
+      },
+      include: {
+        crunch: true,
+      },
+    });
+
+    if (!user || !user.crunchId || !user.crunch) {
+      throw new DomainError("Usuario nao possui igreja vinculada");
+    }
+
+    const isTitularPastor =
+      user.role === "PASTOR" && user.crunch.userMainId === user.id;
+
+    if (!isTitularPastor) {
+      throw new DomainError("Apenas o pastor titular pode editar a igreja");
+    }
+
+    if (body.name !== undefined && !body.name.trim()) {
+      throw new DomainError("Nome da igreja e obrigatorio");
+    }
+
+    const updatedChurch = await $prismaClient.crunch.update({
+      where: {
+        id: user.crunchId,
+      },
+      data: {
+        ...(body.name !== undefined ? { name: body.name.trim() } : {}),
+        ...(body.city !== undefined ? { city: body.city.trim() } : {}),
+        ...(body.road !== undefined ? { road: body.road.trim() } : {}),
+        ...(body.number !== undefined ? { number: body.number?.trim() || null } : {}),
+        ...(body.localZipCode !== undefined
+          ? { localZipCode: body.localZipCode.trim() }
+          : {}),
+        ...(body.state !== undefined ? { state: body.state.trim() } : {}),
+        ...(body.complement !== undefined
+          ? { complement: body.complement?.trim() || null }
+          : {}),
+        ...(body.document !== undefined
+          ? { document: body.document?.trim() || null }
+          : {}),
+        ...(body.logo !== undefined ? { logo: body.logo?.trim() || null } : {}),
+        ...(body.isActive !== undefined ? { isActive: body.isActive } : {}),
+      },
+      select: {
+        id: true,
+        name: true,
+        city: true,
+        road: true,
+        number: true,
+        localZipCode: true,
+        state: true,
+        complement: true,
+        document: true,
+        logo: true,
+        isActive: true,
+        userMainId: true,
+      },
+    });
+
+    return updatedChurch;
+  }
+
   private async getChurchMemberManager(userId: string) {
     const user = await $prismaClient.user.findUnique({
       where: {
@@ -564,6 +653,121 @@ export class UserAdapters {
     });
 
     return updatedMember;
+  }
+
+  async updateChurchMember(request: FastifyRequest) {
+    const userId = getAuthUserId(request);
+    const manager = await this.getChurchMemberManager(userId);
+    const { id } = request.params as { id?: string };
+    const body = request.body as {
+      name?: string;
+      email?: string;
+      phone?: string | null;
+      role?: string;
+    };
+
+    if (!id) {
+      throw new DomainError("Membro nao informado");
+    }
+
+    const member = await $prismaClient.user.findFirst({
+      where: {
+        id,
+        crunchId: manager.crunchId,
+      },
+      include: {
+        crunch: true,
+      },
+    });
+
+    if (!member) {
+      throw new DomainError("Membro nao encontrado nesta igreja");
+    }
+
+    if (member.crunch?.userMainId === member.id) {
+      throw new DomainError("Nao e possivel editar o pastor titular por este fluxo");
+    }
+
+    if (body.name !== undefined && !body.name.trim()) {
+      throw new DomainError("Nome do membro e obrigatorio");
+    }
+
+    if (body.email !== undefined && !body.email.trim()) {
+      throw new DomainError("Email do membro e obrigatorio");
+    }
+
+    const normalizedEmail = body.email?.trim().toLowerCase();
+
+    if (normalizedEmail && normalizedEmail !== member.email) {
+      const existingUser = await $prismaClient.user.findUnique({
+        where: {
+          email: normalizedEmail,
+        },
+      });
+
+      if (existingUser) {
+        throw new DomainError("Ja existe um usuario com esse email");
+      }
+    }
+
+    return await $prismaClient.user.update({
+      where: {
+        id: member.id,
+      },
+      data: {
+        ...(body.name !== undefined ? { name: body.name.trim() } : {}),
+        ...(normalizedEmail !== undefined ? { email: normalizedEmail } : {}),
+        ...(body.phone !== undefined ? { phone: body.phone?.trim() || null } : {}),
+        ...(body.role !== undefined ? { role: body.role.trim() || "MEMBER" } : {}),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        canManageMembers: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  async deleteChurchMember(request: FastifyRequest) {
+    const userId = getAuthUserId(request);
+    const manager = await this.getChurchMemberManager(userId);
+    const { id } = request.params as { id?: string };
+
+    if (!id) {
+      throw new DomainError("Membro nao informado");
+    }
+
+    const member = await $prismaClient.user.findFirst({
+      where: {
+        id,
+        crunchId: manager.crunchId,
+      },
+      include: {
+        crunch: true,
+      },
+    });
+
+    if (!member) {
+      throw new DomainError("Membro nao encontrado nesta igreja");
+    }
+
+    if (member.crunch?.userMainId === member.id) {
+      throw new DomainError("Nao e possivel remover o pastor titular");
+    }
+
+    await $prismaClient.user.delete({
+      where: {
+        id: member.id,
+      },
+    });
+
+    await new KeycloakProvider().deleteUser(member.id).catch(() => undefined);
+
+    return { success: true };
   }
 
   async createUser(request: FastifyRequest): Promise<{ id: string }> {

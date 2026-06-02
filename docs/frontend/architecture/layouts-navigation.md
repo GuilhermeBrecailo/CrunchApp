@@ -39,7 +39,7 @@ Mostra:
 - nome da igreja;
 - botao de notificacoes com badge.
 
-Hoje os dados exibidos sao fixos, por exemplo usuario `gui` e igreja `Minha Igreja`.
+Os dados de usuario e igreja devem vir do contexto autenticado carregado pela aplicacao.
 
 ## Bottom navigation
 
@@ -66,7 +66,8 @@ Arquivo:
 Usado em:
 
 - `web/app/pages/login.vue`;
-- `web/app/pages/register.vue`.
+- `web/app/pages/register.vue`;
+- `web/app/pages/forgot-password.vue`.
 
 Responsabilidade:
 

@@ -1,6 +1,6 @@
 import { FastifyRequest } from "fastify/types/request";
 import crypto from "node:crypto";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
 import { pushNotificationService } from "../../infrastructure/notifications/PushNotificationService";
@@ -10,6 +10,27 @@ type CurrentUser = Prisma.UserGetPayload<{
     crunch: true;
   };
 }>;
+
+type DepartmentWithStats = {
+  id: string;
+  name: string;
+  type: string;
+  isActive: boolean;
+  leaderId: string;
+  leader: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  _count: {
+    members: number;
+    schedules: number;
+    tasks: number;
+  };
+  mediaItems: {
+    category: string;
+  }[];
+};
 
 function getAuthUserId(request: FastifyRequest) {
   const authHeader = request.headers.authorization;
@@ -45,6 +66,7 @@ export class ChurchDepartmentAdapters {
         id: true,
         name: true,
         type: true,
+        leaderId: true,
       },
     },
     assignments: {
@@ -62,6 +84,84 @@ export class ChurchDepartmentAdapters {
       },
     },
   };
+
+  private taskSelect = {
+    id: true,
+    title: true,
+    description: true,
+    status: true,
+    priority: true,
+    dueDate: true,
+    createdAt: true,
+    assigneeId: true,
+    assignee: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    },
+  };
+
+  private resourceSelect = {
+    id: true,
+    title: true,
+    url: true,
+    category: true,
+    metadata: true,
+    departmentId: true,
+  };
+
+  private songSelect = {
+    ...this.resourceSelect,
+  };
+
+  private departmentSelect = {
+    id: true,
+    name: true,
+    type: true,
+    isActive: true,
+    leaderId: true,
+    leader: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    },
+    _count: {
+      select: {
+        members: true,
+        schedules: true,
+        tasks: true,
+      },
+    },
+    mediaItems: {
+      select: {
+        category: true,
+      },
+    },
+  };
+
+  private mapDepartment(department: DepartmentWithStats) {
+    const songsCount = department.mediaItems.filter(
+      (item) => item.category === "MUSIC",
+    ).length;
+
+    return {
+      id: department.id,
+      name: department.name,
+      type: department.type,
+      isActive: department.isActive,
+      leaderId: department.leaderId,
+      leader: department.leader,
+      membersCount: department._count.members,
+      schedulesCount: department._count.schedules,
+      tasksCount: department._count.tasks,
+      resourcesCount: department.mediaItems.length - songsCount,
+      songsCount,
+    };
+  }
 
   private async getCurrentUser(request: FastifyRequest): Promise<CurrentUser> {
     const userId = getAuthUserId(request);
@@ -89,6 +189,19 @@ export class ChurchDepartmentAdapters {
     return user.role === "PASTOR" && user.crunch?.userMainId === user.id;
   }
 
+  private async assertCanManageDepartment(user: CurrentUser, departmentId: string) {
+    const department = await this.getDepartmentFromCurrentChurch(
+      departmentId,
+      user.crunchId!,
+    );
+
+    if (!this.isTitularPastor(user) && department.leaderId !== user.id) {
+      throw new DomainError("Usuario nao possui permissao para gerenciar este ministerio");
+    }
+
+    return department;
+  }
+
   private async getDepartmentFromCurrentChurch(
     departmentId: string,
     crunchId: string,
@@ -98,27 +211,14 @@ export class ChurchDepartmentAdapters {
         id: departmentId,
         crunchId,
       },
-      select: {
-        id: true,
-        name: true,
-        type: true,
-        isActive: true,
-        leaderId: true,
-        leader: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
+      select: this.departmentSelect,
     });
 
     if (!department) {
       throw new DomainError("Ministério não encontrado nesta igreja");
     }
 
-    return department;
+    return this.mapDepartment(department);
   }
 
   private async getScheduleFromCurrentChurch(scheduleId: string, crunchId: string) {
@@ -139,31 +239,66 @@ export class ChurchDepartmentAdapters {
     return schedule;
   }
 
+  private async getTaskFromCurrentChurch(
+    taskId: string,
+    departmentId: string,
+    crunchId: string,
+  ) {
+    const task = await $prismaClient.departmentTask.findFirst({
+      where: {
+        id: taskId,
+        departmentId,
+        department: {
+          crunchId,
+        },
+      },
+      select: this.taskSelect,
+    });
+
+    if (!task) {
+      throw new DomainError("Tarefa nao encontrada neste ministerio");
+    }
+
+    return task;
+  }
+
+  private async getResourceFromCurrentChurch(
+    resourceId: string,
+    departmentId: string,
+    crunchId: string,
+  ) {
+    const resource = await $prismaClient.mediaItem.findFirst({
+      where: {
+        id: resourceId,
+        departmentId,
+        department: {
+          crunchId,
+        },
+      },
+      select: this.resourceSelect,
+    });
+
+    if (!resource) {
+      throw new DomainError("Recurso nao encontrado neste ministerio");
+    }
+
+    return resource;
+  }
+
   async getChurchDepartments(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
 
-    return await $prismaClient.department.findMany({
+    const departments = await $prismaClient.department.findMany({
       where: {
         crunchId: user.crunchId!,
       },
       orderBy: {
         name: "asc",
       },
-      select: {
-        id: true,
-        name: true,
-        type: true,
-        isActive: true,
-        leaderId: true,
-        leader: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
+      select: this.departmentSelect,
     });
+
+    return departments.map((department) => this.mapDepartment(department));
   }
 
   async createChurchDepartment(request: FastifyRequest) {
@@ -205,23 +340,10 @@ export class ChurchDepartmentAdapters {
         crunchId: user.crunchId!,
         isActive: true,
       },
-      select: {
-        id: true,
-        name: true,
-        type: true,
-        isActive: true,
-        leaderId: true,
-        leader: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
+      select: this.departmentSelect,
     });
 
-    return department;
+    return this.mapDepartment(department);
   }
 
   async getChurchDepartmentById(request: FastifyRequest) {
@@ -233,6 +355,99 @@ export class ChurchDepartmentAdapters {
     }
 
     return await this.getDepartmentFromCurrentChurch(id, user.crunchId!);
+  }
+
+  async updateChurchDepartment(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+    const body = request.body as {
+      name?: string;
+      leaderId?: string;
+      type?: string;
+      isActive?: boolean;
+    };
+
+    if (!id) {
+      throw new DomainError("Ministerio nao informado");
+    }
+
+    if (!this.isTitularPastor(user)) {
+      throw new DomainError("Apenas o pastor titular pode editar ministerios");
+    }
+
+    await this.getDepartmentFromCurrentChurch(id, user.crunchId!);
+
+    if (body.leaderId) {
+      const leader = await $prismaClient.user.findFirst({
+        where: {
+          id: body.leaderId,
+          crunchId: user.crunchId!,
+        },
+      });
+
+      if (!leader) {
+        throw new DomainError("Lider nao encontrado nesta igreja");
+      }
+    }
+
+    const data: Prisma.DepartmentUpdateInput = {};
+
+    if (body.name !== undefined) {
+      if (!body.name.trim()) {
+        throw new DomainError("Nome do ministerio e obrigatorio");
+      }
+
+      data.name = body.name.trim();
+    }
+
+    if (body.type !== undefined) {
+      data.type = body.type.trim() || "OTHER";
+    }
+
+    if (body.isActive !== undefined) {
+      data.isActive = body.isActive;
+    }
+
+    if (body.leaderId !== undefined) {
+      data.leader = {
+        connect: {
+          id: body.leaderId,
+        },
+      };
+    }
+
+    const department = await $prismaClient.department.update({
+      where: {
+        id,
+      },
+      data,
+      select: this.departmentSelect,
+    });
+
+    return this.mapDepartment(department);
+  }
+
+  async deleteChurchDepartment(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+
+    if (!id) {
+      throw new DomainError("Ministerio nao informado");
+    }
+
+    if (!this.isTitularPastor(user)) {
+      throw new DomainError("Apenas o pastor titular pode remover ministerios");
+    }
+
+    await this.getDepartmentFromCurrentChurch(id, user.crunchId!);
+
+    await $prismaClient.department.delete({
+      where: {
+        id,
+      },
+    });
+
+    return { success: true };
   }
 
   async getChurchDepartmentTasks(request: FastifyRequest) {
@@ -253,21 +468,7 @@ export class ChurchDepartmentAdapters {
         createdAt: "desc",
       },
       select: {
-        id: true,
-        title: true,
-        description: true,
-        status: true,
-        priority: true,
-        dueDate: true,
-        createdAt: true,
-        assigneeId: true,
-        assignee: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
+        ...this.taskSelect,
       },
     });
   }
@@ -291,7 +492,7 @@ export class ChurchDepartmentAdapters {
       throw new DomainError("Título da tarefa é obrigatório");
     }
 
-    await this.getDepartmentFromCurrentChurch(id, user.crunchId!);
+    await this.assertCanManageDepartment(user, id);
 
     if (body.assigneeId) {
       const assignee = await $prismaClient.user.findUnique({
@@ -316,23 +517,114 @@ export class ChurchDepartmentAdapters {
         assigneeId: body.assigneeId || null,
       },
       select: {
-        id: true,
-        title: true,
-        description: true,
-        status: true,
-        priority: true,
-        dueDate: true,
-        createdAt: true,
-        assigneeId: true,
-        assignee: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
+        ...this.taskSelect,
       },
     });
+  }
+
+  async updateChurchDepartmentTask(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { departmentId, taskId } = request.params as {
+      departmentId?: string;
+      taskId?: string;
+    };
+    const body = request.body as {
+      title?: string;
+      description?: string | null;
+      status?: string;
+      priority?: string;
+      dueDate?: string | null;
+      assigneeId?: string | null;
+    };
+
+    if (!departmentId || !taskId) {
+      throw new DomainError("Tarefa nao informada");
+    }
+
+    await this.assertCanManageDepartment(user, departmentId);
+    await this.getTaskFromCurrentChurch(taskId, departmentId, user.crunchId!);
+
+    if (body.assigneeId) {
+      const assignee = await $prismaClient.user.findFirst({
+        where: {
+          id: body.assigneeId,
+          crunchId: user.crunchId!,
+        },
+      });
+
+      if (!assignee) {
+        throw new DomainError("Responsavel nao encontrado nesta igreja");
+      }
+    }
+
+    const data: Prisma.DepartmentTaskUpdateInput = {};
+
+    if (body.title !== undefined) {
+      if (!body.title.trim()) {
+        throw new DomainError("Titulo da tarefa e obrigatorio");
+      }
+
+      data.title = body.title.trim();
+    }
+
+    if (body.description !== undefined) {
+      data.description = body.description?.trim() || null;
+    }
+
+    if (body.status !== undefined) {
+      data.status = body.status.trim() || "OPEN";
+    }
+
+    if (body.priority !== undefined) {
+      data.priority = body.priority.trim() || "MEDIUM";
+    }
+
+    if (body.dueDate !== undefined) {
+      data.dueDate = body.dueDate ? new Date(body.dueDate) : null;
+    }
+
+    if (body.assigneeId !== undefined) {
+      data.assignee = body.assigneeId
+        ? {
+            connect: {
+              id: body.assigneeId,
+            },
+          }
+        : {
+            disconnect: true,
+          };
+    }
+
+    return await $prismaClient.departmentTask.update({
+      where: {
+        id: taskId,
+      },
+      data,
+      select: this.taskSelect,
+    });
+  }
+
+  async deleteChurchDepartmentTask(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { departmentId, taskId } = request.params as {
+      departmentId?: string;
+      taskId?: string;
+    };
+
+    if (!departmentId || !taskId) {
+      throw new DomainError("Tarefa nao informada");
+    }
+
+    await this.assertCanManageDepartment(user, departmentId);
+    await this.getTaskFromCurrentChurch(taskId, departmentId, user.crunchId!);
+
+    await $prismaClient.departmentTask.delete({
+      where: {
+        id: taskId,
+      },
+    });
+
+    return { success: true };
   }
 
   async getChurchDepartmentSchedules(request: FastifyRequest) {
@@ -435,6 +727,94 @@ export class ChurchDepartmentAdapters {
     });
   }
 
+  async updateChurchSchedule(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+    const body = request.body as {
+      title?: string;
+      description?: string;
+      date?: string;
+      time?: string;
+      departmentId?: string;
+    };
+
+    if (!id) {
+      throw new DomainError("Escala nao informada");
+    }
+
+    const schedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+    const targetDepartmentId = body.departmentId || schedule.departmentId;
+
+    await this.assertCanManageDepartment(user, schedule.departmentId);
+
+    if (targetDepartmentId !== schedule.departmentId) {
+      await this.assertCanManageDepartment(user, targetDepartmentId);
+    }
+
+    const data: Prisma.ScheduleUpdateInput = {};
+
+    if (body.title !== undefined || body.description !== undefined) {
+      const description = body.title ?? body.description;
+
+      if (!description?.trim()) {
+        throw new DomainError("Titulo da escala e obrigatorio");
+      }
+
+      data.description = description.trim();
+    }
+
+    if (body.date !== undefined || body.time !== undefined) {
+      const currentDate = schedule.date;
+      const datePart = body.date ?? currentDate.toISOString().slice(0, 10);
+      const timePart =
+        body.time ??
+        currentDate.toISOString().slice(11, 16);
+      const scheduleDate = new Date(`${datePart}T${timePart}:00.000`);
+
+      if (Number.isNaN(scheduleDate.getTime())) {
+        throw new DomainError("Data da escala invalida");
+      }
+
+      data.date = scheduleDate;
+    }
+
+    if (body.departmentId !== undefined) {
+      data.department = {
+        connect: {
+          id: body.departmentId,
+        },
+      };
+    }
+
+    return await $prismaClient.schedule.update({
+      where: {
+        id,
+      },
+      data,
+      select: this.scheduleSelect,
+    });
+  }
+
+  async deleteChurchSchedule(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+
+    if (!id) {
+      throw new DomainError("Escala nao informada");
+    }
+
+    const schedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+    await this.assertCanManageDepartment(user, schedule.departmentId);
+
+    await $prismaClient.schedule.delete({
+      where: {
+        id,
+      },
+    });
+
+    return { success: true };
+  }
+
   async updateChurchScheduleAssignments(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
     const { id } = request.params as { id?: string };
@@ -455,7 +835,8 @@ export class ChurchDepartmentAdapters {
       throw new DomainError("Voluntários inválidos");
     }
 
-    await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+    const schedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+    await this.assertCanManageDepartment(user, schedule.departmentId);
 
     const normalizedAssignments = assignments
       .map((assignment) => ({
@@ -549,19 +930,188 @@ export class ChurchDepartmentAdapters {
     return await $prismaClient.mediaItem.findMany({
       where: {
         departmentId: id,
+        NOT: {
+          category: "MUSIC",
+        },
       },
       orderBy: {
         title: "asc",
       },
       select: {
-        id: true,
-        title: true,
-        url: true,
-        category: true,
-        metadata: true,
-        departmentId: true,
+        ...this.resourceSelect,
       },
     });
+  }
+
+  async getChurchDepartmentSongs(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+
+    if (!id) {
+      throw new DomainError("Ministerio nao informado");
+    }
+
+    await this.getDepartmentFromCurrentChurch(id, user.crunchId!);
+
+    return await $prismaClient.mediaItem.findMany({
+      where: {
+        departmentId: id,
+        category: "MUSIC",
+      },
+      orderBy: {
+        title: "asc",
+      },
+      select: this.songSelect,
+    });
+  }
+
+  async createChurchDepartmentSong(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+    const body = request.body as {
+      title?: string;
+      artist?: string;
+      key?: string;
+      bpm?: string | number | null;
+      songCategory?: string;
+      url?: string;
+      notes?: string;
+    };
+
+    if (!id) {
+      throw new DomainError("Ministerio nao informado");
+    }
+
+    if (!body.title?.trim()) {
+      throw new DomainError("Titulo da musica e obrigatorio");
+    }
+
+    await this.assertCanManageDepartment(user, id);
+
+    const metadata = {
+      artist: body.artist?.trim() || "",
+      key: body.key?.trim() || "",
+      bpm: body.bpm === undefined || body.bpm === null ? "" : String(body.bpm).trim(),
+      songCategory: body.songCategory?.trim() || "Louvor",
+      notes: body.notes?.trim() || "",
+    };
+
+    return await $prismaClient.mediaItem.create({
+      data: {
+        id: crypto.randomUUID(),
+        title: body.title.trim(),
+        url: body.url?.trim() || "",
+        category: "MUSIC",
+        metadata,
+        departmentId: id,
+      },
+      select: this.songSelect,
+    });
+  }
+
+  async updateChurchDepartmentSong(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { departmentId, songId } = request.params as {
+      departmentId?: string;
+      songId?: string;
+    };
+    const body = request.body as {
+      title?: string;
+      artist?: string;
+      key?: string;
+      bpm?: string | number | null;
+      songCategory?: string;
+      url?: string | null;
+      notes?: string | null;
+    };
+
+    if (!departmentId || !songId) {
+      throw new DomainError("Musica nao informada");
+    }
+
+    await this.assertCanManageDepartment(user, departmentId);
+    const song = await this.getResourceFromCurrentChurch(
+      songId,
+      departmentId,
+      user.crunchId!,
+    );
+
+    if (song.category !== "MUSIC") {
+      throw new DomainError("Musica nao encontrada");
+    }
+
+    const currentMetadata =
+      song.metadata && typeof song.metadata === "object" && !Array.isArray(song.metadata)
+        ? (song.metadata as Record<string, unknown>)
+        : {};
+
+    const metadata = {
+      ...currentMetadata,
+      ...(body.artist !== undefined ? { artist: body.artist.trim() } : {}),
+      ...(body.key !== undefined ? { key: body.key.trim() } : {}),
+      ...(body.bpm !== undefined
+        ? { bpm: body.bpm === null ? "" : String(body.bpm).trim() }
+        : {}),
+      ...(body.songCategory !== undefined
+        ? { songCategory: body.songCategory.trim() || "Louvor" }
+        : {}),
+      ...(body.notes !== undefined ? { notes: body.notes?.trim() || "" } : {}),
+    };
+
+    const data: Prisma.MediaItemUpdateInput = {
+      metadata,
+    };
+
+    if (body.title !== undefined) {
+      if (!body.title.trim()) {
+        throw new DomainError("Titulo da musica e obrigatorio");
+      }
+
+      data.title = body.title.trim();
+    }
+
+    if (body.url !== undefined) {
+      data.url = body.url?.trim() || "";
+    }
+
+    return await $prismaClient.mediaItem.update({
+      where: {
+        id: songId,
+      },
+      data,
+      select: this.songSelect,
+    });
+  }
+
+  async deleteChurchDepartmentSong(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { departmentId, songId } = request.params as {
+      departmentId?: string;
+      songId?: string;
+    };
+
+    if (!departmentId || !songId) {
+      throw new DomainError("Musica nao informada");
+    }
+
+    await this.assertCanManageDepartment(user, departmentId);
+    const song = await this.getResourceFromCurrentChurch(
+      songId,
+      departmentId,
+      user.crunchId!,
+    );
+
+    if (song.category !== "MUSIC") {
+      throw new DomainError("Musica nao encontrada");
+    }
+
+    await $prismaClient.mediaItem.delete({
+      where: {
+        id: songId,
+      },
+    });
+
+    return { success: true };
   }
 
   async createChurchDepartmentResource(request: FastifyRequest) {
@@ -586,7 +1136,7 @@ export class ChurchDepartmentAdapters {
       throw new DomainError("Link do recurso é obrigatório");
     }
 
-    await this.getDepartmentFromCurrentChurch(id, user.crunchId!);
+    await this.assertCanManageDepartment(user, id);
 
     return await $prismaClient.mediaItem.create({
       data: {
@@ -597,14 +1147,85 @@ export class ChurchDepartmentAdapters {
         metadata: body.notes?.trim() ? { notes: body.notes.trim() } : undefined,
         departmentId: id,
       },
-      select: {
-        id: true,
-        title: true,
-        url: true,
-        category: true,
-        metadata: true,
-        departmentId: true,
+      select: this.resourceSelect,
+    });
+  }
+
+  async updateChurchDepartmentResource(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { departmentId, resourceId } = request.params as {
+      departmentId?: string;
+      resourceId?: string;
+    };
+    const body = request.body as {
+      title?: string;
+      url?: string;
+      category?: string;
+      notes?: string | null;
+    };
+
+    if (!departmentId || !resourceId) {
+      throw new DomainError("Recurso nao informado");
+    }
+
+    await this.assertCanManageDepartment(user, departmentId);
+    await this.getResourceFromCurrentChurch(resourceId, departmentId, user.crunchId!);
+
+    const data: Prisma.MediaItemUpdateInput = {};
+
+    if (body.title !== undefined) {
+      if (!body.title.trim()) {
+        throw new DomainError("Titulo do recurso e obrigatorio");
+      }
+
+      data.title = body.title.trim();
+    }
+
+    if (body.url !== undefined) {
+      if (!body.url.trim()) {
+        throw new DomainError("Link do recurso e obrigatorio");
+      }
+
+      data.url = body.url.trim();
+    }
+
+    if (body.category !== undefined) {
+      data.category = body.category.trim() || "Geral";
+    }
+
+    if (body.notes !== undefined) {
+      data.metadata = body.notes?.trim() ? { notes: body.notes.trim() } : Prisma.JsonNull;
+    }
+
+    return await $prismaClient.mediaItem.update({
+      where: {
+        id: resourceId,
+      },
+      data,
+      select: this.resourceSelect,
+    });
+  }
+
+  async deleteChurchDepartmentResource(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { departmentId, resourceId } = request.params as {
+      departmentId?: string;
+      resourceId?: string;
+    };
+
+    if (!departmentId || !resourceId) {
+      throw new DomainError("Recurso nao informado");
+    }
+
+    await this.assertCanManageDepartment(user, departmentId);
+    await this.getResourceFromCurrentChurch(resourceId, departmentId, user.crunchId!);
+
+    await $prismaClient.mediaItem.delete({
+      where: {
+        id: resourceId,
       },
     });
+
+    return { success: true };
   }
 }

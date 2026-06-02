@@ -58,7 +58,7 @@ Estado atual:
 
 Estado atual:
 
-- lista e detalhe usam mocks;
+- lista e detalhe devem usar os dados da API;
 - modais ainda nao persistem dados;
 - nomes dos componentes de modal precisam ser revisados para bater com a acao esperada.
 
@@ -70,7 +70,7 @@ Estado atual:
 
 Estado atual:
 
-- o salvar apenas exibe `alert`;
+- o salvar deve persistir alteracoes via composable de usuario;
 - nao ha integracao com endpoint de usuario;
 - dados do usuario nao vem de auth/session.
 

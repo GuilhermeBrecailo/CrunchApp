@@ -241,7 +241,7 @@ Nome do arquivo:
 - `useCrunch.ts`;
 - `useDepartment.ts`;
 - `useSchedule.ts`;
-- `useMediaItem.ts`.
+- funcoes de recursos e musicas dentro de `useDepartments`.
 
 Nome da funcao:
 
@@ -250,7 +250,7 @@ Nome da funcao:
 - `useCrunch`;
 - `useDepartment`;
 - `useSchedule`;
-- `useMediaItem`.
+- funcoes de `useDepartments` para `resources` e `songs`.
 
 Nomes das acoes:
 
@@ -278,6 +278,6 @@ Com base no backend atual, os primeiros composables recomendados sao:
 - `useCrunch`: CRUD de igreja/tenant.
 - `useDepartment`: CRUD de ministerios.
 - `useSchedule`: escalas e atribuicoes.
-- `useMediaItem`: musicas, cifras e referencias.
+- `useDepartments`: recursos, musicas, cifras e referencias por ministerio.
 
-Esses composables serao a ponte entre as telas mockadas atuais e a API real.
+Esses composables sao a ponte entre as telas e a API real. As novas telas devem reutilizar essa camada em vez de montar chamadas HTTP diretamente nos componentes.

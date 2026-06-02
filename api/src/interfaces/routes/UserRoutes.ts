@@ -27,6 +27,11 @@ export async function UserRoutes(app: FastifyInstance) {
     controllerHandler(adapters.createOwnChurch.bind(adapters)),
   );
 
+  app.patch(
+    "/api/church",
+    controllerHandler(adapters.updateOwnChurch.bind(adapters)),
+  );
+
   app.get(
     "/api/church/members",
     controllerHandler(adapters.getChurchMembers.bind(adapters)),
@@ -42,4 +47,13 @@ export async function UserRoutes(app: FastifyInstance) {
     controllerHandler(adapters.updateChurchMemberPermissions.bind(adapters)),
   );
 
+  app.patch(
+    "/api/church/members/:id",
+    controllerHandler(adapters.updateChurchMember.bind(adapters)),
+  );
+
+  app.delete(
+    "/api/church/members/:id",
+    controllerHandler(adapters.deleteChurchMember.bind(adapters)),
+  );
 }

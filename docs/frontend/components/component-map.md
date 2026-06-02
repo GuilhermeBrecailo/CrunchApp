@@ -28,7 +28,7 @@ Card de destaque com a proxima escala do usuario.
 
 Estado atual:
 
-- conteudo fixo;
+- conteudo voltado ao resumo da proxima escala;
 - visual em gradiente roxo.
 
 ### `Dashboard/quickAccess/index.vue`
@@ -37,8 +37,8 @@ Atalhos horizontais para areas do app.
 
 Estado atual:
 
-- rotas configuradas como `/escalas`, `/musicas`, `/membros`, `/devocionais`;
-- essas rotas ainda nao existem no projeto atual.
+- atalhos devem apontar para as rotas reais do Nuxt;
+- novas areas, como devocionais, ainda precisam de paginas dedicadas se virarem modulos do produto.
 
 ### `Dashboard/UpcomingEvents/index.vue`
 
@@ -46,8 +46,8 @@ Lista de proximos cultos/eventos.
 
 Estado atual:
 
-- eventos mockados;
-- link `Ver todos` nao navega.
+- eventos devem ser carregados a partir das escalas e contexto do usuario;
+- link `Ver todos` deve navegar para a tela de escalas quando o fluxo estiver fechado.
 
 ## Escalas
 
@@ -67,7 +67,7 @@ Mostra um evento de escala com:
 
 Estado atual:
 
-- acao de adicionar voluntario ainda nao executa fluxo real.
+- possui acoes de adicionar voluntarios, editar e excluir escalas quando o usuario tem permissao.
 
 ## Ministerios
 
@@ -93,7 +93,7 @@ Modal para criar tarefa/referencia.
 
 Observacao:
 
-- em `/ministery/[id]`, os nomes dos dialogs e componentes parecem estar cruzados. Vale revisar antes de integrar com a API.
+- repertorio de louvor e integrado na pagina de detalhe do ministerio via endpoints de musicas.
 
 ## Admin
 

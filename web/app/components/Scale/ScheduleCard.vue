@@ -47,8 +47,9 @@
     </div>
 
     <v-divider class="mb-3"></v-divider>
-    <div class="d-flex justify-center">
+    <div class="d-flex justify-center align-center ga-2">
       <v-btn
+        v-if="canManage"
         variant="text"
         color="primary"
         class="text-none font-weight-medium"
@@ -58,14 +59,34 @@
         <UserPlus size="16" class="mr-2" />
         Adicionar Voluntário
       </v-btn>
+      <v-btn
+        v-if="canManage"
+        icon
+        variant="text"
+        color="grey-darken-1"
+        size="small"
+        @click="$emit('edit', event)"
+      >
+        <Pencil size="16" />
+      </v-btn>
+      <v-btn
+        v-if="canManage"
+        icon
+        variant="text"
+        color="red-darken-2"
+        size="small"
+        @click="$emit('delete', event)"
+      >
+        <Trash2 size="16" />
+      </v-btn>
     </div>
   </v-card>
 </template>
 
 <script setup>
-import { Clock, UserPlus } from "lucide-vue-next";
+import { Clock, Pencil, Trash2, UserPlus } from "lucide-vue-next";
 
-defineEmits(["add-volunteer"]);
+defineEmits(["add-volunteer", "edit", "delete"]);
 
 defineProps({
   event: {
@@ -73,6 +94,10 @@ defineProps({
     required: true,
   },
   selected: {
+    type: Boolean,
+    default: false,
+  },
+  canManage: {
     type: Boolean,
     default: false,
   },

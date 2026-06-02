@@ -1,6 +1,6 @@
-# Indice: Documentacao do Frontend
+Indice: Documentacao do Frontend
 
-Esta documentacao descreve como o front-end do AppQuadrangular esta organizado e como o usuario navega pela aplicacao.
+Esta documentacao descreve como o frontend do AppQuadrangular esta organizado e como o usuario navega pela aplicacao.
 
 O front fica na pasta `web` e usa Nuxt 4, Vue 3, Vuetify, Tailwind CSS e icones do `lucide-vue-next`.
 
@@ -26,14 +26,15 @@ Componentes reutilizaveis que montam dashboard, ministerios, escalas e administr
 
 ## 4. Estado e API
 
-Estado compartilhado, autenticacao e pontos que ainda precisam ser conectados ao backend.
+Estado compartilhado, autenticacao e integracao com o backend.
 
 - [Estado, auth e integracao com API](state/api-auth.md)
 - [Padrao de composables](state/composables.md)
 
 ## Observacoes atuais
 
-- Grande parte do front ainda usa dados mockados em arrays locais.
-- As telas de login e cadastro ainda nao chamam a API de verdade.
-- Existem rotas usadas em atalhos que ainda nao possuem paginas correspondentes.
-- Alguns textos aparecem com encoding quebrado, por exemplo `MinistÃ©rios`.
+- Login, cadastro, sessao, onboarding, membros, ministerios, escalas, admin, configuracoes da igreja e notificacoes ja possuem integracoes com a API em diferentes niveis.
+- Ainda existem partes incompletas, principalmente alguns contadores do painel, fluxo de convite de membros e testes ponta a ponta.
+- O CRUD principal de ministerios, escalas, tarefas, recursos, membros e dados da igreja esta integrado ao backend.
+- O fluxo de convite ou solicitacao para membro entrar em uma igreja ainda precisa ser definido.
+- Alguns documentos internos podem ficar atrasados em relacao ao codigo; use o codigo atual como fonte principal.

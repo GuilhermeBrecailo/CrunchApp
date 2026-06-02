@@ -8,6 +8,7 @@
         </p>
       </div>
       <v-btn
+        v-if="canCreateChurchSchedule"
         color="#A855F7"
         class="rounded-lg text-none px-4"
         elevation="2"
@@ -38,6 +39,8 @@
         :events="section.events"
         :selected-event-id="focusedScheduleId"
         @add-volunteer="openAssignmentsDialog"
+        @edit="openScheduleEditDialog"
+        @delete="handleDeleteSchedule"
       />
 
       <v-card
@@ -69,7 +72,7 @@
           </v-avatar>
           <div>
             <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
-              Nova escala
+              {{ editingScheduleId ? "Editar escala" : "Nova escala" }}
             </h2>
             <p class="text-body-2 text-grey-darken-1 mb-0">
               Cadastre uma escala para um ministério.
@@ -77,7 +80,7 @@
           </div>
         </div>
 
-        <v-form autocomplete="off" @submit.prevent="handleCreateSchedule">
+        <v-form autocomplete="off" @submit.prevent="handleSaveSchedule">
           <v-text-field
             v-model="scheduleForm.title"
             label="Título"
@@ -161,7 +164,7 @@
               :loading="isCreatingSchedule"
               :disabled="isCreatingSchedule"
             >
-              Criar escala
+              {{ editingScheduleId ? "Salvar escala" : "Criar escala" }}
             </v-btn>
           </div>
         </v-form>
@@ -296,12 +299,22 @@
         </div>
       </v-card>
     </v-dialog>
+
+    <UtilsConfirmDialog
+      v-model="isDeleteScheduleDialogOpen"
+      title="Remover escala"
+      message="Esta escala e seus voluntarios serao removidos."
+      :loading="isDeletingSchedule"
+      @cancel="closeDeleteScheduleDialog"
+      @confirm="confirmDeleteSchedule"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 import { Calendar, Plus, UserPlus } from "lucide-vue-next";
+import { useAuth } from "../../composables/useAuth";
 import {
   useDepartments,
   type ChurchDepartment,
@@ -313,9 +326,12 @@ const {
   getDepartments,
   getChurchSchedules,
   createChurchSchedule,
+  updateChurchSchedule,
+  deleteChurchSchedule,
   updateScheduleAssignments,
 } = useDepartments();
 const { getMembers } = useMembers();
+const { user } = useAuth();
 const route = useRoute();
 
 const activeFilter = ref("Todos");
@@ -329,8 +345,11 @@ const isScheduleDialogOpen = ref(false);
 const isAssignmentsDialogOpen = ref(false);
 const isCreatingSchedule = ref(false);
 const isSavingAssignments = ref(false);
+const isDeletingSchedule = ref(false);
 const selectedScheduleId = ref("");
 const focusedScheduleId = ref("");
+const editingScheduleId = ref("");
+const pendingDeleteSchedule = ref<ScheduleEvent | null>(null);
 
 const scheduleForm = reactive({
   title: "",
@@ -375,6 +394,15 @@ const selectedSchedule = computed(() =>
   schedules.value.find((schedule) => schedule.id === selectedScheduleId.value),
 );
 
+const isDeleteScheduleDialogOpen = computed({
+  get: () => Boolean(pendingDeleteSchedule.value),
+  set: (value: boolean) => {
+    if (!value && !isDeletingSchedule.value) {
+      pendingDeleteSchedule.value = null;
+    }
+  },
+});
+
 type ScheduleEvent = {
   id: string;
   title: string;
@@ -382,7 +410,14 @@ type ScheduleEvent = {
   time: string;
   volunteerCount: number;
   volunteers: { initials: string }[];
+  canManage: boolean;
 };
+
+const canCreateChurchSchedule = computed(() => user.value?.isTitularPastor === true);
+
+const canManageSchedule = (schedule: DepartmentSchedule) =>
+  user.value?.isTitularPastor === true ||
+  schedule.department?.leaderId === user.value?.id;
 
 const filteredSchedules = computed(() => {
   const visibleSchedules =
@@ -422,6 +457,7 @@ const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
       minute: "2-digit",
     }).format(date),
     volunteerCount: schedule.assignments?.length || 0,
+    canManage: canManageSchedule(schedule),
     volunteers:
       schedule.assignments?.map((assignment) => ({
         initials: assignment.user.name
@@ -486,6 +522,7 @@ const resetScheduleForm = () => {
   scheduleForm.date = "";
   scheduleForm.time = "";
   scheduleForm.departmentId = "";
+  editingScheduleId.value = "";
 };
 
 const closeScheduleDialog = () => {
@@ -494,7 +531,30 @@ const closeScheduleDialog = () => {
   resetScheduleForm();
 };
 
-const handleCreateSchedule = async () => {
+const toDateInputValue = (value: string) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
+};
+
+const toTimeInputValue = (value: string) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toTimeString().slice(0, 5);
+};
+
+const openScheduleEditDialog = (event: ScheduleEvent) => {
+  const schedule = schedules.value.find((item) => item.id === event.id);
+  if (!schedule) return;
+
+  editingScheduleId.value = schedule.id;
+  scheduleForm.title = schedule.description;
+  scheduleForm.date = toDateInputValue(schedule.date);
+  scheduleForm.time = toTimeInputValue(schedule.date);
+  scheduleForm.departmentId = schedule.departmentId;
+  createScheduleError.value = "";
+  isScheduleDialogOpen.value = true;
+};
+
+const handleSaveSchedule = async () => {
   createScheduleError.value = "";
   const title = scheduleForm.title.trim();
 
@@ -515,12 +575,19 @@ const handleCreateSchedule = async () => {
 
   isCreatingSchedule.value = true;
 
-  const { data, error } = await createChurchSchedule({
-    title,
-    date: scheduleForm.date,
-    time: scheduleForm.time || undefined,
-    departmentId: scheduleForm.departmentId,
-  });
+  const { data, error } = editingScheduleId.value
+    ? await updateChurchSchedule(editingScheduleId.value, {
+        title,
+        date: scheduleForm.date,
+        time: scheduleForm.time || undefined,
+        departmentId: scheduleForm.departmentId,
+      })
+    : await createChurchSchedule({
+        title,
+        date: scheduleForm.date,
+        time: scheduleForm.time || undefined,
+        departmentId: scheduleForm.departmentId,
+      });
 
   isCreatingSchedule.value = false;
 
@@ -529,11 +596,43 @@ const handleCreateSchedule = async () => {
     return;
   }
 
-  schedules.value = [...schedules.value, data].sort(
+  const nextSchedules = editingScheduleId.value
+    ? schedules.value.map((schedule) => (schedule.id === data.id ? data : schedule))
+    : [...schedules.value, data];
+
+  schedules.value = nextSchedules.sort(
     (current, next) =>
       new Date(current.date).getTime() - new Date(next.date).getTime(),
   );
   closeScheduleDialog();
+};
+
+const handleDeleteSchedule = (event: ScheduleEvent) => {
+  pendingDeleteSchedule.value = event;
+};
+
+const closeDeleteScheduleDialog = () => {
+  if (!isDeletingSchedule.value) {
+    pendingDeleteSchedule.value = null;
+  }
+};
+
+const confirmDeleteSchedule = async () => {
+  if (!pendingDeleteSchedule.value) return;
+
+  schedulesError.value = "";
+  isDeletingSchedule.value = true;
+  const scheduleId = pendingDeleteSchedule.value.id;
+  const { error } = await deleteChurchSchedule(scheduleId);
+  isDeletingSchedule.value = false;
+
+  if (error) {
+    schedulesError.value = error;
+    return;
+  }
+
+  schedules.value = schedules.value.filter((schedule) => schedule.id !== scheduleId);
+  pendingDeleteSchedule.value = null;
 };
 
 const openAssignmentsDialog = (event: ScheduleEvent) => {

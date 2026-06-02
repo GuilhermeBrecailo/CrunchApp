@@ -47,11 +47,11 @@ const menuItems = [
     route: "/user",
   },
   {
-    title: "Admin",
+    title: "Config.",
     icon: Settings,
     iconColor: "#EAB308",
     bgColor: "#FEFCE8",
-    route: "/admin",
+    route: "/settings",
   },
 ];
 

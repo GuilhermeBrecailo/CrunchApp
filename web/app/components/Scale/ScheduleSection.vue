@@ -7,7 +7,10 @@
           :key="event.id"
           :event="event"
           :selected="event.id === selectedEventId"
+          :can-manage="event.canManage"
           @add-volunteer="$emit('add-volunteer', $event)"
+          @edit="$emit('edit', $event)"
+          @delete="$emit('delete', $event)"
         />
       </div>
     </UtilsTitle>
@@ -15,7 +18,7 @@
 </template>
 
 <script setup>
-defineEmits(["add-volunteer"]);
+defineEmits(["add-volunteer", "edit", "delete"]);
 
 const props = defineProps({
   title: {

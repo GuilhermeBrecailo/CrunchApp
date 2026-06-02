@@ -20,6 +20,13 @@ interface CreateMemberDTO {
   password: string;
 }
 
+interface UpdateMemberDTO {
+  name?: string;
+  email?: string;
+  phone?: string | null;
+  role?: string;
+}
+
 export const useMembers = () => {
   const config = useRuntimeConfig();
   const { access_token } = useAuth();
@@ -72,9 +79,37 @@ export const useMembers = () => {
     );
   };
 
+  const updateMember = async (
+    memberId: string,
+    member: UpdateMemberDTO,
+  ): Promise<ApiResponse<ChurchMember>> => {
+    return await $customFetch<ChurchMember>(
+      `${config.public.URL_BACKEND}/api/church/members/${memberId}`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+        body: member,
+      },
+    );
+  };
+
+  const deleteMember = async (
+    memberId: string,
+  ): Promise<ApiResponse<{ success: boolean }>> => {
+    return await $customFetch<{ success: boolean }>(
+      `${config.public.URL_BACKEND}/api/church/members/${memberId}`,
+      {
+        method: "DELETE",
+        headers: authHeaders(),
+      },
+    );
+  };
+
   return {
     getMembers,
     createMember,
     updateMemberPermissions,
+    updateMember,
+    deleteMember,
   };
 };

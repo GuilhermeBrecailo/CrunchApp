@@ -17,6 +17,15 @@ interface AuthUser {
   church?: {
     id: string;
     name: string;
+    city?: string;
+    road?: string;
+    number?: string | null;
+    localZipCode?: string;
+    state?: string;
+    complement?: string | null;
+    document?: string | null;
+    logo?: string | null;
+    isActive?: boolean;
     userMainId?: string | null;
   } | null;
 }
