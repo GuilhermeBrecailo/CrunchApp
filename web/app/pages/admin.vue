@@ -1045,6 +1045,7 @@ const selectedMemberForm = reactive({
 
 const departmentTypes = [
   { label: "Louvor", value: "WORSHIP" },
+  { label: "Louvor", value: "MUSIC" },
   { label: "Crianças", value: "KIDS" },
   { label: "Recepção", value: "RECEPTION" },
   { label: "Mídia", value: "MEDIA" },

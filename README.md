@@ -4,6 +4,16 @@ AppQuadrangular e um MVP fullstack para gestao de igrejas, ministerios, membros 
 
 O projeto foi construido como uma aplicacao real, com autenticacao, permissoes, banco relacional, frontend responsivo, API estruturada, integracao com Keycloak e ambiente local via Docker Compose.
 
+## Visao geral do produto
+
+O app atende tres visoes principais:
+
+- Administrador da plataforma: acompanha igrejas cadastradas, usuarios, ministerios e detalhes gerais.
+- Pastor: administra a propria igreja, cria membros, organiza ministerios, define liderancas e acompanha escalas.
+- Lider ou membro: acessa as informacoes da igreja, participa de ministerios e visualiza ou gerencia escalas conforme permissao.
+
+O foco do MVP foi demonstrar um produto realista, com regras de permissao no backend, experiencia responsiva no frontend e estrutura preparada para evoluir para uso em ambiente real.
+
 ## Destaques
 
 - Autenticacao com Keycloak e JWT.
@@ -13,11 +23,13 @@ O projeto foi construido como uma aplicacao real, com autenticacao, permissoes, 
 - Regras por perfil: administrador da plataforma, pastor titular, lider de ministerio e membro.
 - Criacao e gerenciamento de escalas por ministerio.
 - Controle de voluntarios nas escalas.
+- Regras de edicao: somente pastor e lider do ministerio alteram informacoes de ministerios e escalas.
 - Perfil do usuario com ministerio principal, funcao, telefone e indisponibilidade.
 - Redefinicao de senha obrigatoria para usuarios criados pelo pastor.
+- Interface responsiva para login, navegacao, escalas, perfil do usuario e administracao pastoral.
 - Estrutura de backend separada por dominio, aplicacao, infraestrutura e interfaces.
 - Testes unitarios de dominio e entidades.
-- Base para PWA e notificacoes push.
+- PWA com manifest, service worker, cache basico e suporte inicial a notificacoes push.
 
 ## Stack
 
@@ -31,6 +43,7 @@ O projeto foi construido como uma aplicacao real, com autenticacao, permissoes, 
 - Vue Router
 - lucide-vue-next
 - jwt-decode
+- PWA via manifest e service worker customizado
 
 ### Backend
 
@@ -52,6 +65,15 @@ O projeto foi construido como uma aplicacao real, com autenticacao, permissoes, 
 - PostgreSQL da aplicacao
 - PostgreSQL separado para Keycloak
 - Keycloak em modo desenvolvimento
+
+## Perfis e permissoes
+
+| Perfil | O que pode fazer |
+| --- | --- |
+| Admin da plataforma | Visualizar igrejas cadastradas, detalhes, usuarios e ministerios na tela administrativa global. |
+| Pastor | Administrar a igreja dele, criar usuarios, criar ministerios, definir lideres e gerenciar escalas. |
+| Lider de ministerio | Gerenciar informacoes e escalas do ministerio em que lidera. |
+| Membro | Visualizar suas informacoes, ministerios e escalas, sem alterar escalas ou ministerios. |
 
 ## Arquitetura
 
@@ -142,7 +164,7 @@ Um exemplo funcional para desenvolvimento local:
 DB_USER=igreja_user
 DB_PASSWORD=igreja_password
 DB_NAME=igreja_db
-DB_PORT=5432
+DB_PORT=5433
 
 API_PORT=8000
 WEB_PORT=3000
@@ -164,6 +186,18 @@ VAPID_PRIVATE_KEY=
 VAPID_SUBJECT=
 ```
 
+Se for acessar o frontend por outro aparelho da rede ou pelo IP da maquina, troque o backend publico para o IP local:
+
+```env
+NUXT_PUBLIC_URL_BACKEND=http://192.168.1.9:8000
+```
+
+Nesse caso, acesse a web tambem pelo IP:
+
+```text
+http://192.168.1.9:3000
+```
+
 As variaveis VAPID podem ficar vazias no primeiro teste local. Para usar push notifications, gere as chaves:
 
 ```bash
@@ -177,12 +211,14 @@ npx web-push generate-vapid-keys
 docker compose up --build
 ```
 
+Na primeira subida, o container da API instala dependencias, executa migrations do Prisma e gera o client do Prisma automaticamente.
+
 Servicos:
 
 - Web: `http://localhost:3000`
 - API: `http://localhost:8000`
 - Keycloak: `http://localhost:8080`
-- Banco da aplicacao: `localhost:5432`
+- Banco da aplicacao: `localhost:5433`
 
 ### 4. Configurar Keycloak
 
@@ -205,6 +241,13 @@ Crie/configure:
 7. Web origins: `http://localhost:3000` ou `*` em desenvolvimento.
 
 Depois disso, a API consegue autenticar usuarios e criar contas via Keycloak Admin.
+
+Se estiver acessando pela rede local, inclua tambem:
+
+```text
+Valid redirect URIs: http://192.168.1.9:3000/*
+Web origins: http://192.168.1.9:3000
+```
 
 ### 5. Acessar a aplicacao
 
@@ -245,6 +288,33 @@ cd web
 npm install
 npm run dev
 ```
+
+Para rodar sem Docker, a API ainda precisa de um PostgreSQL acessivel e de um Keycloak configurado. Ajuste `DATABASE_URL`, `KEYCLOAK_BASE_URL` e as variaveis do Keycloak conforme o seu ambiente.
+
+## Demonstracao sugerida
+
+Para apresentar o projeto para recrutadores ou pessoas tecnicas, uma boa ordem e:
+
+1. Mostrar o login e explicar que a autenticacao passa pelo Keycloak.
+2. Entrar como pastor e mostrar a administracao da igreja.
+3. Criar ou abrir um ministerio e destacar a regra de lideranca.
+4. Mostrar a criacao de escala e o controle de voluntarios.
+5. Entrar como membro comum e mostrar que ele nao consegue editar escalas.
+6. Criar um usuario pelo pastor e mostrar a redefinicao obrigatoria de senha no primeiro acesso.
+7. Abrir a tela pelo mobile para evidenciar responsividade e PWA.
+
+## Dados de teste
+
+O projeto permite criar dados pelo proprio fluxo da aplicacao. Para um ambiente de demonstracao, cadastre:
+
+- Uma igreja com nome realista.
+- Um pastor titular.
+- Tres a cinco ministerios, por exemplo Louvor, Midia, Recepcao, Intercessao e Jovens.
+- Alguns membros com funcoes diferentes.
+- Um lider por ministerio.
+- Escalas com datas futuras e voluntarios vinculados.
+
+Se o banco local ja tiver os dados criados durante os testes, use os acessos compartilhados no ambiente local. Caso o banco seja recriado, os usuarios precisam ser cadastrados novamente porque eles tambem dependem do Keycloak.
 
 ## Scripts uteis
 
@@ -291,7 +361,7 @@ Observacao: dependendo do ambiente, o build do Nuxt pode exibir warnings de CSS 
 
 ## Roadmap
 
-- Criar seeds para demonstracao.
+- Criar seeds versionadas para demonstracao.
 - Automatizar configuracao inicial do Keycloak.
 - Criar testes de integracao para endpoints principais.
 - Criar pipeline de CI.
@@ -302,4 +372,6 @@ Observacao: dependendo do ambiente, o build do Nuxt pode exibir warnings de CSS 
 
 ## Resumo para recrutadores
 
-Este projeto demonstra uma aplicacao fullstack em TypeScript com frontend moderno em Nuxt/Vue, backend em Fastify, ORM com Prisma, banco PostgreSQL, autenticacao externa com Keycloak, controle de permissoes, Docker Compose, testes automatizados e uma estrutura de codigo organizada por responsabilidades. O foco foi construir um produto realista, com regras de negocio aplicadas no backend e uma interface funcional para diferentes tipos de usuario.
+Este projeto demonstra uma aplicacao fullstack em TypeScript com frontend moderno em Nuxt/Vue, backend em Fastify, ORM com Prisma, banco PostgreSQL, autenticacao externa com Keycloak, controle de permissoes, Docker Compose, testes automatizados e uma estrutura de codigo organizada por responsabilidades.
+
+Mais do que uma tela bonita, o AppQuadrangular mostra regras reais de produto: pastor administra a propria igreja, lider gerencia apenas o ministerio dele, membro comum nao altera escalas, usuarios criados pelo pastor precisam redefinir senha no primeiro acesso e a experiencia funciona em desktop e mobile.

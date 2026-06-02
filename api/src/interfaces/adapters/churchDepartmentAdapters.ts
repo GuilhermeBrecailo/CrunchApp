@@ -804,13 +804,14 @@ export class ChurchDepartmentAdapters {
       };
     }
 
-    return await $prismaClient.schedule.update({
+    await $prismaClient.schedule.update({
       where: {
         id,
       },
       data,
-      select: this.scheduleSelect,
     });
+
+    return await this.getScheduleFromCurrentChurch(id, user.crunchId!);
   }
 
   async deleteChurchSchedule(request: FastifyRequest) {

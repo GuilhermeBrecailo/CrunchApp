@@ -34,16 +34,17 @@
         </div>
       </div>
 
-      <div class="tabs-row d-flex ga-2 mb-6">
+      <div class="tabs-row mb-6">
         <v-chip
           v-for="tab in tabs"
           :key="tab.value"
           :variant="activeTab === tab.value ? 'flat' : 'outlined'"
           :color="activeTab === tab.value ? '#A855F7' : 'grey-darken-1'"
-          class="font-weight-medium px-4 cursor-pointer"
+          class="tab-chip font-weight-medium cursor-pointer"
           @click="activeTab = tab.value"
         >
-          <component :is="tab.icon" size="16" class="mr-2" /> {{ tab.label }}
+          <component :is="tab.icon" size="16" class="tab-chip-icon" />
+          <span class="tab-chip-label">{{ tab.label }}</span>
         </v-chip>
       </div>
 
@@ -1176,6 +1177,7 @@ const draftAssignments = ref<
 
 const departmentTypes = [
   { label: "Louvor", value: "WORSHIP" },
+  { label: "Louvor", value: "MUSIC" },
   { label: "Crianças", value: "KIDS" },
   { label: "Recepção", value: "RECEPTION" },
   { label: "Mídia", value: "MEDIA" },
@@ -1201,7 +1203,7 @@ const baseTabs = [
 const tabs = computed(() => {
   const items = [...baseTabs];
 
-  if (department.value?.type === "WORSHIP") {
+  if (["WORSHIP", "MUSIC"].includes(department.value?.type || "")) {
     items.push({ label: "Músicas", value: "songs", icon: Music });
   }
 
@@ -1827,8 +1829,43 @@ onMounted(async () => {
   border: 1px solid #f3f4f6;
 }
 .tabs-row {
+  display: flex;
+  gap: 8px;
   overflow-x: auto;
-  padding-bottom: 2px;
+  flex-wrap: nowrap;
+  padding-bottom: 6px;
+  margin-right: -16px;
+  margin-left: -16px;
+  padding-right: 16px;
+  padding-left: 16px;
+  scroll-padding-inline: 16px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.tabs-row::-webkit-scrollbar {
+  display: none;
+}
+.tab-chip {
+  flex: 0 0 auto;
+  max-width: min(62vw, 190px);
+  height: 34px !important;
+  padding-inline: 14px !important;
+}
+.tab-chip :deep(.v-chip__content) {
+  min-width: 0;
+  max-width: 100%;
+}
+.tab-chip-icon {
+  flex: 0 0 auto;
+  margin-right: 8px;
+}
+.tab-chip-label {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .ministery-input :deep(.v-field) {
   border-radius: 14px;
@@ -1858,6 +1895,22 @@ onMounted(async () => {
   }
 }
 @media (max-width: 420px) {
+  .tabs-row {
+    gap: 6px;
+    margin-right: -12px;
+    margin-left: -12px;
+    padding-right: 12px;
+    padding-left: 12px;
+    scroll-padding-inline: 12px;
+  }
+
+  .tab-chip {
+    max-width: 56vw;
+    height: 32px !important;
+    padding-inline: 12px !important;
+    font-size: 0.78rem;
+  }
+
   .dialog-actions .v-btn {
     flex: 1 1 100%;
   }
