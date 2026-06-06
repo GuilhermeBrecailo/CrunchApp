@@ -12,6 +12,6 @@
 }
 
 :global(.app-theme-dark) .app-main {
-  background-color: #111827;
+  background-color: var(--app-color-background);
 }
 </style>

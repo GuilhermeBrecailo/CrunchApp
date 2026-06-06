@@ -34,10 +34,10 @@ export default defineNuxtConfig({
           dark: {
             dark: true,
             colors: {
-              primary: "#a78bfa",
-              secondary: "#818cf8",
-              background: "#111827",
-              surface: "#182233",
+              primary: "#b8a5ff",
+              secondary: "#70d6c8",
+              background: "#121316",
+              surface: "#1b1d22",
               error: "#f87171",
             },
           },

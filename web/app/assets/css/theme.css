@@ -1,9 +1,29 @@
 :root {
   color-scheme: light;
+  --app-color-accent: #4f46e5;
+  --app-color-background: #f6f7f9;
+  --app-color-surface: #ffffff;
+  --app-color-surface-soft: #f8fafc;
+  --app-color-surface-muted: #eef2ff;
+  --app-color-border: #e5e7eb;
+  --app-color-border-strong: #d1d5db;
+  --app-color-text: #111827;
+  --app-color-text-soft: #4b5563;
+  --app-color-text-muted: #6b7280;
 }
 
 .app-theme-dark {
   color-scheme: dark;
+  --app-color-accent: #b8a5ff;
+  --app-color-background: #121316;
+  --app-color-surface: #1b1d22;
+  --app-color-surface-soft: #22252b;
+  --app-color-surface-muted: #2a2438;
+  --app-color-border: #323641;
+  --app-color-border-strong: #454b57;
+  --app-color-text: #f4f6f8;
+  --app-color-text-soft: #d7dce3;
+  --app-color-text-muted: #aeb6c2;
 }
 
 .app-theme-light,
@@ -21,8 +41,8 @@
 .app-theme-dark .v-main__wrap,
 .app-theme-dark .page-wrapper,
 .app-theme-dark .public-page-wrapper {
-  background: #111827 !important;
-  color: #e5e7eb;
+  background: var(--app-color-background) !important;
+  color: var(--app-color-text);
 }
 
 .app-theme-light .v-application {
@@ -31,8 +51,8 @@
 }
 
 .app-theme-dark .v-application {
-  background: #111827;
-  color: #e5e7eb;
+  background: var(--app-color-background);
+  color: var(--app-color-text);
 }
 
 .app-theme-dark .bg-grey-lighten-4,
@@ -40,11 +60,11 @@
 .app-theme-dark .bg-gray-50,
 .app-theme-dark .bg-slate-50,
 .app-theme-dark .auth-page {
-  background-color: #111827 !important;
+  background-color: var(--app-color-background) !important;
 }
 
 .app-theme-dark .bg-grey-lighten-5 {
-  background-color: #1f2937 !important;
+  background-color: var(--app-color-surface-soft) !important;
 }
 
 .app-theme-dark .bg-white,
@@ -53,18 +73,23 @@
 .app-theme-dark .v-sheet,
 .app-theme-dark .v-list,
 .app-theme-dark .v-table,
+.app-theme-dark .v-table .v-table__wrapper,
+.app-theme-dark .v-overlay__content .v-card,
+.app-theme-dark .v-menu .v-card,
+.app-theme-dark .v-dialog .v-card,
 .app-theme-dark .v-expansion-panels,
 .app-theme-dark .v-expansion-panel {
-  background-color: #182233 !important;
-  color: #e5e7eb !important;
+  background-color: var(--app-color-surface) !important;
+  color: var(--app-color-text) !important;
 }
 
 .app-theme-dark .v-app-bar,
 .app-theme-dark .v-toolbar,
 .app-theme-dark .appbar,
 .app-theme-dark .bottom-nav {
-  background-color: #182233 !important;
-  color: #e5e7eb !important;
+  background-color: rgba(27, 29, 34, 0.96) !important;
+  color: var(--app-color-text) !important;
+  border-color: var(--app-color-border) !important;
 }
 
 .app-theme-dark .text-grey-darken-4,
@@ -72,7 +97,7 @@
 .app-theme-dark .text-gray-900,
 .app-theme-dark .text-gray-800,
 .app-theme-dark .text-purple-900 {
-  color: #f9fafb !important;
+  color: var(--app-color-text) !important;
 }
 
 .app-theme-dark .text-grey-darken-2,
@@ -80,53 +105,136 @@
 .app-theme-dark .text-grey,
 .app-theme-dark .text-gray-600,
 .app-theme-dark .text-gray-500 {
-  color: #aeb8c7 !important;
+  color: var(--app-color-text-muted) !important;
 }
 
 .app-theme-dark .text-purple-700,
 .app-theme-dark .hover\:text-purple-900:hover {
-  color: #c4b5fd !important;
+  color: var(--app-color-accent) !important;
 }
 
 .app-theme-dark .text-purple-400 {
-  color: #a78bfa !important;
+  color: #c9bbff !important;
+}
+
+.app-theme-dark .text-purple-darken-3,
+.app-theme-dark .text-purple-darken-4 {
+  color: var(--app-color-accent) !important;
+}
+
+.app-theme-dark .bg-purple-darken-3,
+.app-theme-dark .bg-purple-darken-4 {
+  background-color: #8f7aea !important;
+  color: #ffffff !important;
 }
 
 .app-theme-dark .bg-purple-100 {
-  background-color: rgba(124, 58, 237, 0.2) !important;
+  background-color: rgba(184, 165, 255, 0.14) !important;
 }
 
 .app-theme-dark .border-subtle,
 .app-theme-dark .v-card.border-subtle,
 .app-theme-dark .v-sheet,
-.app-theme-dark .v-divider {
-  border-color: #2c394d !important;
+.app-theme-dark .v-divider,
+.app-theme-dark .v-card,
+.app-theme-dark .v-list,
+.app-theme-dark .v-table {
+  border-color: var(--app-color-border) !important;
 }
 
 .app-theme-dark .v-field,
-.app-theme-dark .v-field--variant-outlined {
-  background-color: #111827 !important;
-  color: #e5e7eb !important;
+.app-theme-dark .v-field--variant-outlined,
+.app-theme-dark .v-field--variant-filled,
+.app-theme-dark .v-field--variant-solo,
+.app-theme-dark .v-field--variant-solo-filled {
+  background-color: var(--app-color-surface-soft) !important;
+  color: var(--app-color-text) !important;
 }
 
 .app-theme-dark .v-field__outline {
-  color: #3b4a61 !important;
+  color: var(--app-color-border-strong) !important;
 }
 
 .app-theme-dark .v-label,
 .app-theme-dark .v-field__input,
 .app-theme-dark .v-field__prepend-inner,
-.app-theme-dark .v-field__append-inner {
-  color: #cbd5e1 !important;
+.app-theme-dark .v-field__append-inner,
+.app-theme-dark .v-select__selection,
+.app-theme-dark .v-autocomplete__selection,
+.app-theme-dark .v-messages {
+  color: var(--app-color-text-soft) !important;
+}
+
+.app-theme-dark .v-field--focused .v-field__outline,
+.app-theme-dark .v-field--active .v-field__outline {
+  color: var(--app-color-accent) !important;
+}
+
+.app-theme-dark .v-btn--variant-tonal {
+  background-color: rgba(184, 165, 255, 0.12) !important;
+  color: var(--app-color-accent) !important;
+}
+
+.app-theme-dark .v-chip.v-chip--variant-tonal {
+  background-color: rgba(184, 165, 255, 0.13) !important;
+  color: var(--app-color-accent) !important;
+}
+
+.app-theme-dark .ministery-card,
+.app-theme-dark .music-card,
+.app-theme-dark .schedule-card,
+.app-theme-dark .profile-card,
+.app-theme-dark .settings-card,
+.app-theme-dark .confirm-card,
+.app-theme-dark .church-card,
+.app-theme-dark .member-card,
+.app-theme-dark .ministry-card,
+.app-theme-dark .stat-card {
+  background-color: var(--app-color-surface) !important;
+  color: var(--app-color-text) !important;
+  border-color: var(--app-color-border) !important;
+}
+
+.app-theme-dark .music-icon-wrapper,
+.app-theme-dark .date-badge {
+  background-color: rgba(184, 165, 255, 0.14) !important;
+  color: var(--app-color-accent) !important;
+}
+
+.app-theme-dark .schedule-volunteers,
+.app-theme-dark .church-metrics span {
+  background: var(--app-color-surface-soft) !important;
+  border-color: var(--app-color-border) !important;
+  color: var(--app-color-text-soft) !important;
+}
+
+.app-theme-dark .empty-avatar {
+  background: var(--app-color-surface) !important;
+  border-color: var(--app-color-border-strong) !important;
+  color: var(--app-color-text-muted) !important;
+}
+
+.app-theme-dark .schedule-avatar {
+  border-color: var(--app-color-surface) !important;
+}
+
+.app-theme-dark .quick-access-label,
+.app-theme-dark .church-card-title {
+  color: var(--app-color-text) !important;
+}
+
+.app-theme-dark .v-btn[color="grey-darken-1"],
+.app-theme-dark .v-btn[color="grey-darken-3"] {
+  color: var(--app-color-text-soft) !important;
 }
 
 .app-theme-dark input:-webkit-autofill,
 .app-theme-dark input:-webkit-autofill:hover,
 .app-theme-dark input:-webkit-autofill:focus,
 .app-theme-dark input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 1000px #111827 inset !important;
-  -webkit-text-fill-color: #e5e7eb !important;
-  caret-color: #e5e7eb;
+  -webkit-box-shadow: 0 0 0 1000px var(--app-color-surface-soft) inset !important;
+  -webkit-text-fill-color: var(--app-color-text) !important;
+  caret-color: var(--app-color-text);
 }
 
 .theme-toggle-btn {
@@ -136,7 +244,7 @@
 }
 
 .app-theme-dark .theme-toggle-btn {
-  border-color: rgba(196, 181, 253, 0.2);
-  background: rgba(99, 102, 241, 0.16);
-  color: #c4b5fd !important;
+  border-color: rgba(184, 165, 255, 0.28);
+  background: rgba(184, 165, 255, 0.12);
+  color: var(--app-color-accent) !important;
 }

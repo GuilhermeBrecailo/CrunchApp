@@ -2,7 +2,7 @@
   <v-bottom-navigation
     class="bottom-nav elevation-10"
     height="64"
-    :bg-color="isDark ? '#182233' : 'white'"
+    :bg-color="isDark ? '#1b1d22' : 'white'"
     app
   >
     <v-btn to="/" class="flex-col custom-btn" exact>
@@ -71,7 +71,7 @@ const adminLabel = computed(() => "Admin");
 }
 
 :global(.app-theme-dark) .bottom-nav {
-  border-top-color: #2c394d;
+  border-top-color: var(--app-color-border);
 }
 
 .nav-label {
@@ -108,11 +108,11 @@ const adminLabel = computed(() => "Admin");
 }
 
 :global(.app-theme-dark) .custom-btn {
-  color: #aeb8c7 !important;
+  color: var(--app-color-text-muted) !important;
 }
 
 :global(html.app-theme-dark) :deep(.custom-btn) {
-  color: #aeb8c7 !important;
+  color: var(--app-color-text-muted) !important;
 }
 
 .custom-btn :deep(.v-btn__content) {
@@ -130,13 +130,13 @@ const adminLabel = computed(() => "Admin");
 }
 
 :global(.app-theme-dark) .custom-btn.v-btn--active {
-  color: #c4b5fd !important;
-  background-color: rgba(99, 102, 241, 0.18) !important;
+  color: var(--app-color-accent) !important;
+  background-color: rgba(184, 165, 255, 0.13) !important;
 }
 
 :global(html.app-theme-dark) :deep(.custom-btn.v-btn--active) {
-  color: #c4b5fd !important;
-  background-color: rgba(99, 102, 241, 0.18) !important;
+  color: var(--app-color-accent) !important;
+  background-color: rgba(184, 165, 255, 0.13) !important;
 }
 
 .custom-btn:hover > .v-btn__overlay {

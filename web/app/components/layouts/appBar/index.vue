@@ -179,8 +179,8 @@ onMounted(() => {
 }
 
 :global(.app-theme-dark) .appbar {
-  background-color: #182233 !important;
-  border-bottom-color: #2c394d;
+  background-color: rgba(27, 29, 34, 0.96) !important;
+  border-bottom-color: var(--app-color-border);
 }
 
 .avatar-text {
@@ -190,7 +190,7 @@ onMounted(() => {
 }
 
 :global(.app-theme-dark) .avatar-text {
-  color: #c4b5fd;
+  color: var(--app-color-accent);
 }
 
 .greeting-text {
@@ -201,7 +201,7 @@ onMounted(() => {
 }
 
 :global(.app-theme-dark) .greeting-text {
-  color: #aeb8c7;
+  color: var(--app-color-text-muted);
 }
 
 .church-icon {
@@ -209,7 +209,7 @@ onMounted(() => {
 }
 
 :global(.app-theme-dark) .church-icon {
-  color: #c4b5fd;
+  color: var(--app-color-accent);
 }
 
 .church-text {
@@ -220,7 +220,7 @@ onMounted(() => {
 }
 
 :global(.app-theme-dark) .church-text {
-  color: #f9fafb;
+  color: var(--app-color-text);
 }
 
 .notification-card {
@@ -231,9 +231,9 @@ onMounted(() => {
 }
 
 :global(.app-theme-dark) .notification-card {
-  background: #182233;
-  color: #e5e7eb;
-  border: 1px solid #2c394d;
+  background: var(--app-color-surface);
+  color: var(--app-color-text);
+  border: 1px solid var(--app-color-border);
 }
 
 .notification-content {
@@ -251,8 +251,8 @@ onMounted(() => {
 }
 
 :global(.app-theme-dark) .notification-list-empty {
-  border-bottom-color: #2c394d;
-  color: #aeb8c7;
+  border-bottom-color: var(--app-color-border);
+  color: var(--app-color-text-muted);
 }
 
 .notification-settings {
@@ -268,7 +268,7 @@ onMounted(() => {
 }
 
 :global(.app-theme-dark) .notification-title {
-  color: #f9fafb !important;
+  color: var(--app-color-text) !important;
 }
 
 .notification-settings-title {
@@ -279,7 +279,7 @@ onMounted(() => {
 }
 
 :global(.app-theme-dark) .notification-settings-title {
-  color: #f9fafb !important;
+  color: var(--app-color-text) !important;
 }
 
 .notification-description,
@@ -292,6 +292,6 @@ onMounted(() => {
 
 :global(.app-theme-dark) .notification-description,
 :global(.app-theme-dark) .notification-message {
-  color: #aeb8c7 !important;
+  color: var(--app-color-text-muted) !important;
 }
 </style>
