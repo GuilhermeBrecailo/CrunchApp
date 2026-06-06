@@ -9,7 +9,7 @@
           <v-icon size="48" color="purple-darken-3">mdi-account-lock</v-icon>
         </div>
         <h1 class="text-3xl font-extrabold text-purple-900 tracking-tight">
-          Crunch
+          Church
         </h1>
         <p class="text-purple-400 text-sm mt-1 font-medium">
           Acesse sua conta para continuar

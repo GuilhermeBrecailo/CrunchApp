@@ -13,10 +13,19 @@ export default defineNuxtPlugin(() => {
       });
   };
 
+  const registerWhenIdle = () => {
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(register, { timeout: 3000 });
+      return;
+    }
+
+    window.setTimeout(register, 1000);
+  };
+
   if (document.readyState === "complete") {
-    register();
+    registerWhenIdle();
     return;
   }
 
-  window.addEventListener("load", register, { once: true });
+  window.addEventListener("load", registerWhenIdle, { once: true });
 });

@@ -2,11 +2,19 @@
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   buildDir: process.env.NUXT_BUILD_DIR || ".nuxt",
-  devtools: { enabled: true },
+  devtools: { enabled: process.env.NUXT_DEVTOOLS === "true" },
   modules: ["@nuxtjs/tailwindcss", "vuetify-nuxt-module"],
   css: ["~/assets/css/theme.css"],
   imports: {
     dirs: ["../composables"],
+  },
+  routeRules: {
+    "/login": { prerender: true },
+    "/register": { prerender: true },
+    "/forgot-password": { prerender: true },
+  },
+  nitro: {
+    compressPublicAssets: true,
   },
   vuetify: {
     vuetifyOptions: {

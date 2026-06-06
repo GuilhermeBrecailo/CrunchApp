@@ -42,14 +42,10 @@ services:
     build: ./web
     container_name: web-igreja
     ports:
-      - "${WEB_PORT:-3000}:${WEB_PORT:-3000}"
-    volumes:
-      - ./web:/usr/src/app
-      - web_node_modules:/usr/src/app/node_modules
+      - "${WEB_PORT:-3000}:3000"
     environment:
-      - NODE_ENV=${NODE_ENV}
+      - NODE_ENV=${NODE_ENV:-production}
       - NUXT_PUBLIC_URL_BACKEND=${NUXT_PUBLIC_URL_BACKEND:-http://localhost:${API_PORT}}
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port ${WEB_PORT:-3000}"
     depends_on:
       - api
 
@@ -107,4 +103,3 @@ services:
 volumes:
   pgdata:
   keycloak_pgdata:
-  web_node_modules:

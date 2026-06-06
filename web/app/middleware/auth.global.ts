@@ -1,5 +1,4 @@
-import { defineNuxtRouteMiddleware, navigateTo, useCookie } from "#app";
-import { useAuth } from "../../composables/useAuth";
+import { defineNuxtRouteMiddleware, navigateTo, useCookie, useState } from "#app";
 
 const publicRoutes = ["/login", "/register", "/forgot-password"];
 const onboardingRoutes = ["/onboarding/church"];
@@ -29,15 +28,18 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return;
   }
 
-  const { access_token, user, session, should_refresh, fetchMe } = useAuth();
-
   if (isPublicRoute) {
+    const access_token = useState<string | null>("access_token", () => null);
+
     if (access_token.value) {
       return navigateTo("/");
     }
 
     return;
   }
+
+  const { useAuth } = await import("../../composables/useAuth");
+  const { access_token, user, session, should_refresh, fetchMe } = useAuth();
 
   let needsSession = !access_token.value;
 
