@@ -58,6 +58,11 @@ export interface DepartmentSchedule {
       email: string;
     };
   }[];
+  mediaItems?: {
+    id: string;
+    mediaItemId: string;
+    mediaItem: DepartmentResource | DepartmentSong;
+  }[];
 }
 
 export interface DepartmentResource {
@@ -121,6 +126,8 @@ interface CreateDepartmentScheduleDTO {
   date: string;
   time?: string;
   departmentId?: string;
+  songIds?: string[];
+  resourceIds?: string[];
 }
 
 interface UpdateDepartmentScheduleDTO {
@@ -129,6 +136,8 @@ interface UpdateDepartmentScheduleDTO {
   date?: string;
   time?: string;
   departmentId?: string;
+  songIds?: string[];
+  resourceIds?: string[];
 }
 
 interface CreateDepartmentResourceDTO {

@@ -83,6 +83,25 @@ export class ChurchDepartmentAdapters {
         },
       },
     },
+    mediaItems: {
+      orderBy: {
+        createdAt: "asc" as const,
+      },
+      select: {
+        id: true,
+        mediaItemId: true,
+        mediaItem: {
+          select: {
+            id: true,
+            title: true,
+            url: true,
+            category: true,
+            metadata: true,
+            departmentId: true,
+          },
+        },
+      },
+    },
   };
 
   private taskSelect = {
@@ -301,6 +320,68 @@ export class ChurchDepartmentAdapters {
     }
 
     return resource;
+  }
+
+  private normalizeMediaItemIds(ids: unknown) {
+    if (!Array.isArray(ids)) {
+      return [];
+    }
+
+    return [
+      ...new Set(
+        ids
+          .map((id) => (typeof id === "string" ? id.trim() : ""))
+          .filter(Boolean),
+      ),
+    ];
+  }
+
+  private async assertMediaItemsFromDepartment(
+    ids: string[],
+    departmentId: string,
+    expected: "MUSIC" | "RESOURCE",
+  ) {
+    if (ids.length === 0) {
+      return;
+    }
+
+    const mediaItems = await $prismaClient.mediaItem.findMany({
+      where: {
+        id: {
+          in: ids,
+        },
+        departmentId,
+        ...(expected === "MUSIC"
+          ? { category: "MUSIC" }
+          : {
+              NOT: {
+                category: "MUSIC",
+              },
+            }),
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (mediaItems.length !== ids.length) {
+      throw new DomainError(
+        expected === "MUSIC"
+          ? "Uma ou mais musicas nao pertencem a este ministerio"
+          : "Um ou mais recursos nao pertencem a este ministerio",
+      );
+    }
+  }
+
+  private getScheduleMediaItemIds(body: { songIds?: unknown; resourceIds?: unknown }) {
+    const songIds = this.normalizeMediaItemIds(body.songIds);
+    const resourceIds = this.normalizeMediaItemIds(body.resourceIds);
+
+    return {
+      songIds,
+      resourceIds,
+      mediaItemIds: [...new Set([...songIds, ...resourceIds])],
+    };
   }
 
   async getChurchDepartments(request: FastifyRequest) {
@@ -714,6 +795,8 @@ export class ChurchDepartmentAdapters {
       description?: string;
       date?: string;
       time?: string;
+      songIds?: unknown;
+      resourceIds?: unknown;
     };
 
     if (!body.title?.trim()) {
@@ -734,12 +817,23 @@ export class ChurchDepartmentAdapters {
       throw new DomainError("Data da escala inválida");
     }
 
+    const { songIds, resourceIds, mediaItemIds } = this.getScheduleMediaItemIds(body);
+
+    await this.assertMediaItemsFromDepartment(songIds, departmentId, "MUSIC");
+    await this.assertMediaItemsFromDepartment(resourceIds, departmentId, "RESOURCE");
+
     return await $prismaClient.schedule.create({
       data: {
         id: crypto.randomUUID(),
         date: scheduleDate,
         description: body.title.trim(),
         departmentId,
+        mediaItems: {
+          create: mediaItemIds.map((mediaItemId) => ({
+            id: crypto.randomUUID(),
+            mediaItemId,
+          })),
+        },
       },
       select: this.scheduleSelect,
     });
@@ -754,6 +848,8 @@ export class ChurchDepartmentAdapters {
       date?: string;
       time?: string;
       departmentId?: string;
+      songIds?: unknown;
+      resourceIds?: unknown;
     };
 
     if (!id) {
@@ -804,12 +900,51 @@ export class ChurchDepartmentAdapters {
       };
     }
 
-    await $prismaClient.schedule.update({
-      where: {
-        id,
-      },
-      data,
-    });
+    const shouldUpdateMediaItems =
+      body.songIds !== undefined ||
+      body.resourceIds !== undefined ||
+      targetDepartmentId !== schedule.departmentId;
+
+    if (shouldUpdateMediaItems) {
+      const { songIds, resourceIds, mediaItemIds } = this.getScheduleMediaItemIds(body);
+
+      await this.assertMediaItemsFromDepartment(songIds, targetDepartmentId, "MUSIC");
+      await this.assertMediaItemsFromDepartment(
+        resourceIds,
+        targetDepartmentId,
+        "RESOURCE",
+      );
+
+      await $prismaClient.$transaction([
+        $prismaClient.schedule.update({
+          where: {
+            id,
+          },
+          data,
+        }),
+        $prismaClient.scheduleMediaItem.deleteMany({
+          where: {
+            scheduleId: id,
+          },
+        }),
+        ...mediaItemIds.map((mediaItemId) =>
+          $prismaClient.scheduleMediaItem.create({
+            data: {
+              id: crypto.randomUUID(),
+              scheduleId: id,
+              mediaItemId,
+            },
+          }),
+        ),
+      ]);
+    } else {
+      await $prismaClient.schedule.update({
+        where: {
+          id,
+        },
+        data,
+      });
+    }
 
     return await this.getScheduleFromCurrentChurch(id, user.crunchId!);
   }

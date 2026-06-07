@@ -139,6 +139,46 @@
             :disabled="isCreatingSchedule"
           />
 
+          <v-select
+            v-if="songOptions.length"
+            v-model="scheduleForm.songIds"
+            label="Músicas"
+            :items="songOptions"
+            item-title="label"
+            item-value="value"
+            prepend-inner-icon="mdi-music-note-outline"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            class="scale-input mb-4"
+            hide-details="auto"
+            multiple
+            chips
+            closable-chips
+            :disabled="isCreatingSchedule"
+          />
+
+          <v-select
+            v-if="resourceOptions.length"
+            v-model="scheduleForm.resourceIds"
+            label="Recursos"
+            :items="resourceOptions"
+            item-title="label"
+            item-value="value"
+            prepend-inner-icon="mdi-file-document-outline"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            class="scale-input mb-4"
+            hide-details="auto"
+            multiple
+            chips
+            closable-chips
+            :disabled="isCreatingSchedule"
+          />
+
           <v-alert
             v-if="createScheduleError"
             type="error"
@@ -320,7 +360,9 @@ import { useAuth } from "../../composables/useAuth";
 import {
   useDepartments,
   type ChurchDepartment,
+  type DepartmentResource,
   type DepartmentSchedule,
+  type DepartmentSong,
 } from "../../composables/useDepartments";
 import { useMembers, type ChurchMember } from "../../composables/useMembers";
 
@@ -331,6 +373,8 @@ const {
   updateChurchSchedule,
   deleteChurchSchedule,
   updateScheduleAssignments,
+  getDepartmentResources,
+  getDepartmentSongs,
 } = useDepartments();
 const { getMembers } = useMembers();
 const { user } = useAuth();
@@ -340,6 +384,8 @@ const activeFilter = ref("Todos");
 const departments = ref<ChurchDepartment[]>([]);
 const schedules = ref<DepartmentSchedule[]>([]);
 const members = ref<ChurchMember[]>([]);
+const resourcesByDepartment = ref<Record<string, DepartmentResource[]>>({});
+const songsByDepartment = ref<Record<string, DepartmentSong[]>>({});
 const schedulesError = ref("");
 const createScheduleError = ref("");
 const assignmentsError = ref("");
@@ -351,6 +397,7 @@ const isDeletingSchedule = ref(false);
 const selectedScheduleId = ref("");
 const focusedScheduleId = ref("");
 const editingScheduleId = ref("");
+const isPrefillingScheduleForm = ref(false);
 const pendingDeleteSchedule = ref<ScheduleEvent | null>(null);
 
 const scheduleForm = reactive({
@@ -358,6 +405,8 @@ const scheduleForm = reactive({
   date: "",
   time: "",
   departmentId: "",
+  songIds: [] as string[],
+  resourceIds: [] as string[],
 });
 
 const assignmentForm = reactive({
@@ -400,6 +449,28 @@ const memberOptions = computed(() =>
   })),
 );
 
+const selectedDepartmentResources = computed(
+  () => resourcesByDepartment.value[scheduleForm.departmentId] || [],
+);
+
+const selectedDepartmentSongs = computed(
+  () => songsByDepartment.value[scheduleForm.departmentId] || [],
+);
+
+const songOptions = computed(() =>
+  selectedDepartmentSongs.value.map((song) => ({
+    label: song.metadata?.artist ? `${song.title} - ${song.metadata.artist}` : song.title,
+    value: song.id,
+  })),
+);
+
+const resourceOptions = computed(() =>
+  selectedDepartmentResources.value.map((resource) => ({
+    label: `${resource.title} (${resource.category})`,
+    value: resource.id,
+  })),
+);
+
 const selectedSchedule = computed(() =>
   schedules.value.find((schedule) => schedule.id === selectedScheduleId.value),
 );
@@ -420,6 +491,11 @@ type ScheduleEvent = {
   time: string;
   volunteerCount: number;
   volunteers: { initials: string }[];
+  mediaItems: {
+    id: string;
+    title: string;
+    category: string;
+  }[];
   canManage: boolean;
 };
 
@@ -469,6 +545,12 @@ const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
       minute: "2-digit",
     }).format(date),
     volunteerCount: schedule.assignments?.length || 0,
+    mediaItems:
+      schedule.mediaItems?.map((item) => ({
+        id: item.id,
+        title: item.mediaItem.title,
+        category: item.mediaItem.category,
+      })) || [],
     canManage: canManageSchedule(schedule),
     volunteers:
       schedule.assignments?.map((assignment) => ({
@@ -529,11 +611,40 @@ const loadMembers = async () => {
   members.value = data ?? [];
 };
 
+const loadScheduleMediaItems = async (departmentId: string) => {
+  if (!departmentId) return;
+
+  const shouldLoadResources = !resourcesByDepartment.value[departmentId];
+  const shouldLoadSongs = !songsByDepartment.value[departmentId];
+
+  if (!shouldLoadResources && !shouldLoadSongs) return;
+
+  const [resourcesResponse, songsResponse] = await Promise.all([
+    shouldLoadResources
+      ? getDepartmentResources(departmentId)
+      : Promise.resolve({ data: resourcesByDepartment.value[departmentId] }),
+    shouldLoadSongs
+      ? getDepartmentSongs(departmentId)
+      : Promise.resolve({ data: songsByDepartment.value[departmentId] }),
+  ]);
+
+  resourcesByDepartment.value = {
+    ...resourcesByDepartment.value,
+    [departmentId]: resourcesResponse.data ?? [],
+  };
+  songsByDepartment.value = {
+    ...songsByDepartment.value,
+    [departmentId]: songsResponse.data ?? [],
+  };
+};
+
 const resetScheduleForm = () => {
   scheduleForm.title = "";
   scheduleForm.date = "";
   scheduleForm.time = "";
   scheduleForm.departmentId = "";
+  scheduleForm.songIds = [];
+  scheduleForm.resourceIds = [];
   editingScheduleId.value = "";
 };
 
@@ -553,16 +664,27 @@ const toTimeInputValue = (value: string) => {
   return Number.isNaN(date.getTime()) ? "" : date.toTimeString().slice(0, 5);
 };
 
-const openScheduleEditDialog = (event: ScheduleEvent) => {
+const openScheduleEditDialog = async (event: ScheduleEvent) => {
   const schedule = schedules.value.find((item) => item.id === event.id);
   if (!schedule) return;
 
+  isPrefillingScheduleForm.value = true;
   editingScheduleId.value = schedule.id;
   scheduleForm.title = schedule.description;
   scheduleForm.date = toDateInputValue(schedule.date);
   scheduleForm.time = toTimeInputValue(schedule.date);
   scheduleForm.departmentId = schedule.departmentId;
+  await loadScheduleMediaItems(schedule.departmentId);
+  scheduleForm.songIds =
+    schedule.mediaItems
+      ?.filter((item) => item.mediaItem.category === "MUSIC")
+      .map((item) => item.mediaItemId) || [];
+  scheduleForm.resourceIds =
+    schedule.mediaItems
+      ?.filter((item) => item.mediaItem.category !== "MUSIC")
+      .map((item) => item.mediaItemId) || [];
   createScheduleError.value = "";
+  isPrefillingScheduleForm.value = false;
   isScheduleDialogOpen.value = true;
 };
 
@@ -593,12 +715,16 @@ const handleSaveSchedule = async () => {
         date: scheduleForm.date,
         time: scheduleForm.time || undefined,
         departmentId: scheduleForm.departmentId,
+        songIds: scheduleForm.songIds,
+        resourceIds: scheduleForm.resourceIds,
       })
     : await createChurchSchedule({
         title,
         date: scheduleForm.date,
         time: scheduleForm.time || undefined,
         departmentId: scheduleForm.departmentId,
+        songIds: scheduleForm.songIds,
+        resourceIds: scheduleForm.resourceIds,
       });
 
   isCreatingSchedule.value = false;
@@ -749,6 +875,22 @@ watch(
   () => route.query.schedule,
   async () => {
     await focusScheduleFromRoute();
+  },
+);
+
+watch(
+  () => scheduleForm.departmentId,
+  async (departmentId, previousDepartmentId) => {
+    if (isPrefillingScheduleForm.value) return;
+
+    if (departmentId) {
+      await loadScheduleMediaItems(departmentId);
+    }
+
+    if (departmentId !== previousDepartmentId) {
+      scheduleForm.songIds = [];
+      scheduleForm.resourceIds = [];
+    }
   },
 );
 

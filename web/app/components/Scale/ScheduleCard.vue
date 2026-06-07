@@ -62,6 +62,18 @@
       </div>
     </div>
 
+    <div v-if="event.mediaItems?.length" class="schedule-media-list mb-4">
+      <v-chip
+        v-for="item in event.mediaItems"
+        :key="item.id"
+        size="small"
+        :color="item.category === 'MUSIC' ? 'purple-darken-3' : 'teal-darken-2'"
+        variant="tonal"
+      >
+        {{ item.title }}
+      </v-chip>
+    </div>
+
     <v-divider class="mb-3"></v-divider>
     <div class="schedule-actions">
       <v-btn
@@ -167,6 +179,12 @@ const volunteerLabel = computed(() => {
   background: #fafafa;
   border: 1px solid #f3f4f6;
   padding: 10px 12px;
+}
+
+.schedule-media-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .avatar-stack {

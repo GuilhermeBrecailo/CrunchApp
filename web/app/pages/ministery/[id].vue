@@ -113,6 +113,21 @@
               </v-chip>
             </div>
 
+            <div
+              v-if="schedule.mediaItems?.length"
+              class="schedule-media-list mt-3"
+            >
+              <v-chip
+                v-for="item in schedule.mediaItems"
+                :key="item.id"
+                size="small"
+                :color="item.mediaItem.category === 'MUSIC' ? 'purple-darken-3' : 'teal-darken-2'"
+                variant="tonal"
+              >
+                {{ item.mediaItem.title }}
+              </v-chip>
+            </div>
+
             <v-divider class="my-3"></v-divider>
             <div class="d-flex justify-center align-center ga-2">
               <v-btn
@@ -498,6 +513,46 @@
               :disabled="isCreatingSchedule"
             />
           </div>
+
+          <v-select
+            v-if="songOptions.length"
+            v-model="scheduleForm.songIds"
+            label="Músicas"
+            :items="songOptions"
+            item-title="label"
+            item-value="value"
+            prepend-inner-icon="mdi-music-note-outline"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            class="ministery-input mb-4"
+            hide-details="auto"
+            multiple
+            chips
+            closable-chips
+            :disabled="isCreatingSchedule"
+          />
+
+          <v-select
+            v-if="resourceOptions.length"
+            v-model="scheduleForm.resourceIds"
+            label="Recursos"
+            :items="resourceOptions"
+            item-title="label"
+            item-value="value"
+            prepend-inner-icon="mdi-file-document-outline"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            class="ministery-input mb-4"
+            hide-details="auto"
+            multiple
+            chips
+            closable-chips
+            :disabled="isCreatingSchedule"
+          />
 
           <v-alert
             v-if="createScheduleError"
@@ -1143,6 +1198,8 @@ const scheduleForm = reactive({
   title: "",
   date: "",
   time: "",
+  songIds: [] as string[],
+  resourceIds: [] as string[],
 });
 
 const resourceForm = reactive({
@@ -1218,6 +1275,20 @@ const memberOptions = computed(() =>
   members.value.map((member) => ({
     label: `${member.name} (${member.email})`,
     value: member.id,
+  })),
+);
+
+const songOptions = computed(() =>
+  songs.value.map((song) => ({
+    label: song.metadata?.artist ? `${song.title} - ${song.metadata.artist}` : song.title,
+    value: song.id,
+  })),
+);
+
+const resourceOptions = computed(() =>
+  resources.value.map((resource) => ({
+    label: `${resource.title} (${resource.category})`,
+    value: resource.id,
   })),
 );
 
@@ -1345,6 +1416,8 @@ const resetScheduleForm = () => {
   scheduleForm.title = "";
   scheduleForm.date = "";
   scheduleForm.time = "";
+  scheduleForm.songIds = [];
+  scheduleForm.resourceIds = [];
   editingScheduleId.value = "";
 };
 
@@ -1448,6 +1521,14 @@ const openScheduleEditDialog = (schedule: DepartmentSchedule) => {
   scheduleForm.title = schedule.description;
   scheduleForm.date = toDateInputValue(schedule.date);
   scheduleForm.time = toTimeInputValue(schedule.date);
+  scheduleForm.songIds =
+    schedule.mediaItems
+      ?.filter((item) => item.mediaItem.category === "MUSIC")
+      .map((item) => item.mediaItemId) || [];
+  scheduleForm.resourceIds =
+    schedule.mediaItems
+      ?.filter((item) => item.mediaItem.category !== "MUSIC")
+      .map((item) => item.mediaItemId) || [];
   createScheduleError.value = "";
   isScheduleDialogOpen.value = true;
 };
@@ -1473,11 +1554,15 @@ const handleSaveSchedule = async () => {
         title,
         date: scheduleForm.date,
         time: scheduleForm.time || undefined,
+        songIds: scheduleForm.songIds,
+        resourceIds: scheduleForm.resourceIds,
       })
     : await createDepartmentSchedule(departmentId, {
         title,
         date: scheduleForm.date,
         time: scheduleForm.time || undefined,
+        songIds: scheduleForm.songIds,
+        resourceIds: scheduleForm.resourceIds,
       });
 
   isCreatingSchedule.value = false;
@@ -1827,6 +1912,11 @@ onMounted(async () => {
 }
 .border-subtle {
   border: 1px solid #f3f4f6;
+}
+.schedule-media-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .tabs-row {
   display: flex;

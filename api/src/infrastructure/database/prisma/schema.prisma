@@ -150,6 +150,7 @@ model MediaItem {
 
     departmentId String
     department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+    schedules    ScheduleMediaItem[]
 }
 
 model Schedule {
@@ -161,6 +162,20 @@ model Schedule {
     department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
 
     assignments ScheduleAssignment[]
+    mediaItems  ScheduleMediaItem[]
+}
+
+model ScheduleMediaItem {
+    id        String   @id @default(uuid())
+    createdAt DateTime @default(now())
+
+    scheduleId String
+    schedule   Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+    mediaItemId String
+    mediaItem   MediaItem @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
+
+    @@unique([scheduleId, mediaItemId])
 }
 
 model ScheduleAssignment {
