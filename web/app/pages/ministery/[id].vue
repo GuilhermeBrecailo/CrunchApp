@@ -123,6 +123,8 @@
                 size="small"
                 :color="item.mediaItem.category === 'MUSIC' ? 'purple-darken-3' : 'teal-darken-2'"
                 variant="tonal"
+                class="schedule-media-chip"
+                @click="openScheduleMediaItem(item.mediaItem)"
               >
                 {{ item.mediaItem.title }}
               </v-chip>
@@ -393,6 +395,22 @@
                   <v-chip v-if="song.metadata?.bpm" size="x-small" variant="tonal">
                     {{ song.metadata.bpm }} BPM
                   </v-chip>
+                  <v-chip
+                    v-if="song.metadata?.lyrics"
+                    size="x-small"
+                    color="indigo-darken-2"
+                    variant="tonal"
+                  >
+                    Letra
+                  </v-chip>
+                  <v-chip
+                    v-if="song.metadata?.chords"
+                    size="x-small"
+                    color="teal-darken-2"
+                    variant="tonal"
+                  >
+                    Cifra
+                  </v-chip>
                 </div>
               </div>
               <v-btn
@@ -420,6 +438,15 @@
               <v-btn
                 icon
                 variant="text"
+                color="purple-darken-3"
+                size="small"
+                @click="openSongViewer(song)"
+              >
+                <BookOpen size="16" />
+              </v-btn>
+              <v-btn
+                icon
+                variant="text"
                 color="grey-darken-1"
                 size="small"
                 @click="openSongEditDialog(song)"
@@ -434,6 +461,21 @@
                 @click="handleDeleteSong(song)"
               >
                 <Trash2 size="16" />
+              </v-btn>
+            </div>
+
+            <div
+              v-else-if="song.metadata?.lyrics || song.metadata?.chords"
+              class="d-flex justify-end mt-3"
+            >
+              <v-btn
+                variant="tonal"
+                color="purple-darken-3"
+                size="small"
+                class="text-none"
+                @click="openSongViewer(song)"
+              >
+                Ver letra e cifra
               </v-btn>
             </div>
           </v-card>
@@ -800,6 +842,36 @@
             :disabled="isCreatingSong"
           />
 
+          <v-textarea
+            v-model="songForm.lyrics"
+            label="Letra"
+            prepend-inner-icon="mdi-format-text"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            class="ministery-input mb-4"
+            hide-details="auto"
+            rows="5"
+            auto-grow
+            :disabled="isCreatingSong"
+          />
+
+          <v-textarea
+            v-model="songForm.chords"
+            label="Cifra"
+            prepend-inner-icon="mdi-guitar-acoustic"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            class="ministery-input mb-4 chords-input"
+            hide-details="auto"
+            rows="6"
+            auto-grow
+            :disabled="isCreatingSong"
+          />
+
           <v-alert
             v-if="createSongError"
             type="error"
@@ -831,6 +903,154 @@
             </v-btn>
           </div>
         </v-form>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="isSongViewerOpen" max-width="760" scrollable>
+      <v-card v-if="selectedSong" class="rounded-xl bg-white song-viewer" elevation="0">
+        <div class="song-viewer-header">
+          <div class="min-w-0">
+            <p class="text-caption text-purple-darken-3 font-weight-bold mb-1">
+              {{ selectedSong.metadata?.songCategory || "Louvor" }}
+            </p>
+            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+              {{ selectedSong.title }}
+            </h2>
+            <p class="text-body-2 text-grey-darken-1 mb-0 text-truncate">
+              {{ selectedSong.metadata?.artist || "Artista não informado" }}
+            </p>
+          </div>
+          <v-btn icon variant="text" color="grey-darken-1" @click="closeSongViewer">
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
+        </div>
+
+        <v-divider />
+
+        <div class="song-viewer-body">
+          <div class="d-flex flex-wrap ga-2 mb-4">
+            <v-chip v-if="selectedSong.metadata?.key" size="small" variant="tonal">
+              Tom {{ selectedSong.metadata.key }}
+            </v-chip>
+            <v-chip v-if="selectedSong.metadata?.bpm" size="small" variant="tonal">
+              {{ selectedSong.metadata.bpm }} BPM
+            </v-chip>
+            <v-btn
+              v-if="selectedSong.url"
+              :href="selectedSong.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              color="purple-darken-3"
+              variant="tonal"
+              size="small"
+              class="text-none"
+            >
+              Abrir link
+            </v-btn>
+          </div>
+
+          <v-tabs v-model="songViewerTab" color="purple-darken-3" class="mb-4">
+            <v-tab value="lyrics" class="text-none">Letra</v-tab>
+            <v-tab value="chords" class="text-none">Cifra</v-tab>
+            <v-tab value="notes" class="text-none">Notas</v-tab>
+          </v-tabs>
+
+          <pre v-if="songViewerTab === 'lyrics'" class="song-text-block">{{ selectedSong.metadata?.lyrics || "Letra não cadastrada." }}</pre>
+          <div v-else-if="songViewerTab === 'chords'" class="personal-chords-panel">
+            <div class="personal-chords-heading">
+              <div>
+                <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-1">
+                  Minha cifra
+                </h3>
+                <p class="text-caption text-grey-darken-1 mb-0">
+                  Esta versão aparece somente para você.
+                </p>
+              </div>
+              <v-chip v-if="personalSongForm.personalKey" size="small" variant="tonal">
+                Meu tom {{ personalSongForm.personalKey }}
+              </v-chip>
+            </div>
+
+            <v-text-field
+              v-model="personalSongForm.personalKey"
+              label="Meu tom"
+              placeholder="ex: C, Dm, F#"
+              variant="outlined"
+              density="comfortable"
+              color="purple-darken-3"
+              bg-color="white"
+              class="ministery-input mb-3"
+              hide-details="auto"
+              :disabled="isLoadingSongPreference || isSavingSongPreference"
+            />
+
+            <v-textarea
+              v-model="personalSongForm.chords"
+              label="Minha cifra"
+              variant="outlined"
+              density="comfortable"
+              color="purple-darken-3"
+              bg-color="white"
+              class="ministery-input chords-input mb-3"
+              hide-details="auto"
+              rows="9"
+              auto-grow
+              :disabled="isLoadingSongPreference || isSavingSongPreference"
+            />
+
+            <div class="personal-chords-actions">
+              <div class="d-flex ga-2">
+                <v-btn
+                  variant="tonal"
+                  color="grey-darken-1"
+                  size="small"
+                  class="text-none"
+                  @click="transposePersonalChords(-1)"
+                >
+                  -1 tom
+                </v-btn>
+                <v-btn
+                  variant="tonal"
+                  color="grey-darken-1"
+                  size="small"
+                  class="text-none"
+                  @click="transposePersonalChords(1)"
+                >
+                  +1 tom
+                </v-btn>
+              </div>
+              <v-btn
+                variant="text"
+                color="grey-darken-1"
+                class="text-none"
+                :disabled="isLoadingSongPreference || isSavingSongPreference"
+                @click="useOfficialChords"
+              >
+                Usar cifra da escala
+              </v-btn>
+              <v-btn
+                color="purple-darken-3"
+                class="text-none"
+                :loading="isSavingSongPreference"
+                :disabled="isLoadingSongPreference"
+                @click="saveSongPreference"
+              >
+                Salvar minha cifra
+              </v-btn>
+            </div>
+
+            <v-alert
+              v-if="songPreferenceError"
+              type="error"
+              variant="tonal"
+              density="compact"
+              class="mt-3"
+            >
+              {{ songPreferenceError }}
+            </v-alert>
+          </div>
+          <pre v-else class="song-text-block">{{ selectedSong.metadata?.notes || "Sem observações." }}</pre>
+        </div>
       </v-card>
     </v-dialog>
 
@@ -1132,6 +1352,8 @@ const {
   createDepartmentSong,
   updateDepartmentSong,
   deleteDepartmentSong,
+  getSongPreference,
+  updateSongPreference,
   updateScheduleAssignments,
 } = useDepartments();
 const { getMembers } = useMembers();
@@ -1152,17 +1374,21 @@ const createTaskError = ref("");
 const createScheduleError = ref("");
 const createResourceError = ref("");
 const createSongError = ref("");
+const songPreferenceError = ref("");
 const assignmentsError = ref("");
 const activeTab = ref("overview");
 const isTaskDialogOpen = ref(false);
 const isScheduleDialogOpen = ref(false);
 const isResourceDialogOpen = ref(false);
 const isSongDialogOpen = ref(false);
+const isSongViewerOpen = ref(false);
 const isAssignmentsDialogOpen = ref(false);
 const isCreatingTask = ref(false);
 const isCreatingSchedule = ref(false);
 const isCreatingResource = ref(false);
 const isCreatingSong = ref(false);
+const isLoadingSongPreference = ref(false);
+const isSavingSongPreference = ref(false);
 const isSavingAssignments = ref(false);
 const isConfirmingDelete = ref(false);
 const selectedScheduleId = ref("");
@@ -1170,20 +1396,29 @@ const editingTaskId = ref("");
 const editingScheduleId = ref("");
 const editingResourceId = ref("");
 const editingSongId = ref("");
+const selectedSong = ref<DepartmentSong | null>(null);
+const songViewerTab = ref("lyrics");
 const pendingDelete = ref<{
   kind: "task" | "schedule" | "resource" | "song";
   id: string;
   title: string;
 } | null>(null);
 
+const isChurchWideManager = computed(
+  () =>
+    user.value?.role === "PASTOR" ||
+    user.value?.role === "ADMIN" ||
+    user.value?.role === "SUPER_ADMIN" ||
+    user.value?.is_admin === true,
+);
 const canManageDepartment = computed(
   () =>
-    user.value?.isTitularPastor === true ||
+    isChurchWideManager.value ||
     department.value?.leaderId === user.value?.id,
 );
 const canManageSchedules = computed(
   () =>
-    user.value?.isTitularPastor === true ||
+    isChurchWideManager.value ||
     department.value?.leaderId === user.value?.id,
 );
 
@@ -1217,6 +1452,13 @@ const songForm = reactive({
   songCategory: "Louvor",
   url: "",
   notes: "",
+  lyrics: "",
+  chords: "",
+});
+
+const personalSongForm = reactive({
+  personalKey: "",
+  chords: "",
 });
 
 const assignmentForm = reactive({
@@ -1449,6 +1691,8 @@ const resetSongForm = () => {
   songForm.songCategory = "Louvor";
   songForm.url = "";
   songForm.notes = "";
+  songForm.lyrics = "";
+  songForm.chords = "";
   editingSongId.value = "";
 };
 
@@ -1456,6 +1700,112 @@ const closeSongDialog = () => {
   isSongDialogOpen.value = false;
   createSongError.value = "";
   resetSongForm();
+};
+
+const openSongViewer = (song: DepartmentSong) => {
+  selectedSong.value = song;
+  songViewerTab.value = song.metadata?.lyrics
+    ? "lyrics"
+    : song.metadata?.chords
+      ? "chords"
+      : "notes";
+  isSongViewerOpen.value = true;
+  void loadSongPreference(song);
+};
+
+const openScheduleMediaItem = (mediaItem: DepartmentResource | DepartmentSong) => {
+  if (mediaItem.category !== "MUSIC") return;
+
+  openSongViewer(mediaItem as DepartmentSong);
+};
+
+const closeSongViewer = () => {
+  isSongViewerOpen.value = false;
+  selectedSong.value = null;
+  songPreferenceError.value = "";
+  personalSongForm.personalKey = "";
+  personalSongForm.chords = "";
+};
+
+const loadSongPreference = async (song: DepartmentSong) => {
+  songPreferenceError.value = "";
+  isLoadingSongPreference.value = true;
+  personalSongForm.personalKey = "";
+  personalSongForm.chords = song.metadata?.chords || "";
+
+  const { data, error } = await getSongPreference(song.id);
+
+  isLoadingSongPreference.value = false;
+
+  if (error) {
+    songPreferenceError.value = error;
+    return;
+  }
+
+  personalSongForm.personalKey = data?.personalKey || "";
+  personalSongForm.chords = data?.chords || song.metadata?.chords || "";
+};
+
+const useOfficialChords = () => {
+  personalSongForm.personalKey = selectedSong.value?.metadata?.key || "";
+  personalSongForm.chords = selectedSong.value?.metadata?.chords || "";
+};
+
+const saveSongPreference = async () => {
+  if (!selectedSong.value) return;
+
+  songPreferenceError.value = "";
+  isSavingSongPreference.value = true;
+
+  const { data, error } = await updateSongPreference(selectedSong.value.id, {
+    personalKey: personalSongForm.personalKey,
+    chords: personalSongForm.chords,
+  });
+
+  isSavingSongPreference.value = false;
+
+  if (error || !data) {
+    songPreferenceError.value = error || "Não foi possível salvar sua cifra.";
+    return;
+  }
+
+  personalSongForm.personalKey = data.personalKey || "";
+  personalSongForm.chords = data.chords || "";
+};
+
+const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+const flatToSharp: Record<string, string> = {
+  Db: "C#",
+  Eb: "D#",
+  Gb: "F#",
+  Ab: "G#",
+  Bb: "A#",
+};
+
+const transposeNote = (note: string, steps: number) => {
+  const normalized = flatToSharp[note] || note;
+  const index = noteNames.indexOf(normalized);
+
+  if (index === -1) return note;
+
+  return noteNames[(index + steps + noteNames.length) % noteNames.length];
+};
+
+const transposePersonalChords = (steps: number) => {
+  const chordRegex = /\b([A-G](?:#|b)?)(m|maj|min|dim|aug|sus|add)?([0-9]*)?(\/([A-G](?:#|b)?))?/g;
+
+  personalSongForm.chords = personalSongForm.chords.replace(
+    chordRegex,
+    (match, root, quality = "", extension = "", slash = "", bass = "") => {
+      const nextRoot = transposeNote(root, steps);
+      const nextBass = bass ? `/${transposeNote(bass, steps)}` : "";
+      return `${nextRoot}${quality || ""}${extension || ""}${nextBass}`;
+    },
+  );
+
+  if (personalSongForm.personalKey) {
+    personalSongForm.personalKey = transposeNote(personalSongForm.personalKey, steps);
+  }
 };
 
 const openTaskEditDialog = (task: DepartmentTask) => {
@@ -1650,6 +2000,8 @@ const openSongEditDialog = (song: DepartmentSong) => {
   songForm.songCategory = song.metadata?.songCategory || "Louvor";
   songForm.url = song.url || "";
   songForm.notes = song.metadata?.notes || "";
+  songForm.lyrics = song.metadata?.lyrics || "";
+  songForm.chords = song.metadata?.chords || "";
   createSongError.value = "";
   isSongDialogOpen.value = true;
 };
@@ -1673,6 +2025,8 @@ const handleSaveSong = async () => {
     songCategory: songForm.songCategory,
     url: songForm.url,
     notes: songForm.notes,
+    lyrics: songForm.lyrics,
+    chords: songForm.chords,
   };
 
   const { data, error } = editingSongId.value
@@ -1917,6 +2271,54 @@ onMounted(async () => {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+.schedule-media-chip {
+  cursor: pointer;
+}
+.chords-input :deep(textarea),
+.song-chords-block {
+  font-family: "Courier New", monospace;
+}
+.song-viewer {
+  overflow: hidden;
+}
+.song-viewer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px;
+}
+.song-viewer-body {
+  max-height: min(680px, 75vh);
+  overflow-y: auto;
+  padding: 20px;
+}
+.song-text-block {
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  background: #fafafa;
+  color: #1f2937;
+  font-family: inherit;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  margin: 0;
+  min-height: 180px;
+  overflow-x: auto;
+  padding: 16px;
+  white-space: pre-wrap;
+}
+.personal-chords-panel {
+  display: grid;
+  gap: 12px;
+}
+.personal-chords-heading,
+.personal-chords-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 .tabs-row {
   display: flex;

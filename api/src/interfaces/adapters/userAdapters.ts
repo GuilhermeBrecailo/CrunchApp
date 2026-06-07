@@ -459,11 +459,13 @@ export class UserAdapters {
       throw new DomainError("Usuario nao possui igreja vinculada");
     }
 
-    const isTitularPastor =
-      user.role === "PASTOR" && user.crunch.userMainId === user.id;
+    const canEditChurch =
+      user.role === "PASTOR" ||
+      user.role === "ADMIN" ||
+      user.role === "SUPER_ADMIN";
 
-    if (!isTitularPastor) {
-      throw new DomainError("Apenas o pastor titular pode editar a igreja");
+    if (!canEditChurch) {
+      throw new DomainError("Apenas pastores ou admins podem editar a igreja");
     }
 
     if (body.name !== undefined && !body.name.trim()) {
@@ -529,25 +531,25 @@ export class UserAdapters {
       throw new DomainError("Usuário não possui igreja vinculada");
     }
 
-    const isTitularPastor =
-      user.role === "PASTOR" && user.crunch.userMainId === user.id;
     const isPlatformAdmin =
       user.role === "ADMIN" || user.role === "SUPER_ADMIN";
 
-    if (!isPlatformAdmin && !isTitularPastor && !user.canManageMembers) {
+    if (!isPlatformAdmin && user.role !== "PASTOR" && !user.canManageMembers) {
       throw new DomainError("Usuário não possui permissão para gerenciar membros");
     }
 
     return user;
   }
 
-  private async getTitularPastor(userId: string) {
+  private async getMemberPermissionManager(userId: string) {
     const user = await this.getChurchMemberManager(userId);
-    const isTitularPastor =
-      user.role === "PASTOR" && user.crunch?.userMainId === user.id;
+    const canEditPermissions =
+      user.role === "PASTOR" ||
+      user.role === "ADMIN" ||
+      user.role === "SUPER_ADMIN";
 
-    if (!isTitularPastor) {
-      throw new DomainError("Apenas o pastor titular pode alterar permissões");
+    if (!canEditPermissions) {
+      throw new DomainError("Apenas pastores ou admins podem alterar permissões");
     }
 
     return user;
@@ -572,10 +574,20 @@ export class UserAdapters {
         role: true,
         canManageMembers: true,
         createdAt: true,
+        unavailableDates: {
+          select: {
+            date: true,
+          },
+        },
       },
     });
 
-    return members;
+    return members.map((member) => ({
+      ...member,
+      unavailableDates: member.unavailableDates.map((item) =>
+        item.date.toISOString().slice(0, 10),
+      ),
+    }));
   }
 
   async createChurchMember(request: FastifyRequest) {
@@ -655,7 +667,7 @@ export class UserAdapters {
 
   async updateChurchMemberPermissions(request: FastifyRequest) {
     const userId = getAuthUserId(request);
-    const pastor = await this.getTitularPastor(userId);
+    const manager = await this.getMemberPermissionManager(userId);
     const { id } = request.params as { id?: string };
     const body = request.body as {
       canManageMembers?: boolean;
@@ -678,7 +690,7 @@ export class UserAdapters {
       },
     });
 
-    if (!member || member.crunchId !== pastor.crunchId) {
+    if (!member || member.crunchId !== manager.crunchId) {
       throw new DomainError("Membro não encontrado nesta igreja");
     }
 

@@ -1,12 +1,18 @@
 <template>
-  <div v-if="isPlatformAdmin" class="pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
-    <div class="mb-6">
-      <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">
-        Plataforma
-      </h1>
-      <p class="text-body-2 text-grey-darken-1 mb-0">
-        Igrejas, usuários e ministérios de todo o sistema
-      </p>
+  <div v-if="isPlatformAdmin" class="platform-admin-page pa-4 min-vh-100 pb-20">
+    <div class="platform-hero mb-6">
+      <div class="min-w-0">
+        <p class="platform-kicker mb-2">Admin master</p>
+        <h1 class="platform-title font-weight-bold text-grey-darken-4 mb-2">
+          Visão geral da plataforma
+        </h1>
+        <p class="platform-subtitle text-body-2 text-grey-darken-1 mb-0">
+          Acompanhe igrejas, lideranças, usuários e ministérios em um só lugar.
+        </p>
+      </div>
+      <div class="platform-hero-mark">
+        <Church size="26" color="#4F46E5" />
+      </div>
     </div>
 
     <v-alert
@@ -50,183 +56,361 @@
       />
     </div>
 
-    <div class="platform-layout">
-      <section class="platform-sidebar">
-        <v-card class="church-list-panel rounded-xl pa-4 elevation-1 bg-white border-subtle">
-          <div class="d-flex justify-space-between align-center mb-4">
-            <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
-              Igrejas
-            </h2>
-            <v-chip size="small" color="purple-darken-3" variant="tonal">
-              {{ adminChurches.length }} total
-            </v-chip>
-          </div>
+    <section class="platform-directory">
+      <div class="directory-heading mb-4">
+        <div>
+          <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-1">
+            Igrejas cadastradas
+          </h2>
+          <p class="text-caption text-grey-darken-1 mb-0">
+            Selecione uma igreja para abrir o painel de informações.
+          </p>
+        </div>
+        <v-chip size="small" color="indigo-darken-2" variant="tonal">
+          {{ adminChurches.length }} total
+        </v-chip>
+      </div>
 
+      <v-card
+        v-if="isLoadingPlatform"
+        class="platform-loading rounded-lg pa-4 elevation-0 bg-white border-subtle"
+      >
+        <v-skeleton-loader type="list-item-three-line@5" />
+      </v-card>
+
+      <v-card
+        v-else-if="adminChurches.length === 0"
+        class="platform-empty rounded-lg pa-8 elevation-0 bg-white border-subtle"
+      >
+        <Church size="34" color="#9CA3AF" class="mb-3" />
+        <p class="text-body-2 text-grey-darken-1 font-weight-medium mb-0 text-center">
+          Nenhuma igreja cadastrada ainda
+        </p>
+      </v-card>
+
+      <div v-else class="church-directory-grid">
+        <button
+          v-for="church in adminChurches"
+          :key="church.id"
+          type="button"
+          class="church-directory-card"
+          :class="{ 'church-directory-card-active': selectedChurch?.id === church.id }"
+          @click="selectChurch(church.id)"
+        >
+          <span class="church-card-top">
+            <span class="church-avatar">
+              <Church size="21" color="#4F46E5" />
+            </span>
+            <span class="church-status-dot" :class="{ 'church-status-dot-muted': !church.isActive }" />
+          </span>
+
+          <span class="church-card-copy">
+            <span class="church-card-title">
+              {{ church.name }}
+            </span>
+            <span class="church-card-location">
+              {{ church.city || "Cidade não informada" }}{{ church.state ? ` - ${church.state}` : "" }}
+            </span>
+          </span>
+
+          <span class="church-metrics">
+            <span>
+              <strong>{{ church.membersCount }}</strong>
+              usuários
+            </span>
+            <span>
+              <strong>{{ church.departmentsCount }}</strong>
+              ministérios
+            </span>
+            <span>
+              <strong>{{ church.isActive ? "Ativa" : "Inativa" }}</strong>
+              status
+            </span>
+          </span>
+
+          <span class="church-open-action">
+            Ver detalhes
+            <ArrowRight size="16" />
+          </span>
+        </button>
+      </div>
+    </section>
+
+    <v-dialog
+      v-model="isChurchDetailsOpen"
+      max-width="920"
+      scrollable
+      @after-leave="closeChurchDetails"
+    >
+      <v-card class="church-details-surface bg-white" elevation="0">
+        <div class="church-details-header">
+          <div class="d-flex align-center min-w-0">
+            <v-avatar color="#EEF2FF" size="52" class="mr-3">
+              <Church size="24" color="#4F46E5" />
+            </v-avatar>
+            <div class="min-w-0">
+              <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+                {{ selectedChurch?.name || "Carregando igreja" }}
+              </h2>
+              <p class="text-caption text-grey-darken-1 mb-0 text-truncate">
+                {{ selectedChurchAddress }}
+              </p>
+            </div>
+          </div>
+          <v-btn
+            icon
+            variant="text"
+            color="grey-darken-1"
+            size="small"
+            @click="isChurchDetailsOpen = false"
+          >
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
+        </div>
+
+        <v-divider />
+
+        <div class="church-details-body">
           <v-skeleton-loader
-            v-if="isLoadingPlatform"
-            type="list-item-three-line@4"
+            v-if="isLoadingChurch"
+            type="article, list-item-three-line@4"
           />
 
-          <div
-            v-else-if="adminChurches.length === 0"
-            class="d-flex flex-column align-center justify-center py-6"
-          >
-            <Church size="32" color="#9CA3AF" class="mb-3" />
-            <p class="text-caption text-grey-darken-1 font-weight-medium mb-0 text-center">
-              Nenhuma igreja cadastrada ainda
-            </p>
-          </div>
-
-          <div v-else class="church-list-scroll d-flex flex-column ga-3">
-            <v-card
-              v-for="church in adminChurches"
-              :key="church.id"
-              class="church-card rounded-xl pa-4 elevation-0 bg-white border-subtle"
-              :class="{ 'church-card-active': selectedChurch?.id === church.id }"
-              @click="selectChurch(church.id)"
-            >
-              <div class="d-flex align-center">
-                <v-avatar color="#EEF2FF" size="44" class="mr-3">
-                  <Church size="21" color="#6366F1" />
-                </v-avatar>
-                <div class="flex-grow-1 min-w-0">
-                  <h3 class="church-card-title text-subtitle-2 font-weight-bold mb-1">
-                    {{ church.name }}
-                  </h3>
-                  <p class="text-caption text-grey-darken-1 mb-0 text-truncate">
-                    {{ church.city || "Cidade não informada" }} {{ church.state ? `- ${church.state}` : "" }}
-                  </p>
-                </div>
-                <ArrowRight size="18" color="#6B7280" />
-              </div>
-
-              <div class="church-metrics mt-3">
-                <span>{{ church.membersCount }} usuários</span>
-                <span>{{ church.departmentsCount }} ministérios</span>
-                <span>{{ church.isActive ? "Ativa" : "Inativa" }}</span>
-              </div>
-            </v-card>
-          </div>
-        </v-card>
-      </section>
-
-      <section class="platform-details">
-        <v-card
-          v-if="!selectedChurch && !isLoadingChurch"
-          class="rounded-xl pa-8 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle details-empty"
-        >
-          <Building size="34" color="#9CA3AF" class="mb-3" />
-          <p class="text-body-2 text-grey-darken-1 font-weight-medium mb-0 text-center">
-            Clique em uma igreja para ver usuários, ministérios e dados gerais.
-          </p>
-        </v-card>
-
-        <v-card
-          v-else-if="isLoadingChurch"
-          class="rounded-xl pa-6 elevation-1 bg-white border-subtle"
-        >
-          <v-skeleton-loader type="article, list-item-three-line@3" />
-        </v-card>
-
-        <div v-else-if="selectedChurch" class="d-flex flex-column ga-4">
-          <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
-            <div class="d-flex align-center mb-4">
-              <v-avatar color="#FAF5FF" size="52" class="mr-3">
-                <Church size="24" color="#A855F7" />
-              </v-avatar>
-              <div class="min-w-0">
-                <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
-                  {{ selectedChurch.name }}
-                </h2>
-                <p class="text-caption text-grey-darken-1 mb-0 text-truncate">
-                  {{ selectedChurch.road || "Endereço não informado" }}
-                  {{ selectedChurch.number ? `, ${selectedChurch.number}` : "" }}
-                </p>
-              </div>
-            </div>
-
+          <div v-else-if="selectedChurch" class="church-details-content">
             <div class="church-detail-grid">
-              <div>
+              <div class="detail-tile">
                 <p class="text-caption text-grey-darken-1 mb-1">Cidade</p>
-                <p class="text-body-2 font-weight-medium mb-0">
-                  {{ selectedChurch.city || "-" }} {{ selectedChurch.state ? `- ${selectedChurch.state}` : "" }}
+                <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0">
+                  {{ selectedChurch.city || "-" }}{{ selectedChurch.state ? ` - ${selectedChurch.state}` : "" }}
                 </p>
               </div>
-              <div>
+              <div class="detail-tile">
                 <p class="text-caption text-grey-darken-1 mb-1">Documento</p>
-                <p class="text-body-2 font-weight-medium mb-0">
+                <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0">
                   {{ selectedChurch.document || "-" }}
                 </p>
               </div>
-              <div>
+              <div class="detail-tile">
                 <p class="text-caption text-grey-darken-1 mb-1">CEP</p>
-                <p class="text-body-2 font-weight-medium mb-0">
+                <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0">
                   {{ selectedChurch.localZipCode || "-" }}
                 </p>
               </div>
-              <div>
+              <div class="detail-tile">
                 <p class="text-caption text-grey-darken-1 mb-1">Status</p>
-                <p class="text-body-2 font-weight-medium mb-0">
+                <v-chip
+                  size="small"
+                  :color="selectedChurch.isActive ? 'teal-darken-2' : 'grey'"
+                  variant="tonal"
+                >
                   {{ selectedChurch.isActive ? "Ativa" : "Inativa" }}
-                </p>
-              </div>
-            </div>
-          </v-card>
-
-          <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
-            <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-3">
-              Usuários
-            </h3>
-            <div class="d-flex flex-column ga-2">
-              <div
-                v-for="member in selectedChurch.users"
-                :key="member.id"
-                class="admin-row user-row"
-                @click="openAdminUserDetails(member)"
-              >
-                <div class="min-w-0">
-                  <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
-                    {{ member.name }}
-                  </p>
-                  <p class="text-caption text-grey-darken-1 mb-0 text-truncate">
-                    {{ member.email }}
-                  </p>
-                </div>
-                <v-chip size="small" color="purple-darken-3" variant="tonal">
-                  {{ member.role === "PASTOR" ? "Pastor" : ["ADMIN", "SUPER_ADMIN"].includes(member.role) ? "Admin" : "Membro" }}
                 </v-chip>
               </div>
             </div>
-          </v-card>
 
-          <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
-            <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-3">
-              Ministérios
-            </h3>
-            <div class="d-flex flex-column ga-2">
-              <div
-                v-for="department in selectedChurch.departments"
-                :key="department.id"
-                class="admin-row"
-              >
-                <div class="min-w-0">
-                  <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
-                    {{ department.name }}
-                  </p>
-                  <p class="text-caption text-grey-darken-1 mb-0 text-truncate">
-                    Lider: {{ department.leader.name }}
-                  </p>
+            <div class="church-detail-columns">
+              <section class="detail-section">
+                <div class="detail-section-heading">
+                  <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+                    Usuários
+                  </h3>
+                  <v-chip size="small" color="indigo-darken-2" variant="tonal">
+                    {{ selectedChurch.users.length }}
+                  </v-chip>
                 </div>
-                <div class="text-caption text-grey-darken-1 text-right">
-                  {{ department.membersCount }} membros<br />
-                  {{ department.schedulesCount }} escalas
+                <div class="detail-list">
+                  <div
+                    v-for="member in selectedChurch.users"
+                    :key="member.id"
+                    class="admin-row user-row"
+                    @click="openAdminUserDetails(member)"
+                  >
+                    <div class="min-w-0">
+                      <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+                        {{ member.name }}
+                      </p>
+                      <p class="text-caption text-grey-darken-1 mb-0 text-truncate">
+                        {{ member.email }}
+                      </p>
+                    </div>
+                    <v-chip size="small" color="purple-darken-3" variant="tonal">
+                      {{ adminUserRoleLabel(member.role) }}
+                    </v-chip>
+                  </div>
                 </div>
+              </section>
+
+              <section class="detail-section">
+                <div class="detail-section-heading">
+                  <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+                    Ministérios
+                  </h3>
+                  <v-chip size="small" color="purple-darken-3" variant="tonal">
+                    {{ selectedChurch.departments.length }}
+                  </v-chip>
+                </div>
+                <div class="detail-list">
+                  <div
+                    v-for="department in selectedChurch.departments"
+                    :key="department.id"
+                    class="admin-row"
+                  >
+                    <div class="min-w-0">
+                      <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+                        {{ department.name }}
+                      </p>
+                      <p class="text-caption text-grey-darken-1 mb-0 text-truncate">
+                        Líder: {{ department.leader.name }}
+                      </p>
+                    </div>
+                    <div class="text-caption text-grey-darken-1 text-right">
+                      {{ department.membersCount }} membros<br />
+                      {{ department.schedulesCount }} escalas
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </v-card>
+    </v-dialog>
+
+    <v-bottom-sheet
+      v-model="isChurchDetailsSheetOpen"
+      scrollable
+      @after-leave="closeChurchDetails"
+    >
+      <v-card class="church-details-sheet bg-white" elevation="0">
+        <div class="sheet-handle" />
+        <div class="church-details-header">
+          <div class="d-flex align-center min-w-0">
+            <v-avatar color="#EEF2FF" size="44" class="mr-3">
+              <Church size="21" color="#4F46E5" />
+            </v-avatar>
+            <div class="min-w-0">
+              <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+                {{ selectedChurch?.name || "Carregando igreja" }}
+              </h2>
+              <p class="text-caption text-grey-darken-1 mb-0 text-truncate">
+                {{ selectedChurchAddress }}
+              </p>
+            </div>
+          </div>
+          <v-btn
+            icon
+            variant="text"
+            color="grey-darken-1"
+            size="small"
+            @click="isChurchDetailsSheetOpen = false"
+          >
+            <v-icon size="20">mdi-close</v-icon>
+          </v-btn>
+        </div>
+
+        <div class="church-details-body">
+          <v-skeleton-loader
+            v-if="isLoadingChurch"
+            type="article, list-item-three-line@3"
+          />
+
+          <div v-else-if="selectedChurch" class="church-details-content">
+            <div class="church-detail-grid">
+              <div class="detail-tile">
+                <p class="text-caption text-grey-darken-1 mb-1">Cidade</p>
+                <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0">
+                  {{ selectedChurch.city || "-" }}{{ selectedChurch.state ? ` - ${selectedChurch.state}` : "" }}
+                </p>
+              </div>
+              <div class="detail-tile">
+                <p class="text-caption text-grey-darken-1 mb-1">Status</p>
+                <v-chip
+                  size="small"
+                  :color="selectedChurch.isActive ? 'teal-darken-2' : 'grey'"
+                  variant="tonal"
+                >
+                  {{ selectedChurch.isActive ? "Ativa" : "Inativa" }}
+                </v-chip>
+              </div>
+              <div class="detail-tile">
+                <p class="text-caption text-grey-darken-1 mb-1">Documento</p>
+                <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0">
+                  {{ selectedChurch.document || "-" }}
+                </p>
+              </div>
+              <div class="detail-tile">
+                <p class="text-caption text-grey-darken-1 mb-1">CEP</p>
+                <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0">
+                  {{ selectedChurch.localZipCode || "-" }}
+                </p>
               </div>
             </div>
-          </v-card>
+
+            <section class="detail-section">
+              <div class="detail-section-heading">
+                <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+                  Usuários
+                </h3>
+                <v-chip size="small" color="indigo-darken-2" variant="tonal">
+                  {{ selectedChurch.users.length }}
+                </v-chip>
+              </div>
+              <div class="detail-list">
+                <div
+                  v-for="member in selectedChurch.users"
+                  :key="member.id"
+                  class="admin-row user-row"
+                  @click="openAdminUserDetails(member)"
+                >
+                  <div class="min-w-0">
+                    <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+                      {{ member.name }}
+                    </p>
+                    <p class="text-caption text-grey-darken-1 mb-0 text-truncate">
+                      {{ member.email }}
+                    </p>
+                  </div>
+                  <v-chip size="small" color="purple-darken-3" variant="tonal">
+                    {{ adminUserRoleLabel(member.role) }}
+                  </v-chip>
+                </div>
+              </div>
+            </section>
+
+            <section class="detail-section">
+              <div class="detail-section-heading">
+                <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+                  Ministérios
+                </h3>
+                <v-chip size="small" color="purple-darken-3" variant="tonal">
+                  {{ selectedChurch.departments.length }}
+                </v-chip>
+              </div>
+              <div class="detail-list">
+                <div
+                  v-for="department in selectedChurch.departments"
+                  :key="department.id"
+                  class="admin-row"
+                >
+                  <div class="min-w-0">
+                    <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+                      {{ department.name }}
+                    </p>
+                    <p class="text-caption text-grey-darken-1 mb-0 text-truncate">
+                      Líder: {{ department.leader.name }}
+                    </p>
+                  </div>
+                  <div class="text-caption text-grey-darken-1 text-right">
+                    {{ department.membersCount }} membros<br />
+                    {{ department.schedulesCount }} escalas
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
         </div>
-      </section>
-    </div>
+      </v-card>
+    </v-bottom-sheet>
 
     <v-dialog v-model="isAdminUserDetailsOpen" max-width="520">
       <v-card
@@ -869,7 +1053,7 @@
         Administração indisponível
       </h1>
       <p class="text-body-2 text-grey-darken-1 mb-0 text-center">
-        Esta área é liberada para pastor titular ou membros com permissão de gestão.
+        Esta área é liberada para pastores, admins ou membros com permissão de gestão.
       </p>
     </v-card>
   </div>
@@ -877,6 +1061,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
+import { useDisplay } from "vuetify";
 import {
   Users,
   Building,
@@ -901,6 +1086,7 @@ import {
 } from "../../composables/useAdmin";
 
 const { user } = useAuth();
+const { smAndDown } = useDisplay();
 const {
   getMembers,
   createMember,
@@ -931,6 +1117,8 @@ const isLoadingChurch = ref(false);
 const isMemberDialogOpen = ref(false);
 const isMemberDetailsOpen = ref(false);
 const isAdminUserDetailsOpen = ref(false);
+const isChurchDetailsOpen = ref(false);
+const isChurchDetailsSheetOpen = ref(false);
 const isDepartmentDialogOpen = ref(false);
 const isCreatingMember = ref(false);
 const isUpdatingPermissions = ref(false);
@@ -954,21 +1142,23 @@ const isPlatformAdmin = computed(
     user.value?.role === "SUPER_ADMIN" ||
     user.value?.is_admin === true,
 );
+const isChurchWideManager = computed(
+  () => user.value?.role === "PASTOR" || isPlatformAdmin.value,
+);
 const canAddMembers = computed(
-  () => user.value?.isTitularPastor === true || user.value?.canManageMembers === true,
+  () => isChurchWideManager.value || user.value?.canManageMembers === true,
 );
 const canAccessChurchAdmin = computed(
   () =>
     user.value?.hasChurch === true &&
-    (user.value?.isTitularPastor === true ||
-      user.value?.canManageMembers === true),
+    (isChurchWideManager.value || user.value?.canManageMembers === true),
 );
 const canEditMemberPermissions = computed(
   () =>
-    user.value?.isTitularPastor === true &&
+    isChurchWideManager.value &&
     selectedMember.value?.id !== user.value?.id,
 );
-const canManageDepartments = computed(() => user.value?.isTitularPastor === true);
+const canManageDepartments = computed(() => isChurchWideManager.value);
 const leaderOptions = computed(() =>
   members.value.map((member) => ({
     label: `${member.name} (${member.email})`,
@@ -986,6 +1176,17 @@ const platformTotals = computed(() => ({
   ),
   activeChurches: adminChurches.value.filter((church) => church.isActive).length,
 }));
+
+const selectedChurchAddress = computed(() => {
+  if (!selectedChurch.value) return "Buscando informações";
+
+  const street = selectedChurch.value.road || "Endereço não informado";
+  const number = selectedChurch.value.number
+    ? `, ${selectedChurch.value.number}`
+    : "";
+
+  return `${street}${number}`;
+});
 
 const churchTotals = computed(() => ({
   schedules: departments.value.reduce(
@@ -1122,16 +1323,19 @@ const loadPlatformChurches = async () => {
   }
 
   adminChurches.value = data ?? [];
-
-  if (!selectedChurch.value && adminChurches.value[0]) {
-    await selectChurch(adminChurches.value[0].id);
-  }
 };
 
 const selectChurch = async (id: string) => {
   platformError.value = "";
   isLoadingChurch.value = true;
   closeAdminUserDetails();
+  selectedChurch.value = null;
+
+  if (smAndDown.value) {
+    isChurchDetailsSheetOpen.value = true;
+  } else {
+    isChurchDetailsOpen.value = true;
+  }
 
   const { data, error } = await getChurchById(id);
 
@@ -1139,10 +1343,20 @@ const selectChurch = async (id: string) => {
 
   if (error || !data) {
     platformError.value = error || "Não foi possível carregar a igreja.";
+    isChurchDetailsOpen.value = false;
+    isChurchDetailsSheetOpen.value = false;
     return;
   }
 
   selectedChurch.value = data;
+};
+
+const closeChurchDetails = () => {
+  if (isChurchDetailsOpen.value || isChurchDetailsSheetOpen.value) return;
+
+  selectedChurch.value = null;
+  isLoadingChurch.value = false;
+  closeAdminUserDetails();
 };
 
 const openAdminUserDetails = (member: AdminChurchUser) => {
@@ -1439,11 +1653,288 @@ onMounted(async () => {
   border: 1px solid #f3f4f6;
 }
 
-/* Cria o grid de 2 colunas para os quadros de cima */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
+}
+
+.platform-admin-page {
+  background:
+    linear-gradient(180deg, #eef2ff 0, rgba(238, 242, 255, 0) 260px),
+    #f9fafb;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.platform-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+}
+
+.platform-kicker {
+  color: #4f46e5;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.platform-title {
+  font-size: 1.75rem;
+  line-height: 1.12;
+}
+
+.platform-subtitle {
+  max-width: 620px;
+}
+
+.platform-hero-mark {
+  width: 54px;
+  height: 54px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(79, 70, 229, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.platform-directory {
+  min-width: 0;
+}
+
+.directory-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.platform-loading,
+.platform-empty {
+  border-radius: 8px !important;
+}
+
+.platform-empty {
+  min-height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.church-directory-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.church-directory-card {
+  appearance: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  min-height: 188px;
+  padding: 16px;
+  text-align: left;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.church-directory-card:hover {
+  border-color: #c7d2fe;
+  box-shadow: 0 14px 36px rgba(31, 41, 55, 0.08);
+  transform: translateY(-1px);
+}
+
+.church-directory-card:active {
+  transform: scale(0.99);
+}
+
+.church-directory-card-active {
+  border-color: #6366f1;
+  box-shadow: 0 14px 32px rgba(99, 102, 241, 0.14);
+}
+
+.church-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.church-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: #eef2ff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.church-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #14b8a6;
+  box-shadow: 0 0 0 4px #ccfbf1;
+}
+
+.church-status-dot-muted {
+  background: #9ca3af;
+  box-shadow: 0 0 0 4px #f3f4f6;
+}
+
+.church-card-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.church-card-title {
+  color: #111827;
+  display: block;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.church-card-location {
+  color: #6b7280;
+  display: block;
+  font-size: 0.8125rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.church-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.church-metrics span {
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 0.72rem;
+  font-weight: 700;
+  min-height: 46px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+  padding: 5px 6px;
+}
+
+.church-metrics strong {
+  color: #111827;
+  font-size: 0.875rem;
+}
+
+.church-open-action {
+  color: #4f46e5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+  font-weight: 800;
+}
+
+.church-details-surface,
+.church-details-sheet {
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+.church-details-sheet {
+  max-height: 86vh;
+  border-radius: 8px 8px 0 0 !important;
+}
+
+.sheet-handle {
+  width: 44px;
+  height: 4px;
+  border-radius: 999px;
+  background: #d1d5db;
+  margin: 10px auto 2px;
+}
+
+.church-details-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px;
+}
+
+.church-details-body {
+  max-height: min(680px, 78vh);
+  overflow-y: auto;
+  padding: 18px;
+}
+
+.church-details-content {
+  display: grid;
+  gap: 16px;
+}
+
+.church-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.detail-tile {
+  min-width: 0;
+  border: 1px solid #eef2f7;
+  border-radius: 8px;
+  background: #f9fafb;
+  padding: 12px;
+}
+
+.detail-tile p {
+  overflow-wrap: anywhere;
+}
+
+.church-detail-columns {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.detail-section {
+  min-width: 0;
+  border: 1px solid #eef2f7;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.detail-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.detail-list {
+  display: grid;
+  gap: 8px;
 }
 
 .church-admin-page {
@@ -1541,90 +2032,6 @@ onMounted(async () => {
   gap: 14px;
 }
 
-.platform-layout {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-}
-
-.platform-sidebar,
-.platform-details {
-  min-height: 0;
-}
-
-.church-list-panel {
-  display: flex;
-  flex-direction: column;
-  max-height: 560px;
-  overflow: hidden;
-}
-
-.church-list-scroll {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.platform-details {
-  max-height: 640px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.church-card {
-  cursor: pointer;
-  flex: 0 0 auto;
-  color: #111827;
-  transition:
-    border-color 0.18s ease,
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
-}
-
-.church-card-title {
-  color: #111827;
-  display: block;
-  line-height: 1.25;
-  overflow-wrap: anywhere;
-  white-space: normal;
-}
-
-.church-card:active {
-  transform: scale(0.99);
-}
-
-.church-card-active {
-  border-color: #a855f7;
-  box-shadow: 0 10px 26px rgba(168, 85, 247, 0.12) !important;
-}
-
-.church-metrics {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.church-metrics span {
-  border-radius: 10px;
-  background: #f9fafb;
-  color: #4b5563;
-  font-size: 0.75rem;
-  font-weight: 600;
-  min-height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 4px 6px;
-}
-
-.church-detail-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 14px;
-}
-
 .admin-row {
   min-height: 56px;
   display: grid;
@@ -1632,16 +2039,12 @@ onMounted(async () => {
   align-items: center;
   gap: 12px;
   border: 1px solid #f3f4f6;
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 10px 12px;
 }
 
 .user-row {
   cursor: pointer;
-}
-
-.details-empty {
-  min-height: 280px;
 }
 
 .permission-empty {
@@ -1684,28 +2087,60 @@ onMounted(async () => {
   .church-detail-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .church-directory-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (min-width: 900px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
   .church-stats-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
-  .platform-layout {
-    grid-template-columns: minmax(320px, 0.85fr) minmax(0, 1.35fr);
-    align-items: start;
-    max-height: calc(100vh - 236px);
-    min-height: 520px;
+  .church-directory-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .church-list-panel,
-  .platform-details {
-    height: calc(100vh - 236px);
-    max-height: none;
+  .church-detail-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 520px) {
+  .platform-admin-page {
+    padding-right: 12px !important;
+    padding-left: 12px !important;
+  }
+
+  .platform-hero {
+    align-items: start;
+  }
+
+  .platform-title {
+    font-size: 1.45rem;
+  }
+
+  .platform-hero-mark {
+    width: 46px;
+    height: 46px;
+  }
+
+  .directory-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .church-details-header,
+  .church-details-body {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
   .church-admin-page {
     padding-right: 12px !important;
     padding-left: 12px !important;

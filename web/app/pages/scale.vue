@@ -33,6 +33,27 @@
       </div>
     </div>
 
+    <div v-if="canCreateChurchSchedule" class="leader-summary-grid mb-6">
+      <v-card class="leader-summary-card pa-4 elevation-1 bg-white">
+        <p class="text-caption text-grey-darken-1 mb-1">Pendentes</p>
+        <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+          {{ leaderSummary.pending }}
+        </h2>
+      </v-card>
+      <v-card class="leader-summary-card pa-4 elevation-1 bg-white">
+        <p class="text-caption text-grey-darken-1 mb-1">Não viram</p>
+        <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+          {{ leaderSummary.notViewed }}
+        </h2>
+      </v-card>
+      <v-card class="leader-summary-card pa-4 elevation-1 bg-white">
+        <p class="text-caption text-grey-darken-1 mb-1">Trocas</p>
+        <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+          {{ leaderSummary.swapRequests }}
+        </h2>
+      </v-card>
+    </div>
+
     <div>
       <ScaleScheduleSection
         v-for="(section, index) in filteredSchedules"
@@ -43,6 +64,11 @@
         @add-volunteer="openAssignmentsDialog"
         @edit="openScheduleEditDialog"
         @delete="handleDeleteSchedule"
+        @mark-viewed="handleMarkScheduleViewed"
+        @confirm-presence="handleConfirmSchedule"
+        @decline-presence="handleDeclineSchedule"
+        @maybe-presence="handleMaybeSchedule"
+        @request-swap="handleRequestSwap"
       />
 
       <v-card
@@ -130,6 +156,46 @@
             item-title="label"
             item-value="value"
             prepend-inner-icon="mdi-account-group-outline"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            class="scale-input mb-4"
+            hide-details="auto"
+            :disabled="isCreatingSchedule"
+          />
+
+          <div class="scale-field-grid mb-4">
+            <v-text-field
+              v-model="scheduleForm.rehearsalDate"
+              label="Data do ensaio"
+              type="date"
+              variant="outlined"
+              density="comfortable"
+              color="purple-darken-3"
+              bg-color="white"
+              class="scale-input"
+              hide-details="auto"
+              :disabled="isCreatingSchedule"
+            />
+            <v-text-field
+              v-model="scheduleForm.rehearsalTime"
+              label="Hora do ensaio"
+              type="time"
+              variant="outlined"
+              density="comfortable"
+              color="purple-darken-3"
+              bg-color="white"
+              class="scale-input"
+              hide-details="auto"
+              :disabled="isCreatingSchedule"
+            />
+          </div>
+
+          <v-text-field
+            v-model="scheduleForm.rehearsalNotes"
+            label="Observações do ensaio"
+            prepend-inner-icon="mdi-text"
             variant="outlined"
             density="comfortable"
             color="purple-darken-3"
@@ -277,13 +343,66 @@
             elevation="0"
           >
             <div class="d-flex justify-space-between align-center gap-3">
-              <div>
+              <div class="min-w-0">
                 <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0">
                   {{ assignment.name }}
                 </p>
                 <p class="text-caption text-grey-darken-1 mb-0">
                   {{ assignment.role }}
                 </p>
+                <div class="d-flex flex-wrap ga-2 mt-2">
+                  <v-chip
+                    size="x-small"
+                    :color="assignment.viewedAt ? 'indigo-darken-2' : 'grey'"
+                    variant="tonal"
+                  >
+                    {{ assignment.viewedAt ? "Viu" : "Não viu" }}
+                  </v-chip>
+                  <v-chip
+                    size="x-small"
+                    :color="responseStatusColor(assignment.confirmationStatus)"
+                    variant="tonal"
+                  >
+                    {{ responseStatusLabel(assignment.confirmationStatus) }}
+                  </v-chip>
+                  <v-chip
+                    size="x-small"
+                    :color="assignment.attendanceStatus === 'PRESENT' ? 'teal-darken-2' : assignment.attendanceStatus === 'ABSENT' ? 'red-darken-2' : 'grey'"
+                    variant="tonal"
+                  >
+                    {{ attendanceStatusLabel(assignment.attendanceStatus) }}
+                  </v-chip>
+                  <v-chip
+                    v-if="assignment.warning"
+                    size="x-small"
+                    color="amber-darken-3"
+                    variant="tonal"
+                  >
+                    {{ assignment.warning }}
+                  </v-chip>
+                </div>
+              </div>
+              <div class="d-flex align-center ga-1">
+                <v-btn
+                  icon
+                  variant="text"
+                  color="teal-darken-2"
+                  size="small"
+                  :disabled="isSavingAssignments"
+                  @click="markAttendance(assignment, 'PRESENT')"
+                >
+                  <v-icon size="18">mdi-check-circle-outline</v-icon>
+                </v-btn>
+                <v-btn
+                  icon
+                  variant="text"
+                  color="red-darken-2"
+                  size="small"
+                  :disabled="isSavingAssignments"
+                  @click="markAttendance(assignment, 'ABSENT')"
+                >
+                  <v-icon size="18">mdi-close-circle-outline</v-icon>
+                </v-btn>
               </div>
               <v-btn
                 icon
@@ -373,6 +492,8 @@ const {
   updateChurchSchedule,
   deleteChurchSchedule,
   updateScheduleAssignments,
+  updateMyScheduleAssignment,
+  updateScheduleAssignmentAttendance,
   getDepartmentResources,
   getDepartmentSongs,
 } = useDepartments();
@@ -405,6 +526,9 @@ const scheduleForm = reactive({
   date: "",
   time: "",
   departmentId: "",
+  rehearsalDate: "",
+  rehearsalTime: "",
+  rehearsalNotes: "",
   songIds: [] as string[],
   resourceIds: [] as string[],
 });
@@ -417,8 +541,13 @@ const assignmentForm = reactive({
 const draftAssignments = ref<
   {
     userId: string;
+    assignmentId?: string;
     name: string;
     role: string;
+    viewedAt?: string | null;
+    confirmationStatus?: string;
+    attendanceStatus?: string;
+    warning?: string;
   }[]
 >([]);
 
@@ -427,8 +556,15 @@ const filters = computed(() => [
   ...departments.value.map((department) => department.name),
 ]);
 
+const isChurchWideManager = computed(
+  () =>
+    user.value?.role === "PASTOR" ||
+    user.value?.role === "ADMIN" ||
+    user.value?.role === "SUPER_ADMIN" ||
+    user.value?.is_admin === true,
+);
 const manageableDepartments = computed(() => {
-  if (user.value?.isTitularPastor === true) {
+  if (isChurchWideManager.value) {
     return departments.value;
   }
 
@@ -471,9 +607,55 @@ const resourceOptions = computed(() =>
   })),
 );
 
+const responseStatusLabel = (status?: string) => {
+  const labels: Record<string, string> = {
+    CONFIRMED: "Confirmou",
+    DECLINED: "Não pode",
+    MAYBE: "Talvez",
+    SWAP_REQUESTED: "Troca",
+    PENDING: "Pendente",
+  };
+
+  return labels[status || "PENDING"] || "Pendente";
+};
+
+const responseStatusColor = (status?: string) => {
+  const colors: Record<string, string> = {
+    CONFIRMED: "teal-darken-2",
+    DECLINED: "red-darken-2",
+    MAYBE: "amber-darken-3",
+    SWAP_REQUESTED: "indigo-darken-2",
+    PENDING: "grey",
+  };
+
+  return colors[status || "PENDING"] || "grey";
+};
+
+const attendanceStatusLabel = (status?: string) => {
+  if (status === "PRESENT") return "Presente";
+  if (status === "ABSENT") return "Faltou";
+  return "Presença pendente";
+};
+
 const selectedSchedule = computed(() =>
   schedules.value.find((schedule) => schedule.id === selectedScheduleId.value),
 );
+
+const leaderSummary = computed(() => {
+  const assignments = schedules.value.flatMap((schedule) => schedule.assignments || []);
+
+  return {
+    pending: assignments.filter(
+      (assignment) =>
+        !assignment.confirmationStatus ||
+        assignment.confirmationStatus === "PENDING",
+    ).length,
+    notViewed: assignments.filter((assignment) => !assignment.viewedAt).length,
+    swapRequests: assignments.filter(
+      (assignment) => assignment.confirmationStatus === "SWAP_REQUESTED",
+    ).length,
+  };
+});
 
 const isDeleteScheduleDialogOpen = computed({
   get: () => Boolean(pendingDeleteSchedule.value),
@@ -489,12 +671,24 @@ type ScheduleEvent = {
   title: string;
   date: string;
   time: string;
+  rehearsalLabel?: string;
+  rehearsalNotes?: string | null;
   volunteerCount: number;
+  viewedCount: number;
+  confirmedCount: number;
   volunteers: { initials: string }[];
+  currentUserAssignment?: {
+    id: string;
+    viewedAt?: string | null;
+    confirmationStatus?: string;
+    confirmedAt?: string | null;
+  } | null;
   mediaItems: {
     id: string;
     title: string;
     category: string;
+    url?: string;
+    metadata?: DepartmentSong["metadata"] | DepartmentResource["metadata"];
   }[];
   canManage: boolean;
 };
@@ -504,7 +698,7 @@ const canCreateChurchSchedule = computed(
 );
 
 const canManageSchedule = (schedule: DepartmentSchedule) =>
-  user.value?.isTitularPastor === true ||
+  isChurchWideManager.value ||
   schedule.department?.leaderId === user.value?.id;
 
 const filteredSchedules = computed(() => {
@@ -533,6 +727,10 @@ const filteredSchedules = computed(() => {
 
 const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
   const date = new Date(schedule.date);
+  const rehearsalDate = schedule.rehearsalAt ? new Date(schedule.rehearsalAt) : null;
+  const currentUserAssignment = schedule.assignments?.find(
+    (assignment) => assignment.userId === user.value?.id,
+  );
 
   return {
     id: schedule.id,
@@ -544,12 +742,37 @@ const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
       hour: "2-digit",
       minute: "2-digit",
     }).format(date),
+    rehearsalLabel:
+      rehearsalDate && !Number.isNaN(rehearsalDate.getTime())
+        ? new Intl.DateTimeFormat("pt-BR", {
+            dateStyle: "medium",
+            timeStyle: "short",
+          }).format(rehearsalDate)
+        : "",
+    rehearsalNotes: schedule.rehearsalNotes,
     volunteerCount: schedule.assignments?.length || 0,
+    viewedCount:
+      schedule.assignments?.filter((assignment) => Boolean(assignment.viewedAt))
+        .length || 0,
+    confirmedCount:
+      schedule.assignments?.filter(
+        (assignment) => assignment.confirmationStatus === "CONFIRMED",
+      ).length || 0,
+    currentUserAssignment: currentUserAssignment
+      ? {
+          id: currentUserAssignment.id,
+          viewedAt: currentUserAssignment.viewedAt,
+          confirmationStatus: currentUserAssignment.confirmationStatus,
+          confirmedAt: currentUserAssignment.confirmedAt,
+        }
+      : null,
     mediaItems:
       schedule.mediaItems?.map((item) => ({
-        id: item.id,
+        id: item.mediaItem.id,
         title: item.mediaItem.title,
         category: item.mediaItem.category,
+        url: item.mediaItem.url,
+        metadata: item.mediaItem.metadata,
       })) || [],
     canManage: canManageSchedule(schedule),
     volunteers:
@@ -562,6 +785,80 @@ const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
           .join(""),
       })) || [],
   };
+};
+
+const updateLocalAssignment = (
+  scheduleId: string,
+  assignment: NonNullable<DepartmentSchedule["assignments"]>[number],
+) => {
+  schedules.value = schedules.value.map((schedule) => {
+    if (schedule.id !== scheduleId) return schedule;
+
+    return {
+      ...schedule,
+      assignments: schedule.assignments?.map((item) =>
+        item.id === assignment.id ? assignment : item,
+      ),
+    };
+  });
+};
+
+const updateMyScheduleResponse = async (
+  event: ScheduleEvent,
+  action: "VIEWED" | "CONFIRMED" | "DECLINED" | "MAYBE" | "SWAP_REQUESTED",
+  fallbackError: string,
+) => {
+  schedulesError.value = "";
+  const { data, error } = await updateMyScheduleAssignment(event.id, {
+    action,
+  });
+
+  if (error || !data) {
+    schedulesError.value = error || fallbackError;
+    return;
+  }
+
+  updateLocalAssignment(event.id, data);
+};
+
+const handleMarkScheduleViewed = async (event: ScheduleEvent) => {
+  await updateMyScheduleResponse(
+    event,
+    "VIEWED",
+    "Não foi possível marcar a escala como vista.",
+  );
+};
+
+const handleConfirmSchedule = async (event: ScheduleEvent) => {
+  await updateMyScheduleResponse(
+    event,
+    "CONFIRMED",
+    "Não foi possível confirmar presença.",
+  );
+};
+
+const handleDeclineSchedule = async (event: ScheduleEvent) => {
+  await updateMyScheduleResponse(
+    event,
+    "DECLINED",
+    "Não foi possível informar ausência.",
+  );
+};
+
+const handleMaybeSchedule = async (event: ScheduleEvent) => {
+  await updateMyScheduleResponse(
+    event,
+    "MAYBE",
+    "Não foi possível marcar talvez.",
+  );
+};
+
+const handleRequestSwap = async (event: ScheduleEvent) => {
+  await updateMyScheduleResponse(
+    event,
+    "SWAP_REQUESTED",
+    "Não foi possível pedir troca.",
+  );
 };
 
 const loadDepartments = async () => {
@@ -643,6 +940,9 @@ const resetScheduleForm = () => {
   scheduleForm.date = "";
   scheduleForm.time = "";
   scheduleForm.departmentId = "";
+  scheduleForm.rehearsalDate = "";
+  scheduleForm.rehearsalTime = "";
+  scheduleForm.rehearsalNotes = "";
   scheduleForm.songIds = [];
   scheduleForm.resourceIds = [];
   editingScheduleId.value = "";
@@ -674,6 +974,13 @@ const openScheduleEditDialog = async (event: ScheduleEvent) => {
   scheduleForm.date = toDateInputValue(schedule.date);
   scheduleForm.time = toTimeInputValue(schedule.date);
   scheduleForm.departmentId = schedule.departmentId;
+  scheduleForm.rehearsalDate = schedule.rehearsalAt
+    ? toDateInputValue(schedule.rehearsalAt)
+    : "";
+  scheduleForm.rehearsalTime = schedule.rehearsalAt
+    ? toTimeInputValue(schedule.rehearsalAt)
+    : "";
+  scheduleForm.rehearsalNotes = schedule.rehearsalNotes || "";
   await loadScheduleMediaItems(schedule.departmentId);
   scheduleForm.songIds =
     schedule.mediaItems
@@ -715,6 +1022,9 @@ const handleSaveSchedule = async () => {
         date: scheduleForm.date,
         time: scheduleForm.time || undefined,
         departmentId: scheduleForm.departmentId,
+        rehearsalDate: scheduleForm.rehearsalDate || null,
+        rehearsalTime: scheduleForm.rehearsalTime || null,
+        rehearsalNotes: scheduleForm.rehearsalNotes || null,
         songIds: scheduleForm.songIds,
         resourceIds: scheduleForm.resourceIds,
       })
@@ -723,6 +1033,9 @@ const handleSaveSchedule = async () => {
         date: scheduleForm.date,
         time: scheduleForm.time || undefined,
         departmentId: scheduleForm.departmentId,
+        rehearsalDate: scheduleForm.rehearsalDate || null,
+        rehearsalTime: scheduleForm.rehearsalTime || null,
+        rehearsalNotes: scheduleForm.rehearsalNotes || null,
         songIds: scheduleForm.songIds,
         resourceIds: scheduleForm.resourceIds,
       });
@@ -773,6 +1086,33 @@ const confirmDeleteSchedule = async () => {
   pendingDeleteSchedule.value = null;
 };
 
+const getSelectedScheduleDate = () => {
+  const schedule = selectedSchedule.value;
+  if (!schedule) return "";
+
+  return toDateInputValue(schedule.date);
+};
+
+const getAssignmentWarning = (userId: string) => {
+  const selectedDate = getSelectedScheduleDate();
+  if (!selectedDate) return "";
+
+  const member = members.value.find((item) => item.id === userId);
+
+  if (member?.unavailableDates?.includes(selectedDate)) {
+    return "Indisponível";
+  }
+
+  const hasConflict = schedules.value.some((schedule) => {
+    if (schedule.id === selectedScheduleId.value) return false;
+    if (toDateInputValue(schedule.date) !== selectedDate) return false;
+
+    return schedule.assignments?.some((assignment) => assignment.userId === userId);
+  });
+
+  return hasConflict ? "Conflito" : "";
+};
+
 const openAssignmentsDialog = (event: ScheduleEvent) => {
   const schedule = schedules.value.find((item) => item.id === event.id);
   if (!schedule) return;
@@ -783,9 +1123,14 @@ const openAssignmentsDialog = (event: ScheduleEvent) => {
   assignmentForm.role = "";
   draftAssignments.value =
     schedule.assignments?.map((assignment) => ({
+      assignmentId: assignment.id,
       userId: assignment.userId,
       name: assignment.user.name,
       role: assignment.role,
+      viewedAt: assignment.viewedAt,
+      confirmationStatus: assignment.confirmationStatus,
+      attendanceStatus: assignment.attendanceStatus,
+      warning: getAssignmentWarning(assignment.userId),
     })) || [];
   isAssignmentsDialogOpen.value = true;
 };
@@ -821,6 +1166,10 @@ const addDraftAssignment = () => {
       userId: member.id,
       name: member.name,
       role: assignmentForm.role.trim() || "Voluntário",
+      viewedAt: null,
+      confirmationStatus: "PENDING",
+      attendanceStatus: "PENDING",
+      warning: getAssignmentWarning(member.id),
     },
   ];
   assignmentForm.userId = "";
@@ -830,6 +1179,41 @@ const addDraftAssignment = () => {
 const removeDraftAssignment = (userId: string) => {
   draftAssignments.value = draftAssignments.value.filter(
     (assignment) => assignment.userId !== userId,
+  );
+};
+
+const markAttendance = async (
+  assignment: {
+    assignmentId?: string;
+    userId: string;
+  },
+  attendanceStatus: "PRESENT" | "ABSENT",
+) => {
+  if (!selectedScheduleId.value || !assignment.assignmentId) {
+    assignmentsError.value = "Salve os voluntários antes de marcar presença.";
+    return;
+  }
+
+  assignmentsError.value = "";
+  const { data, error } = await updateScheduleAssignmentAttendance(
+    selectedScheduleId.value,
+    assignment.assignmentId,
+    { attendanceStatus },
+  );
+
+  if (error || !data) {
+    assignmentsError.value = error || "Não foi possível marcar presença.";
+    return;
+  }
+
+  updateLocalAssignment(selectedScheduleId.value, data);
+  draftAssignments.value = draftAssignments.value.map((item) =>
+    item.assignmentId === data.id
+      ? {
+          ...item,
+          attendanceStatus: data.attendanceStatus,
+        }
+      : item,
   );
 };
 
@@ -975,6 +1359,17 @@ watch(schedules, async () => {
   cursor: pointer;
 }
 
+.leader-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.leader-summary-card {
+  border: 1px solid #f3f4f6;
+  border-radius: 8px !important;
+}
+
 .scale-input :deep(.v-field) {
   border-radius: 14px;
 }
@@ -1030,6 +1425,10 @@ watch(schedules, async () => {
 
   .dialog-actions .v-btn {
     flex: 1 1 100%;
+  }
+
+  .leader-summary-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

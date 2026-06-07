@@ -10,6 +10,7 @@ export interface ChurchMember {
   phone: string;
   role: string;
   canManageMembers: boolean;
+  unavailableDates?: string[];
   createdAt?: string;
 }
 

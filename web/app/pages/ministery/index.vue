@@ -190,7 +190,14 @@ const departmentTypes = [
 const departmentTypeLabel = (value: string) =>
   departmentTypes.find((type) => type.value === value)?.label || "Outro";
 
-const canCreateDepartment = computed(() => user.value?.isTitularPastor === true);
+const isChurchWideManager = computed(
+  () =>
+    user.value?.role === "PASTOR" ||
+    user.value?.role === "ADMIN" ||
+    user.value?.role === "SUPER_ADMIN" ||
+    user.value?.is_admin === true,
+);
+const canCreateDepartment = computed(() => isChurchWideManager.value);
 const leaderOptions = computed(() =>
   members.value.map((member) => ({
     label: `${member.name} (${member.email})`,

@@ -60,6 +60,8 @@ export class ChurchDepartmentAdapters {
     id: true,
     date: true,
     description: true,
+    rehearsalAt: true,
+    rehearsalNotes: true,
     departmentId: true,
     department: {
       select: {
@@ -74,6 +76,11 @@ export class ChurchDepartmentAdapters {
         id: true,
         role: true,
         userId: true,
+        viewedAt: true,
+        confirmationStatus: true,
+        confirmedAt: true,
+        attendanceStatus: true,
+        attendedAt: true,
         user: {
           select: {
             id: true,
@@ -204,8 +211,12 @@ export class ChurchDepartmentAdapters {
     return user;
   }
 
-  private isTitularPastor(user: CurrentUser) {
-    return user.role === "PASTOR" && user.crunch?.userMainId === user.id;
+  private isChurchWideManager(user: CurrentUser) {
+    return (
+      user.role === "PASTOR" ||
+      user.role === "ADMIN" ||
+      user.role === "SUPER_ADMIN"
+    );
   }
 
   private async assertCanManageDepartment(user: CurrentUser, departmentId: string) {
@@ -214,7 +225,7 @@ export class ChurchDepartmentAdapters {
       user.crunchId!,
     );
 
-    if (!this.isTitularPastor(user) && department.leaderId !== user.id) {
+    if (!this.isChurchWideManager(user) && department.leaderId !== user.id) {
       throw new DomainError("Usuario nao possui permissao para gerenciar este ministerio");
     }
 
@@ -230,9 +241,9 @@ export class ChurchDepartmentAdapters {
       user.crunchId!,
     );
 
-    if (!this.isTitularPastor(user) && department.leaderId !== user.id) {
+    if (!this.isChurchWideManager(user) && department.leaderId !== user.id) {
       throw new DomainError(
-        "Apenas o pastor titular ou o lider do ministerio pode gerenciar escalas",
+        "Apenas pastores, admins ou o lider do ministerio podem gerenciar escalas",
       );
     }
 
@@ -384,6 +395,20 @@ export class ChurchDepartmentAdapters {
     };
   }
 
+  private getOptionalDateTime(date?: string | null, time?: string | null) {
+    if (!date) {
+      return null;
+    }
+
+    const parsedDate = new Date(`${date}T${time || "00:00"}:00.000`);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      throw new DomainError("Data do ensaio invalida");
+    }
+
+    return parsedDate;
+  }
+
   async getChurchDepartments(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
 
@@ -408,8 +433,8 @@ export class ChurchDepartmentAdapters {
       type?: string;
     };
 
-    if (!this.isTitularPastor(user)) {
-      throw new DomainError("Apenas o pastor titular pode cadastrar ministérios");
+    if (!this.isChurchWideManager(user)) {
+      throw new DomainError("Apenas pastores ou admins podem cadastrar ministérios");
     }
 
     if (!body.name?.trim()) {
@@ -472,8 +497,8 @@ export class ChurchDepartmentAdapters {
 
     await this.assertCanManageDepartment(user, id);
 
-    if (body.leaderId && !this.isTitularPastor(user)) {
-      throw new DomainError("Apenas o pastor titular pode alterar o lider do ministerio");
+    if (body.leaderId && !this.isChurchWideManager(user)) {
+      throw new DomainError("Apenas pastores ou admins podem alterar o lider do ministerio");
     }
 
     if (body.leaderId) {
@@ -534,8 +559,8 @@ export class ChurchDepartmentAdapters {
       throw new DomainError("Ministerio nao informado");
     }
 
-    if (!this.isTitularPastor(user)) {
-      throw new DomainError("Apenas o pastor titular pode remover ministerios");
+    if (!this.isChurchWideManager(user)) {
+      throw new DomainError("Apenas pastores ou admins podem remover ministerios");
     }
 
     await this.getDepartmentFromCurrentChurch(id, user.crunchId!);
@@ -797,6 +822,9 @@ export class ChurchDepartmentAdapters {
       time?: string;
       songIds?: unknown;
       resourceIds?: unknown;
+      rehearsalDate?: string | null;
+      rehearsalTime?: string | null;
+      rehearsalNotes?: string | null;
     };
 
     if (!body.title?.trim()) {
@@ -828,6 +856,8 @@ export class ChurchDepartmentAdapters {
         date: scheduleDate,
         description: body.title.trim(),
         departmentId,
+        rehearsalAt: this.getOptionalDateTime(body.rehearsalDate, body.rehearsalTime),
+        rehearsalNotes: body.rehearsalNotes?.trim() || null,
         mediaItems: {
           create: mediaItemIds.map((mediaItemId) => ({
             id: crypto.randomUUID(),
@@ -850,6 +880,9 @@ export class ChurchDepartmentAdapters {
       departmentId?: string;
       songIds?: unknown;
       resourceIds?: unknown;
+      rehearsalDate?: string | null;
+      rehearsalTime?: string | null;
+      rehearsalNotes?: string | null;
     };
 
     if (!id) {
@@ -898,6 +931,17 @@ export class ChurchDepartmentAdapters {
           id: body.departmentId,
         },
       };
+    }
+
+    if (body.rehearsalDate !== undefined || body.rehearsalTime !== undefined) {
+      data.rehearsalAt = this.getOptionalDateTime(
+        body.rehearsalDate,
+        body.rehearsalTime,
+      );
+    }
+
+    if (body.rehearsalNotes !== undefined) {
+      data.rehearsalNotes = body.rehearsalNotes?.trim() || null;
     }
 
     const shouldUpdateMediaItems =
@@ -1030,9 +1074,13 @@ export class ChurchDepartmentAdapters {
         scheduleId: id,
       },
       select: {
+        id: true,
         userId: true,
       },
     });
+    const previousAssignmentByUserId = new Map(
+      previousAssignments.map((assignment) => [assignment.userId, assignment]),
+    );
     const previousUserIds = new Set(
       previousAssignments.map((assignment) => assignment.userId),
     );
@@ -1044,18 +1092,36 @@ export class ChurchDepartmentAdapters {
       $prismaClient.scheduleAssignment.deleteMany({
         where: {
           scheduleId: id,
+          userId: uniqueUserIds.length
+            ? {
+                notIn: uniqueUserIds,
+              }
+            : undefined,
         },
       }),
-      ...normalizedAssignments.map((assignment) =>
-        $prismaClient.scheduleAssignment.create({
+      ...normalizedAssignments.map((assignment) => {
+        const previousAssignment = previousAssignmentByUserId.get(assignment.userId);
+
+        if (previousAssignment) {
+          return $prismaClient.scheduleAssignment.update({
+            where: {
+              id: previousAssignment.id,
+            },
+            data: {
+              role: assignment.role,
+            },
+          });
+        }
+
+        return $prismaClient.scheduleAssignment.create({
           data: {
             id: crypto.randomUUID(),
             scheduleId: id,
             userId: assignment.userId,
             role: assignment.role,
           },
-        }),
-      ),
+        });
+      }),
     ]);
 
     const updatedSchedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
@@ -1069,6 +1135,172 @@ export class ChurchDepartmentAdapters {
     });
 
     return updatedSchedule;
+  }
+
+  async updateMyChurchScheduleAssignment(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+    const body = request.body as {
+      action?: "VIEWED" | "CONFIRMED" | "DECLINED" | "MAYBE" | "SWAP_REQUESTED";
+    };
+
+    if (!id) {
+      throw new DomainError("Escala nao informada");
+    }
+
+    const validActions = [
+      "VIEWED",
+      "CONFIRMED",
+      "DECLINED",
+      "MAYBE",
+      "SWAP_REQUESTED",
+    ];
+
+    if (!validActions.includes(body.action || "")) {
+      throw new DomainError("Acao da escala invalida");
+    }
+
+    const schedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+
+    const assignment = await $prismaClient.scheduleAssignment.findFirst({
+      where: {
+        scheduleId: id,
+        userId: user.id,
+      },
+      select: {
+        id: true,
+        viewedAt: true,
+      },
+    });
+
+    if (!assignment) {
+      throw new DomainError("Voce nao esta nesta escala");
+    }
+
+    const now = new Date();
+    const updatedAssignment = await $prismaClient.scheduleAssignment.update({
+      where: {
+        id: assignment.id,
+      },
+      data:
+        body.action === "VIEWED"
+          ? {
+              viewedAt: assignment.viewedAt || now,
+            }
+          : body.action === "CONFIRMED"
+          ? {
+              viewedAt: assignment.viewedAt || now,
+              confirmationStatus: "CONFIRMED",
+              confirmedAt: now,
+            }
+          : {
+              viewedAt: assignment.viewedAt || now,
+              confirmationStatus: body.action,
+              confirmedAt: null,
+            },
+      select: {
+        id: true,
+        role: true,
+        userId: true,
+        viewedAt: true,
+        confirmationStatus: true,
+        confirmedAt: true,
+        attendanceStatus: true,
+        attendedAt: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (body.action !== "VIEWED") {
+      const actionLabels: Record<string, string> = {
+        CONFIRMED: "confirmou presenca",
+        DECLINED: "marcou que nao pode ir",
+        MAYBE: "marcou talvez",
+        SWAP_REQUESTED: "pediu troca",
+      };
+
+      await pushNotificationService.sendToUsers(
+        [schedule.department.leaderId, user.crunch?.userMainId || ""],
+        {
+          title: "Resposta de escala",
+          body: `${user.name} ${actionLabels[body.action || ""] || "respondeu"} em ${schedule.description}`,
+          url: `/scale?schedule=${schedule.id}`,
+          type: "schedule-response",
+          scheduleId: schedule.id,
+        },
+      );
+    }
+
+    return updatedAssignment;
+  }
+
+  async updateChurchScheduleAssignmentAttendance(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { scheduleId, assignmentId } = request.params as {
+      scheduleId?: string;
+      assignmentId?: string;
+    };
+    const body = request.body as {
+      attendanceStatus?: "PRESENT" | "ABSENT" | "PENDING";
+    };
+
+    if (!scheduleId || !assignmentId) {
+      throw new DomainError("Voluntario da escala nao informado");
+    }
+
+    if (!["PRESENT", "ABSENT", "PENDING"].includes(body.attendanceStatus || "")) {
+      throw new DomainError("Status de presenca invalido");
+    }
+
+    const schedule = await this.getScheduleFromCurrentChurch(scheduleId, user.crunchId!);
+    await this.assertCanManageScheduleDepartment(user, schedule.departmentId);
+
+    const assignment = await $prismaClient.scheduleAssignment.findFirst({
+      where: {
+        id: assignmentId,
+        scheduleId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!assignment) {
+      throw new DomainError("Voluntario nao encontrado nesta escala");
+    }
+
+    return await $prismaClient.scheduleAssignment.update({
+      where: {
+        id: assignmentId,
+      },
+      data: {
+        attendanceStatus: body.attendanceStatus,
+        attendedAt: body.attendanceStatus === "PRESENT" ? new Date() : null,
+      },
+      select: {
+        id: true,
+        role: true,
+        userId: true,
+        viewedAt: true,
+        confirmationStatus: true,
+        confirmedAt: true,
+        attendanceStatus: true,
+        attendedAt: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
   }
 
   async getChurchDepartmentResources(request: FastifyRequest) {
@@ -1130,6 +1362,8 @@ export class ChurchDepartmentAdapters {
       songCategory?: string;
       url?: string;
       notes?: string;
+      lyrics?: string;
+      chords?: string;
     };
 
     if (!id) {
@@ -1148,6 +1382,8 @@ export class ChurchDepartmentAdapters {
       bpm: body.bpm === undefined || body.bpm === null ? "" : String(body.bpm).trim(),
       songCategory: body.songCategory?.trim() || "Louvor",
       notes: body.notes?.trim() || "",
+      lyrics: body.lyrics?.trim() || "",
+      chords: body.chords?.trim() || "",
     };
 
     return await $prismaClient.mediaItem.create({
@@ -1177,6 +1413,8 @@ export class ChurchDepartmentAdapters {
       songCategory?: string;
       url?: string | null;
       notes?: string | null;
+      lyrics?: string | null;
+      chords?: string | null;
     };
 
     if (!departmentId || !songId) {
@@ -1210,6 +1448,8 @@ export class ChurchDepartmentAdapters {
         ? { songCategory: body.songCategory.trim() || "Louvor" }
         : {}),
       ...(body.notes !== undefined ? { notes: body.notes?.trim() || "" } : {}),
+      ...(body.lyrics !== undefined ? { lyrics: body.lyrics?.trim() || "" } : {}),
+      ...(body.chords !== undefined ? { chords: body.chords?.trim() || "" } : {}),
     };
 
     const data: Prisma.MediaItemUpdateInput = {
@@ -1266,6 +1506,114 @@ export class ChurchDepartmentAdapters {
     });
 
     return { success: true };
+  }
+
+  async getChurchSongPreference(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { songId } = request.params as { songId?: string };
+
+    if (!songId) {
+      throw new DomainError("Musica nao informada");
+    }
+
+    const song = await $prismaClient.mediaItem.findFirst({
+      where: {
+        id: songId,
+        category: "MUSIC",
+        department: {
+          crunchId: user.crunchId!,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!song) {
+      throw new DomainError("Musica nao encontrada nesta igreja");
+    }
+
+    const preference = await $prismaClient.userSongPreference.findUnique({
+      where: {
+        userId_mediaItemId: {
+          userId: user.id,
+          mediaItemId: songId,
+        },
+      },
+      select: {
+        id: true,
+        personalKey: true,
+        chords: true,
+        updatedAt: true,
+      },
+    });
+
+    return (
+      preference ?? {
+        id: null,
+        personalKey: "",
+        chords: "",
+        updatedAt: null,
+      }
+    );
+  }
+
+  async updateChurchSongPreference(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { songId } = request.params as { songId?: string };
+    const body = request.body as {
+      personalKey?: string | null;
+      chords?: string | null;
+    };
+
+    if (!songId) {
+      throw new DomainError("Musica nao informada");
+    }
+
+    const song = await $prismaClient.mediaItem.findFirst({
+      where: {
+        id: songId,
+        category: "MUSIC",
+        department: {
+          crunchId: user.crunchId!,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!song) {
+      throw new DomainError("Musica nao encontrada nesta igreja");
+    }
+
+    const preference = await $prismaClient.userSongPreference.upsert({
+      where: {
+        userId_mediaItemId: {
+          userId: user.id,
+          mediaItemId: songId,
+        },
+      },
+      create: {
+        id: crypto.randomUUID(),
+        userId: user.id,
+        mediaItemId: songId,
+        personalKey: body.personalKey?.trim() || null,
+        chords: body.chords?.trim() || null,
+      },
+      update: {
+        personalKey: body.personalKey?.trim() || null,
+        chords: body.chords?.trim() || null,
+      },
+      select: {
+        id: true,
+        personalKey: true,
+        chords: true,
+        updatedAt: true,
+      },
+    });
+
+    return preference;
   }
 
   async createChurchDepartmentResource(request: FastifyRequest) {

@@ -85,6 +85,18 @@ export async function ChurchDepartmentRoutes(app: FastifyInstance) {
     controllerHandler(adapters.updateChurchScheduleAssignments.bind(adapters)),
   );
 
+  app.patch(
+    "/api/church/schedules/:id/my-assignment",
+    controllerHandler(adapters.updateMyChurchScheduleAssignment.bind(adapters)),
+  );
+
+  app.patch(
+    "/api/church/schedules/:scheduleId/assignments/:assignmentId/attendance",
+    controllerHandler(
+      adapters.updateChurchScheduleAssignmentAttendance.bind(adapters),
+    ),
+  );
+
   app.get(
     "/api/church/departments/:id/resources",
     controllerHandler(adapters.getChurchDepartmentResources.bind(adapters)),
@@ -108,6 +120,16 @@ export async function ChurchDepartmentRoutes(app: FastifyInstance) {
   app.delete(
     "/api/church/departments/:departmentId/songs/:songId",
     controllerHandler(adapters.deleteChurchDepartmentSong.bind(adapters)),
+  );
+
+  app.get(
+    "/api/church/songs/:songId/preference",
+    controllerHandler(adapters.getChurchSongPreference.bind(adapters)),
+  );
+
+  app.patch(
+    "/api/church/songs/:songId/preference",
+    controllerHandler(adapters.updateChurchSongPreference.bind(adapters)),
   );
 
   app.post(

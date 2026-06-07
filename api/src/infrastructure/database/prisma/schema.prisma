@@ -50,6 +50,7 @@ model User {
     unavailableDates UserUnavailableDate[]
     userAuth       UserAuth?
     pushSubscriptions PushSubscription[]
+    songPreferences UserSongPreference[]
 }
 
 model PushSubscription {
@@ -151,12 +152,31 @@ model MediaItem {
     departmentId String
     department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
     schedules    ScheduleMediaItem[]
+    userPreferences UserSongPreference[]
+}
+
+model UserSongPreference {
+    id          String   @id @default(uuid())
+    personalKey String?
+    chords      String?
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    userId String
+    user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    mediaItemId String
+    mediaItem   MediaItem @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, mediaItemId])
 }
 
 model Schedule {
     id          String   @id @default(uuid())
     date        DateTime
     description String
+    rehearsalAt DateTime?
+    rehearsalNotes String?
 
     departmentId String
     department   Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
@@ -181,6 +201,11 @@ model ScheduleMediaItem {
 model ScheduleAssignment {
     id   String @id @default(uuid())
     role String
+    viewedAt DateTime?
+    confirmationStatus String @default("PENDING")
+    confirmedAt DateTime?
+    attendanceStatus String @default("PENDING")
+    attendedAt DateTime?
 
     userId String
     user   User   @relation(fields: [userId], references: [id])

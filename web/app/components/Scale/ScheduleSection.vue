@@ -11,6 +11,11 @@
           @add-volunteer="$emit('add-volunteer', $event)"
           @edit="$emit('edit', $event)"
           @delete="$emit('delete', $event)"
+          @mark-viewed="$emit('mark-viewed', $event)"
+          @confirm-presence="$emit('confirm-presence', $event)"
+          @decline-presence="$emit('decline-presence', $event)"
+          @maybe-presence="$emit('maybe-presence', $event)"
+          @request-swap="$emit('request-swap', $event)"
         />
       </div>
     </UtilsTitle>
@@ -18,7 +23,16 @@
 </template>
 
 <script setup>
-defineEmits(["add-volunteer", "edit", "delete"]);
+defineEmits([
+  "add-volunteer",
+  "edit",
+  "delete",
+  "mark-viewed",
+  "confirm-presence",
+  "decline-presence",
+  "maybe-presence",
+  "request-swap",
+]);
 
 const props = defineProps({
   title: {

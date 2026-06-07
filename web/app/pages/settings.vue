@@ -16,7 +16,7 @@
       density="comfortable"
       class="mb-4"
     >
-      Apenas o pastor titular pode editar os dados da igreja.
+      Apenas pastores ou admins podem editar os dados da igreja.
     </v-alert>
 
     <v-card class="settings-card pa-4 elevation-1 bg-white">
@@ -154,8 +154,15 @@ const form = reactive({
   document: "",
 });
 
+const isChurchWideManager = computed(
+  () =>
+    user.value?.role === "PASTOR" ||
+    user.value?.role === "ADMIN" ||
+    user.value?.role === "SUPER_ADMIN" ||
+    user.value?.is_admin === true,
+);
 const canEditChurch = computed(
-  () => user.value?.hasChurch === true && user.value?.isTitularPastor === true,
+  () => user.value?.hasChurch === true && isChurchWideManager.value,
 );
 
 const fillForm = () => {

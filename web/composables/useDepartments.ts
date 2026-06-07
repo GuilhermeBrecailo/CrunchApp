@@ -41,6 +41,8 @@ export interface DepartmentSchedule {
   id: string;
   date: string;
   description: string;
+  rehearsalAt?: string | null;
+  rehearsalNotes?: string | null;
   departmentId: string;
   department?: {
     id: string;
@@ -52,6 +54,11 @@ export interface DepartmentSchedule {
     id: string;
     role: string;
     userId: string;
+    viewedAt?: string | null;
+    confirmationStatus?: "PENDING" | "CONFIRMED" | string;
+    confirmedAt?: string | null;
+    attendanceStatus?: "PENDING" | "PRESENT" | "ABSENT" | string;
+    attendedAt?: string | null;
     user: {
       id: string;
       name: string;
@@ -87,8 +94,17 @@ export interface DepartmentSong {
     bpm?: string;
     songCategory?: string;
     notes?: string;
+    lyrics?: string;
+    chords?: string;
   } | null;
   departmentId: string;
+}
+
+export interface SongPreference {
+  id: string | null;
+  personalKey?: string | null;
+  chords?: string | null;
+  updatedAt?: string | null;
 }
 
 interface CreateDepartmentDTO {
@@ -128,6 +144,9 @@ interface CreateDepartmentScheduleDTO {
   departmentId?: string;
   songIds?: string[];
   resourceIds?: string[];
+  rehearsalDate?: string | null;
+  rehearsalTime?: string | null;
+  rehearsalNotes?: string | null;
 }
 
 interface UpdateDepartmentScheduleDTO {
@@ -138,6 +157,9 @@ interface UpdateDepartmentScheduleDTO {
   departmentId?: string;
   songIds?: string[];
   resourceIds?: string[];
+  rehearsalDate?: string | null;
+  rehearsalTime?: string | null;
+  rehearsalNotes?: string | null;
 }
 
 interface CreateDepartmentResourceDTO {
@@ -162,6 +184,8 @@ interface CreateDepartmentSongDTO {
   songCategory?: string;
   url?: string;
   notes?: string;
+  lyrics?: string;
+  chords?: string;
 }
 
 interface UpdateDepartmentSongDTO {
@@ -172,6 +196,8 @@ interface UpdateDepartmentSongDTO {
   songCategory?: string;
   url?: string | null;
   notes?: string | null;
+  lyrics?: string | null;
+  chords?: string | null;
 }
 
 interface UpdateScheduleAssignmentsDTO {
@@ -179,6 +205,19 @@ interface UpdateScheduleAssignmentsDTO {
     userId: string;
     role: string;
   }[];
+}
+
+interface UpdateMyScheduleAssignmentDTO {
+  action: "VIEWED" | "CONFIRMED" | "DECLINED" | "MAYBE" | "SWAP_REQUESTED";
+}
+
+interface UpdateScheduleAssignmentAttendanceDTO {
+  attendanceStatus: "PENDING" | "PRESENT" | "ABSENT";
+}
+
+interface UpdateSongPreferenceDTO {
+  personalKey?: string | null;
+  chords?: string | null;
 }
 
 export const useDepartments = () => {
@@ -376,6 +415,35 @@ export const useDepartments = () => {
     );
   };
 
+  const updateMyScheduleAssignment = async (
+    scheduleId: string,
+    payload: UpdateMyScheduleAssignmentDTO,
+  ): Promise<ApiResponse<NonNullable<DepartmentSchedule["assignments"]>[number]>> => {
+    return await $customFetch<NonNullable<DepartmentSchedule["assignments"]>[number]>(
+      `${config.public.URL_BACKEND}/api/church/schedules/${scheduleId}/my-assignment`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+        body: payload,
+      },
+    );
+  };
+
+  const updateScheduleAssignmentAttendance = async (
+    scheduleId: string,
+    assignmentId: string,
+    payload: UpdateScheduleAssignmentAttendanceDTO,
+  ): Promise<ApiResponse<NonNullable<DepartmentSchedule["assignments"]>[number]>> => {
+    return await $customFetch<NonNullable<DepartmentSchedule["assignments"]>[number]>(
+      `${config.public.URL_BACKEND}/api/church/schedules/${scheduleId}/assignments/${assignmentId}/attendance`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+        body: payload,
+      },
+    );
+  };
+
   const updateChurchSchedule = async (
     scheduleId: string,
     schedule: UpdateDepartmentScheduleDTO,
@@ -482,6 +550,32 @@ export const useDepartments = () => {
     );
   };
 
+  const getSongPreference = async (
+    songId: string,
+  ): Promise<ApiResponse<SongPreference>> => {
+    return await $customFetch<SongPreference>(
+      `${config.public.URL_BACKEND}/api/church/songs/${songId}/preference`,
+      {
+        method: "GET",
+        headers: authHeaders(),
+      },
+    );
+  };
+
+  const updateSongPreference = async (
+    songId: string,
+    preference: UpdateSongPreferenceDTO,
+  ): Promise<ApiResponse<SongPreference>> => {
+    return await $customFetch<SongPreference>(
+      `${config.public.URL_BACKEND}/api/church/songs/${songId}/preference`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+        body: preference,
+      },
+    );
+  };
+
   const updateDepartmentResource = async (
     departmentId: string,
     resourceId: string,
@@ -527,6 +621,8 @@ export const useDepartments = () => {
     updateChurchSchedule,
     deleteChurchSchedule,
     updateScheduleAssignments,
+    updateMyScheduleAssignment,
+    updateScheduleAssignmentAttendance,
     getDepartmentResources,
     createDepartmentResource,
     updateDepartmentResource,
@@ -535,5 +631,7 @@ export const useDepartments = () => {
     createDepartmentSong,
     updateDepartmentSong,
     deleteDepartmentSong,
+    getSongPreference,
+    updateSongPreference,
   };
 };
