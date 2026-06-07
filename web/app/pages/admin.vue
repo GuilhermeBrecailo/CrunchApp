@@ -315,6 +315,29 @@
           />
 
           <div v-else-if="selectedChurch" class="church-details-content">
+            <div class="church-sheet-summary">
+              <div class="sheet-summary-tile">
+                <Users size="18" />
+                <span>{{ selectedChurch.users.length }}</span>
+                <small>usuários</small>
+              </div>
+              <div class="sheet-summary-tile">
+                <Building size="18" />
+                <span>{{ selectedChurch.departments.length }}</span>
+                <small>ministérios</small>
+              </div>
+              <div class="sheet-summary-tile">
+                <Calendar size="18" />
+                <span>{{ selectedChurch.schedules?.length || 0 }}</span>
+                <small>escalas</small>
+              </div>
+              <div class="sheet-summary-tile">
+                <UserCheck size="18" />
+                <span>{{ selectedChurch.isActive ? "Ativa" : "Inativa" }}</span>
+                <small>status</small>
+              </div>
+            </div>
+
             <div class="church-detail-grid">
               <div class="detail-tile">
                 <p class="text-caption text-grey-darken-1 mb-1">Cidade</p>
@@ -351,13 +374,25 @@
                 <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
                   Usuários
                 </h3>
-                <v-chip size="small" color="indigo-darken-2" variant="tonal">
-                  {{ selectedChurch.users.length }}
-                </v-chip>
+                <div class="detail-heading-actions">
+                  <v-chip size="small" color="indigo-darken-2" variant="tonal">
+                    {{ selectedChurch.users.length }}
+                  </v-chip>
+                  <v-btn
+                    v-if="selectedChurch.users.length > churchPreviewLimit"
+                    variant="text"
+                    color="primary"
+                    size="small"
+                    class="text-none"
+                    @click="showAllChurchUsers = !showAllChurchUsers"
+                  >
+                    {{ showAllChurchUsers ? "Mostrar menos" : "Mostrar todos" }}
+                  </v-btn>
+                </div>
               </div>
               <div class="detail-list">
                 <div
-                  v-for="member in selectedChurch.users"
+                  v-for="member in visibleChurchUsers"
                   :key="member.id"
                   class="admin-row user-row"
                   @click="openAdminUserDetails(member)"
@@ -382,13 +417,25 @@
                 <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
                   Ministérios
                 </h3>
-                <v-chip size="small" color="purple-darken-3" variant="tonal">
-                  {{ selectedChurch.departments.length }}
-                </v-chip>
+                <div class="detail-heading-actions">
+                  <v-chip size="small" color="purple-darken-3" variant="tonal">
+                    {{ selectedChurch.departments.length }}
+                  </v-chip>
+                  <v-btn
+                    v-if="selectedChurch.departments.length > churchPreviewLimit"
+                    variant="text"
+                    color="primary"
+                    size="small"
+                    class="text-none"
+                    @click="showAllChurchDepartments = !showAllChurchDepartments"
+                  >
+                    {{ showAllChurchDepartments ? "Mostrar menos" : "Mostrar todos" }}
+                  </v-btn>
+                </div>
               </div>
               <div class="detail-list">
                 <div
-                  v-for="department in selectedChurch.departments"
+                  v-for="department in visibleChurchDepartments"
                   :key="department.id"
                   class="admin-row"
                 >
@@ -405,6 +452,54 @@
                     {{ department.schedulesCount }} escalas
                   </div>
                 </div>
+              </div>
+            </section>
+
+            <section class="detail-section">
+              <div class="detail-section-heading">
+                <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+                  Escalas
+                </h3>
+                <div class="detail-heading-actions">
+                  <v-chip size="small" color="teal-darken-2" variant="tonal">
+                    {{ selectedChurch.schedules?.length || 0 }}
+                  </v-chip>
+                  <v-btn
+                    v-if="(selectedChurch.schedules?.length || 0) > churchPreviewLimit"
+                    variant="text"
+                    color="primary"
+                    size="small"
+                    class="text-none"
+                    @click="showAllChurchSchedules = !showAllChurchSchedules"
+                  >
+                    {{ showAllChurchSchedules ? "Mostrar menos" : "Mostrar todos" }}
+                  </v-btn>
+                </div>
+              </div>
+
+              <div v-if="visibleChurchSchedules.length" class="detail-list">
+                <div
+                  v-for="schedule in visibleChurchSchedules"
+                  :key="schedule.id"
+                  class="admin-row schedule-row"
+                >
+                  <div class="min-w-0">
+                    <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+                      {{ schedule.description }}
+                    </p>
+                    <p class="text-caption text-grey-darken-1 mb-0 text-truncate">
+                      {{ schedule.department.name }} · {{ formatDate(schedule.date) }}
+                    </p>
+                  </div>
+                  <div class="text-caption text-grey-darken-1 text-right">
+                    {{ schedule.assignmentsCount }} voluntários<br />
+                    {{ schedule.mediaItemsCount }} itens
+                  </div>
+                </div>
+              </div>
+
+              <div v-else class="detail-empty">
+                Nenhuma escala cadastrada.
               </div>
             </section>
           </div>
@@ -1086,7 +1181,6 @@ import {
 } from "../../composables/useAdmin";
 
 const { user } = useAuth();
-const { smAndDown } = useDisplay();
 const {
   getMembers,
   createMember,
@@ -1135,6 +1229,10 @@ const editingDepartmentId = ref("");
 const pendingDeleteDepartment = ref<ChurchDepartment | null>(null);
 const pendingDeleteMember = ref<ChurchMember | null>(null);
 const isConfirmingDelete = ref(false);
+const churchPreviewLimit = 3;
+const showAllChurchUsers = ref(false);
+const showAllChurchDepartments = ref(false);
+const showAllChurchSchedules = ref(false);
 
 const isPlatformAdmin = computed(
   () =>
@@ -1186,6 +1284,25 @@ const selectedChurchAddress = computed(() => {
     : "";
 
   return `${street}${number}`;
+});
+
+const visibleChurchUsers = computed(() => {
+  const users = selectedChurch.value?.users || [];
+  return showAllChurchUsers.value ? users : users.slice(0, churchPreviewLimit);
+});
+
+const visibleChurchDepartments = computed(() => {
+  const departments = selectedChurch.value?.departments || [];
+  return showAllChurchDepartments.value
+    ? departments
+    : departments.slice(0, churchPreviewLimit);
+});
+
+const visibleChurchSchedules = computed(() => {
+  const schedules = selectedChurch.value?.schedules || [];
+  return showAllChurchSchedules.value
+    ? schedules
+    : schedules.slice(0, churchPreviewLimit);
 });
 
 const churchTotals = computed(() => ({
@@ -1330,12 +1447,11 @@ const selectChurch = async (id: string) => {
   isLoadingChurch.value = true;
   closeAdminUserDetails();
   selectedChurch.value = null;
-
-  if (smAndDown.value) {
-    isChurchDetailsSheetOpen.value = true;
-  } else {
-    isChurchDetailsOpen.value = true;
-  }
+  showAllChurchUsers.value = false;
+  showAllChurchDepartments.value = false;
+  showAllChurchSchedules.value = false;
+  isChurchDetailsOpen.value = false;
+  isChurchDetailsSheetOpen.value = true;
 
   const { data, error } = await getChurchById(id);
 
@@ -1861,7 +1977,9 @@ onMounted(async () => {
 }
 
 .church-details-sheet {
-  max-height: 86vh;
+  width: min(1040px, 100vw);
+  max-height: 88vh;
+  margin: 0 auto;
   border-radius: 8px 8px 0 0 !important;
 }
 
@@ -1890,6 +2008,51 @@ onMounted(async () => {
 .church-details-content {
   display: grid;
   gap: 16px;
+}
+
+.church-sheet-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sheet-summary-tile {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "icon value"
+    "icon label";
+  align-items: center;
+  column-gap: 9px;
+  min-height: 68px;
+  border: 1px solid #eef2f7;
+  border-radius: 8px;
+  background: #f9fafb;
+  padding: 12px;
+}
+
+.sheet-summary-tile svg {
+  grid-area: icon;
+  color: #4f46e5;
+}
+
+.sheet-summary-tile span {
+  grid-area: value;
+  color: #111827;
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sheet-summary-tile small {
+  grid-area: label;
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 
 .church-detail-grid {
@@ -1932,9 +2095,31 @@ onMounted(async () => {
   margin-bottom: 10px;
 }
 
+.detail-heading-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
 .detail-list {
   display: grid;
   gap: 8px;
+}
+
+.schedule-row {
+  align-items: start;
+}
+
+.detail-empty {
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  color: #6b7280;
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 14px;
+  text-align: center;
 }
 
 .church-admin-page {
@@ -2088,6 +2273,10 @@ onMounted(async () => {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .church-sheet-summary {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
   .church-directory-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2108,6 +2297,10 @@ onMounted(async () => {
 
   .church-detail-columns {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .church-details-sheet {
+    max-height: 82vh;
   }
 }
 
@@ -2139,6 +2332,15 @@ onMounted(async () => {
   .church-details-body {
     padding-right: 14px;
     padding-left: 14px;
+  }
+
+  .detail-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .detail-heading-actions {
+    justify-content: flex-start;
   }
 
   .church-admin-page {

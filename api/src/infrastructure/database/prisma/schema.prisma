@@ -51,6 +51,7 @@ model User {
     userAuth       UserAuth?
     pushSubscriptions PushSubscription[]
     songPreferences UserSongPreference[]
+    notifications AppNotification[]
 }
 
 model PushSubscription {
@@ -63,6 +64,22 @@ model PushSubscription {
 
     userId String
     user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AppNotification {
+    id        String   @id @default(uuid())
+    title     String
+    body      String
+    url       String?
+    type      String?
+    scheduleId String?
+    readAt    DateTime?
+    createdAt DateTime @default(now())
+
+    userId String
+    user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@index([userId, readAt, createdAt])
 }
 
 model UserAuth {

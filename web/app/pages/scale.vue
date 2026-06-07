@@ -676,7 +676,7 @@ type ScheduleEvent = {
   volunteerCount: number;
   viewedCount: number;
   confirmedCount: number;
-  volunteers: { initials: string }[];
+  volunteers: { initials: string; name: string; role: string }[];
   currentUserAssignment?: {
     id: string;
     viewedAt?: string | null;
@@ -777,6 +777,8 @@ const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
     canManage: canManageSchedule(schedule),
     volunteers:
       schedule.assignments?.map((assignment) => ({
+        name: assignment.user.name,
+        role: assignment.role,
         initials: assignment.user.name
           .split(" ")
           .filter(Boolean)

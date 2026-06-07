@@ -95,4 +95,99 @@ export class NotificationAdapters {
 
     return { success: true };
   }
+
+  async listNotifications(request: FastifyRequest) {
+    const userId = getAuthUserId(request);
+
+    const [notifications, unreadCount] = await Promise.all([
+      $prismaClient.appNotification.findMany({
+        where: {
+          userId,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 30,
+        select: {
+          id: true,
+          title: true,
+          body: true,
+          url: true,
+          type: true,
+          scheduleId: true,
+          readAt: true,
+          createdAt: true,
+        },
+      }),
+      $prismaClient.appNotification.count({
+        where: {
+          userId,
+          readAt: null,
+        },
+      }),
+    ]);
+
+    return {
+      notifications,
+      unreadCount,
+    };
+  }
+
+  async markNotificationRead(request: FastifyRequest) {
+    const userId = getAuthUserId(request);
+    const { id } = request.params as { id?: string };
+
+    if (!id) {
+      throw new DomainError("Notificacao nao informada");
+    }
+
+    const notification = await $prismaClient.appNotification.findFirst({
+      where: {
+        id,
+        userId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!notification) {
+      throw new DomainError("Notificacao nao encontrada");
+    }
+
+    return await $prismaClient.appNotification.update({
+      where: {
+        id,
+      },
+      data: {
+        readAt: new Date(),
+      },
+      select: {
+        id: true,
+        title: true,
+        body: true,
+        url: true,
+        type: true,
+        scheduleId: true,
+        readAt: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  async markAllNotificationsRead(request: FastifyRequest) {
+    const userId = getAuthUserId(request);
+
+    await $prismaClient.appNotification.updateMany({
+      where: {
+        userId,
+        readAt: null,
+      },
+      data: {
+        readAt: new Date(),
+      },
+    });
+
+    return { success: true };
+  }
 }

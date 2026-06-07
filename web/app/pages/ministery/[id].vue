@@ -130,6 +130,24 @@
               </v-chip>
             </div>
 
+            <div
+              v-if="schedule.assignments?.length"
+              class="schedule-assignment-list mt-3"
+            >
+              <div
+                v-for="assignment in schedule.assignments"
+                :key="assignment.id"
+                class="schedule-assignment-item"
+              >
+                <span class="schedule-assignment-name">
+                  {{ assignment.user.name }}
+                </span>
+                <span class="schedule-assignment-role">
+                  {{ assignment.role }}
+                </span>
+              </div>
+            </div>
+
             <v-divider class="my-3"></v-divider>
             <div class="d-flex justify-center align-center ga-2">
               <v-btn
@@ -555,6 +573,46 @@
               :disabled="isCreatingSchedule"
             />
           </div>
+
+          <div class="ministery-field-grid mb-4">
+            <v-text-field
+              v-model="scheduleForm.rehearsalDate"
+              label="Data do ensaio"
+              type="date"
+              variant="outlined"
+              density="comfortable"
+              color="purple-darken-3"
+              bg-color="white"
+              class="ministery-input"
+              hide-details="auto"
+              :disabled="isCreatingSchedule"
+            />
+            <v-text-field
+              v-model="scheduleForm.rehearsalTime"
+              label="Hora do ensaio"
+              type="time"
+              variant="outlined"
+              density="comfortable"
+              color="purple-darken-3"
+              bg-color="white"
+              class="ministery-input"
+              hide-details="auto"
+              :disabled="isCreatingSchedule"
+            />
+          </div>
+
+          <v-text-field
+            v-model="scheduleForm.rehearsalNotes"
+            label="Observações do ensaio"
+            prepend-inner-icon="mdi-text"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            class="ministery-input mb-4"
+            hide-details="auto"
+            :disabled="isCreatingSchedule"
+          />
 
           <v-select
             v-if="songOptions.length"
@@ -1118,13 +1176,58 @@
             elevation="0"
           >
             <div class="d-flex justify-space-between align-center ga-3">
-              <div>
+              <div class="min-w-0">
                 <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0">
                   {{ assignment.name }}
                 </p>
                 <p class="text-caption text-grey-darken-1 mb-0">
                   {{ assignment.role }}
                 </p>
+                <div class="d-flex flex-wrap ga-2 mt-2">
+                  <v-chip
+                    size="x-small"
+                    :color="assignment.viewedAt ? 'indigo-darken-2' : 'grey'"
+                    variant="tonal"
+                  >
+                    {{ assignment.viewedAt ? "Viu" : "Não viu" }}
+                  </v-chip>
+                  <v-chip
+                    size="x-small"
+                    :color="responseStatusColor(assignment.confirmationStatus)"
+                    variant="tonal"
+                  >
+                    {{ responseStatusLabel(assignment.confirmationStatus) }}
+                  </v-chip>
+                  <v-chip
+                    size="x-small"
+                    :color="assignment.attendanceStatus === 'PRESENT' ? 'teal-darken-2' : assignment.attendanceStatus === 'ABSENT' ? 'red-darken-2' : 'grey'"
+                    variant="tonal"
+                  >
+                    {{ attendanceStatusLabel(assignment.attendanceStatus) }}
+                  </v-chip>
+                </div>
+              </div>
+              <div class="d-flex align-center ga-1">
+                <v-btn
+                  icon
+                  variant="text"
+                  color="teal-darken-2"
+                  size="small"
+                  :disabled="isSavingAssignments"
+                  @click="markAttendance(assignment, 'PRESENT')"
+                >
+                  <v-icon size="18">mdi-check-circle-outline</v-icon>
+                </v-btn>
+                <v-btn
+                  icon
+                  variant="text"
+                  color="red-darken-2"
+                  size="small"
+                  :disabled="isSavingAssignments"
+                  @click="markAttendance(assignment, 'ABSENT')"
+                >
+                  <v-icon size="18">mdi-close-circle-outline</v-icon>
+                </v-btn>
               </div>
               <v-btn
                 icon
@@ -1355,6 +1458,7 @@ const {
   getSongPreference,
   updateSongPreference,
   updateScheduleAssignments,
+  updateScheduleAssignmentAttendance,
 } = useDepartments();
 const { getMembers } = useMembers();
 const { user } = useAuth();
@@ -1433,6 +1537,9 @@ const scheduleForm = reactive({
   title: "",
   date: "",
   time: "",
+  rehearsalDate: "",
+  rehearsalTime: "",
+  rehearsalNotes: "",
   songIds: [] as string[],
   resourceIds: [] as string[],
 });
@@ -1468,9 +1575,13 @@ const assignmentForm = reactive({
 
 const draftAssignments = ref<
   {
+    assignmentId?: string;
     userId: string;
     name: string;
     role: string;
+    viewedAt?: string | null;
+    confirmationStatus?: string;
+    attendanceStatus?: string;
   }[]
 >([]);
 
@@ -1570,6 +1681,36 @@ const departmentTypeLabel = (value: string) =>
 const priorityLabel = (value: string) =>
   priorityOptions.find((priority) => priority.value === value)?.label || "Média";
 
+const responseStatusLabel = (status?: string) => {
+  const labels: Record<string, string> = {
+    CONFIRMED: "Confirmou",
+    DECLINED: "Não pode",
+    MAYBE: "Talvez",
+    SWAP_REQUESTED: "Troca",
+    PENDING: "Pendente",
+  };
+
+  return labels[status || "PENDING"] || "Pendente";
+};
+
+const responseStatusColor = (status?: string) => {
+  const colors: Record<string, string> = {
+    CONFIRMED: "teal-darken-2",
+    DECLINED: "red-darken-2",
+    MAYBE: "amber-darken-3",
+    SWAP_REQUESTED: "indigo-darken-2",
+    PENDING: "grey",
+  };
+
+  return colors[status || "PENDING"] || "grey";
+};
+
+const attendanceStatusLabel = (status?: string) => {
+  if (status === "PRESENT") return "Presente";
+  if (status === "ABSENT") return "Faltou";
+  return "Presença pendente";
+};
+
 const loadDepartment = async () => {
   departmentError.value = "";
 
@@ -1658,6 +1799,9 @@ const resetScheduleForm = () => {
   scheduleForm.title = "";
   scheduleForm.date = "";
   scheduleForm.time = "";
+  scheduleForm.rehearsalDate = "";
+  scheduleForm.rehearsalTime = "";
+  scheduleForm.rehearsalNotes = "";
   scheduleForm.songIds = [];
   scheduleForm.resourceIds = [];
   editingScheduleId.value = "";
@@ -1871,6 +2015,13 @@ const openScheduleEditDialog = (schedule: DepartmentSchedule) => {
   scheduleForm.title = schedule.description;
   scheduleForm.date = toDateInputValue(schedule.date);
   scheduleForm.time = toTimeInputValue(schedule.date);
+  scheduleForm.rehearsalDate = schedule.rehearsalAt
+    ? toDateInputValue(schedule.rehearsalAt)
+    : "";
+  scheduleForm.rehearsalTime = schedule.rehearsalAt
+    ? toTimeInputValue(schedule.rehearsalAt)
+    : "";
+  scheduleForm.rehearsalNotes = schedule.rehearsalNotes || "";
   scheduleForm.songIds =
     schedule.mediaItems
       ?.filter((item) => item.mediaItem.category === "MUSIC")
@@ -1904,6 +2055,9 @@ const handleSaveSchedule = async () => {
         title,
         date: scheduleForm.date,
         time: scheduleForm.time || undefined,
+        rehearsalDate: scheduleForm.rehearsalDate || null,
+        rehearsalTime: scheduleForm.rehearsalTime || null,
+        rehearsalNotes: scheduleForm.rehearsalNotes || null,
         songIds: scheduleForm.songIds,
         resourceIds: scheduleForm.resourceIds,
       })
@@ -1911,6 +2065,9 @@ const handleSaveSchedule = async () => {
         title,
         date: scheduleForm.date,
         time: scheduleForm.time || undefined,
+        rehearsalDate: scheduleForm.rehearsalDate || null,
+        rehearsalTime: scheduleForm.rehearsalTime || null,
+        rehearsalNotes: scheduleForm.rehearsalNotes || null,
         songIds: scheduleForm.songIds,
         resourceIds: scheduleForm.resourceIds,
       });
@@ -2156,9 +2313,13 @@ const openAssignmentsDialog = (schedule: DepartmentSchedule) => {
   assignmentForm.role = "";
   draftAssignments.value =
     schedule.assignments?.map((assignment) => ({
+      assignmentId: assignment.id,
       userId: assignment.userId,
       name: assignment.user.name,
       role: assignment.role,
+      viewedAt: assignment.viewedAt,
+      confirmationStatus: assignment.confirmationStatus,
+      attendanceStatus: assignment.attendanceStatus,
     })) || [];
   isAssignmentsDialogOpen.value = true;
 };
@@ -2194,6 +2355,9 @@ const addDraftAssignment = () => {
       userId: member.id,
       name: member.name,
       role: assignmentForm.role.trim() || "Voluntário",
+      viewedAt: null,
+      confirmationStatus: "PENDING",
+      attendanceStatus: "PENDING",
     },
   ];
   assignmentForm.userId = "";
@@ -2203,6 +2367,57 @@ const addDraftAssignment = () => {
 const removeDraftAssignment = (userId: string) => {
   draftAssignments.value = draftAssignments.value.filter(
     (assignment) => assignment.userId !== userId,
+  );
+};
+
+const updateLocalAssignment = (
+  scheduleId: string,
+  assignment: NonNullable<DepartmentSchedule["assignments"]>[number],
+) => {
+  schedules.value = schedules.value.map((schedule) => {
+    if (schedule.id !== scheduleId) return schedule;
+
+    return {
+      ...schedule,
+      assignments: schedule.assignments?.map((item) =>
+        item.id === assignment.id ? assignment : item,
+      ),
+    };
+  });
+};
+
+const markAttendance = async (
+  assignment: {
+    assignmentId?: string;
+    userId: string;
+  },
+  attendanceStatus: "PRESENT" | "ABSENT",
+) => {
+  if (!selectedScheduleId.value || !assignment.assignmentId) {
+    assignmentsError.value = "Salve os voluntários antes de marcar presença.";
+    return;
+  }
+
+  assignmentsError.value = "";
+  const { data, error } = await updateScheduleAssignmentAttendance(
+    selectedScheduleId.value,
+    assignment.assignmentId,
+    { attendanceStatus },
+  );
+
+  if (error || !data) {
+    assignmentsError.value = error || "Não foi possível marcar presença.";
+    return;
+  }
+
+  updateLocalAssignment(selectedScheduleId.value, data);
+  draftAssignments.value = draftAssignments.value.map((item) =>
+    item.assignmentId === data.id
+      ? {
+          ...item,
+          attendanceStatus: data.attendanceStatus,
+        }
+      : item,
   );
 };
 
@@ -2274,6 +2489,37 @@ onMounted(async () => {
 }
 .schedule-media-chip {
   cursor: pointer;
+}
+.schedule-assignment-list {
+  display: grid;
+  gap: 8px;
+}
+.schedule-assignment-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 10px;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  background: #ffffff;
+}
+.schedule-assignment-name,
+.schedule-assignment-role {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.schedule-assignment-name {
+  color: #1f2937;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.schedule-assignment-role {
+  color: #6d28d9;
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 .chords-input :deep(textarea),
 .song-chords-block {

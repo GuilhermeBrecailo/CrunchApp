@@ -46,6 +46,19 @@ export interface AdminChurchDepartment {
   songsCount?: number;
 }
 
+export interface AdminChurchSchedule {
+  id: string;
+  date: string;
+  description: string;
+  rehearsalAt?: string | null;
+  department: {
+    id: string;
+    name: string;
+  };
+  assignmentsCount: number;
+  mediaItemsCount: number;
+}
+
 export interface AdminDepartment extends AdminChurchDepartment {
   crunchId: string;
   church: {
@@ -63,6 +76,7 @@ export interface AdminChurchDetails extends AdminChurch {
   localZipCode: string;
   users: AdminChurchUser[];
   departments: AdminChurchDepartment[];
+  schedules: AdminChurchSchedule[];
   pastorHistory: {
     id: string;
     pastorId: string;

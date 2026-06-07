@@ -30,7 +30,33 @@ class PushNotificationService {
   async sendToUsers(userIds: string[], payload: PushPayload) {
     const uniqueUserIds = [...new Set(userIds)].filter(Boolean);
 
-    if (!this.configured || uniqueUserIds.length === 0) {
+    if (uniqueUserIds.length === 0) {
+      return;
+    }
+
+    const notifications = await Promise.all(
+      uniqueUserIds.map((userId) =>
+        $prismaClient.appNotification.create({
+          data: {
+            title: payload.title,
+            body: payload.body,
+            url: payload.url,
+            type: payload.type,
+            scheduleId: payload.scheduleId,
+            userId,
+          },
+          select: {
+            id: true,
+            userId: true,
+          },
+        }),
+      ),
+    );
+    const notificationIdByUserId = new Map(
+      notifications.map((notification) => [notification.userId, notification.id]),
+    );
+
+    if (!this.configured) {
       return;
     }
 
@@ -39,6 +65,13 @@ class PushNotificationService {
         userId: {
           in: uniqueUserIds,
         },
+      },
+      select: {
+        id: true,
+        endpoint: true,
+        p256dh: true,
+        auth: true,
+        userId: true,
       },
     });
 
@@ -53,7 +86,11 @@ class PushNotificationService {
                 auth: subscription.auth,
               },
             },
-            JSON.stringify(payload),
+            JSON.stringify({
+              ...payload,
+              notificationId: notificationIdByUserId.get(subscription.userId),
+              createdAt: new Date().toISOString(),
+            }),
           );
         } catch (error) {
           if (

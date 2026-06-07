@@ -45,7 +45,12 @@
             :loading="loading"
             aria-label="Notificações"
           >
-            <v-badge dot :model-value="hasUnreadNotifications" color="error">
+            <v-badge
+              :content="unreadCount"
+              :model-value="hasUnreadNotifications"
+              color="error"
+              max="9"
+            >
               <BellRing v-if="isEnabled" size="24" />
               <BellOff v-else-if="status === 'denied' || status === 'unsupported'" size="24" />
               <Bell v-else size="24" />
@@ -55,11 +60,55 @@
 
         <v-card class="notification-card" elevation="8">
           <v-card-text class="notification-content">
-            <div class="notification-list-empty">
+            <div class="notification-header">
+              <div>
+                <p class="notification-title mb-0">Notificações</p>
+                <p class="notification-description mb-0">
+                  {{ unreadCount }} não lidas
+                </p>
+              </div>
+              <v-btn
+                v-if="notifications.length"
+                variant="text"
+                color="primary"
+                size="small"
+                class="text-none"
+                :disabled="inboxLoading || unreadCount === 0"
+                @click="markAllNotificationsRead"
+              >
+                Marcar lidas
+              </v-btn>
+            </div>
+
+            <div v-if="notifications.length" class="notification-list">
+              <button
+                v-for="notification in notifications"
+                :key="notification.id"
+                type="button"
+                class="notification-item"
+                :class="{ 'notification-item-unread': !notification.readAt }"
+                @click="openNotification(notification)"
+              >
+                <span class="notification-item-dot" />
+                <span class="notification-item-copy">
+                  <span class="notification-item-title">
+                    {{ notification.title }}
+                  </span>
+                  <span class="notification-item-body">
+                    {{ notification.body }}
+                  </span>
+                  <span class="notification-item-date">
+                    {{ formatNotificationDate(notification.createdAt) }}
+                  </span>
+                </span>
+              </button>
+            </div>
+
+            <div v-else class="notification-list-empty">
               <Bell size="22" />
               <div>
-                <p class="notification-title">Notificações</p>
-                <p class="notification-description">Não há nenhuma notificação.</p>
+                <p class="notification-title">Sem notificações</p>
+                <p class="notification-description">Quando algo acontecer, aparece aqui.</p>
               </div>
             </div>
 
@@ -107,7 +156,10 @@ import { Bell, BellOff, BellRing, Church } from "lucide-vue-next";
 import { Moon, Sun } from "lucide-vue-next";
 import { computed, onMounted } from "vue";
 import { useAuth } from "../../../../composables/useAuth";
-import { usePushNotifications } from "../../../../composables/usePushNotifications";
+import {
+  usePushNotifications,
+  type AppNotification,
+} from "../../../../composables/usePushNotifications";
 
 const { user } = useAuth();
 const { isDark, toggleTheme } = useThemeMode();
@@ -115,12 +167,20 @@ const {
   status,
   message,
   loading,
+  inboxLoading,
+  notifications,
+  unreadCount,
   isEnabled,
+  hasUnread,
   canAskPermission,
   refreshStatus,
+  startInboxSync,
+  markNotificationRead,
+  markAllNotificationsRead,
   enable,
   disable,
 } = usePushNotifications();
+const router = useRouter();
 
 const firstName = computed(() => {
   const name = user.value?.name?.trim();
@@ -129,7 +189,7 @@ const firstName = computed(() => {
 });
 
 const churchName = computed(() => user.value?.church?.name || "Sem igreja");
-const hasUnreadNotifications = computed(() => false);
+const hasUnreadNotifications = computed(() => hasUnread.value);
 const themeToggleLabel = computed(() =>
   isDark.value ? "Ativar tema claro" : "Ativar tema escuro",
 );
@@ -166,8 +226,26 @@ const showNotificationMessage = computed({
   },
 });
 
-onMounted(() => {
-  refreshStatus();
+const formatNotificationDate = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+};
+
+const openNotification = async (notification: AppNotification) => {
+  await markNotificationRead(notification.id);
+  await router.push(notification.url || "/user");
+};
+
+onMounted(async () => {
+  await refreshStatus();
+  await startInboxSync();
 });
 </script>
 
@@ -241,6 +319,77 @@ onMounted(() => {
   gap: 14px;
 }
 
+.notification-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.notification-list {
+  display: grid;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.notification-item {
+  appearance: none;
+  width: 100%;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px;
+  text-align: left;
+}
+
+.notification-item-unread {
+  border-color: #c7d2fe;
+  background: #eef2ff;
+}
+
+.notification-item-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.notification-item-unread .notification-item-dot {
+  background: #4f46e5;
+}
+
+.notification-item-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.notification-item-title {
+  color: #111827;
+  font-size: 0.84rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.notification-item-body,
+.notification-item-date {
+  color: #4b5563;
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.notification-item-body {
+  overflow-wrap: anywhere;
+}
+
 .notification-list-empty {
   display: flex;
   align-items: flex-start;
@@ -252,6 +401,26 @@ onMounted(() => {
 
 :global(.app-theme-dark) .notification-list-empty {
   border-bottom-color: var(--app-color-border);
+  color: var(--app-color-text-muted);
+}
+
+:global(.app-theme-dark) .notification-item {
+  background: var(--app-color-surface);
+  border-color: var(--app-color-border);
+  color: var(--app-color-text);
+}
+
+:global(.app-theme-dark) .notification-item-unread {
+  background: rgba(99, 102, 241, 0.16);
+  border-color: rgba(129, 140, 248, 0.5);
+}
+
+:global(.app-theme-dark) .notification-item-title {
+  color: var(--app-color-text);
+}
+
+:global(.app-theme-dark) .notification-item-body,
+:global(.app-theme-dark) .notification-item-date {
   color: var(--app-color-text-muted);
 }
 

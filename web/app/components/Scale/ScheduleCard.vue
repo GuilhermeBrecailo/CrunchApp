@@ -67,6 +67,20 @@
       </div>
     </div>
 
+    <div v-if="event.volunteers?.length" class="schedule-role-list mb-4">
+      <div
+        v-for="volunteer in visibleRoleAssignments"
+        :key="`${volunteer.name}-${volunteer.role}`"
+        class="schedule-role-item"
+      >
+        <span class="schedule-role-name">{{ volunteer.name }}</span>
+        <span class="schedule-role-value">{{ volunteer.role }}</span>
+      </div>
+      <div v-if="hiddenRoleCount > 0" class="schedule-role-more">
+        +{{ hiddenRoleCount }} funções
+      </div>
+    </div>
+
     <div
       v-if="currentUserAssignment"
       class="assignment-confirmation mb-4"
@@ -491,8 +505,14 @@ const avatarColors = [
 ];
 
 const visibleVolunteers = computed(() => props.event.volunteers?.slice(0, 4) || []);
+const visibleRoleAssignments = computed(
+  () => props.event.volunteers?.slice(0, 6) || [],
+);
 const extraVolunteerCount = computed(() =>
   Math.max((props.event.volunteerCount || 0) - visibleVolunteers.value.length, 0),
+);
+const hiddenRoleCount = computed(() =>
+  Math.max((props.event.volunteerCount || 0) - visibleRoleAssignments.value.length, 0),
 );
 const volunteerLabel = computed(() => {
   const count = props.event.volunteerCount || 0;
@@ -557,6 +577,49 @@ const userAssignmentStatusLabel = computed(() => {
   background: #fafafa;
   border: 1px solid #f3f4f6;
   padding: 10px 12px;
+}
+
+.schedule-role-list {
+  display: grid;
+  gap: 8px;
+}
+
+.schedule-role-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 10px;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.schedule-role-name,
+.schedule-role-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.schedule-role-name {
+  color: #1f2937;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.schedule-role-value {
+  color: #6d28d9;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.schedule-role-more {
+  color: #6b7280;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
 }
 
 .schedule-rehearsal {

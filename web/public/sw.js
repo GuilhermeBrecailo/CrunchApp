@@ -1,4 +1,4 @@
-self.__APP_QUADRANGULAR_SW_VERSION__ = "2026-06-06-01";
+self.__APP_QUADRANGULAR_SW_VERSION__ = "2026-06-07-01";
 
 const CACHE_NAME = `app-quadrangular-${self.__APP_QUADRANGULAR_SW_VERSION__}`;
 const APP_SHELL = ["/", "/login", "/manifest.webmanifest", "/pwa-icon.svg"];
@@ -100,14 +100,27 @@ self.addEventListener("push", (event) => {
   }
 
   event.waitUntil(
-    self.registration.showNotification(payload.title, {
-      body: payload.body,
-      icon: "/pwa-icon-192.png",
-      badge: "/pwa-icon-192.png",
-      data: {
-        url: payload.url || "/user",
-      },
-    }),
+    Promise.all([
+      self.clients
+        .matchAll({ type: "window", includeUncontrolled: true })
+        .then((clients) => {
+          clients.forEach((client) => {
+            client.postMessage({
+              type: "PUSH_NOTIFICATION_RECEIVED",
+              payload,
+            });
+          });
+        }),
+      self.registration.showNotification(payload.title, {
+        body: payload.body,
+        icon: "/pwa-icon-192.png",
+        badge: "/pwa-icon-192.png",
+        data: {
+          notificationId: payload.notificationId,
+          url: payload.url || "/user",
+        },
+      }),
+    ]),
   );
 });
 

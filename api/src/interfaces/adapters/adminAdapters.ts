@@ -230,6 +230,36 @@ export class AdminAdapters {
       throw new DomainError("Igreja nao encontrada");
     }
 
+    const schedules = await $prismaClient.schedule.findMany({
+      where: {
+        department: {
+          crunchId: church.id,
+        },
+      },
+      orderBy: {
+        date: "desc",
+      },
+      take: 24,
+      select: {
+        id: true,
+        date: true,
+        description: true,
+        rehearsalAt: true,
+        department: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        _count: {
+          select: {
+            assignments: true,
+            mediaItems: true,
+          },
+        },
+      },
+    });
+
     return {
       id: church.id,
       name: church.name,
@@ -256,6 +286,15 @@ export class AdminAdapters {
         schedulesCount: department._count.schedules,
         tasksCount: department._count.tasks,
         resourcesCount: department._count.mediaItems,
+      })),
+      schedules: schedules.map((schedule) => ({
+        id: schedule.id,
+        date: schedule.date,
+        description: schedule.description,
+        rehearsalAt: schedule.rehearsalAt,
+        department: schedule.department,
+        assignmentsCount: schedule._count.assignments,
+        mediaItemsCount: schedule._count.mediaItems,
       })),
       pastorHistory: church.pastorHistory,
     };

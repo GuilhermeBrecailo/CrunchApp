@@ -10,6 +10,32 @@ type PublicKeyResponse = {
 
 type PushStatus = "unsupported" | "default" | "denied" | "enabled" | "disabled";
 
+export type AppNotification = {
+  id: string;
+  title: string;
+  body: string;
+  url?: string | null;
+  type?: string | null;
+  scheduleId?: string | null;
+  readAt?: string | null;
+  createdAt: string;
+};
+
+type NotificationListResponse = {
+  notifications: AppNotification[];
+  unreadCount: number;
+};
+
+type ServiceWorkerNotificationPayload = {
+  notificationId?: string;
+  title?: string;
+  body?: string;
+  url?: string;
+  type?: string;
+  scheduleId?: string;
+  createdAt?: string;
+};
+
 function urlBase64ToUint8Array(value: string) {
   const padding = "=".repeat((4 - (value.length % 4)) % 4);
   const base64 = `${value}${padding}`.replace(/-/g, "+").replace(/_/g, "/");
@@ -43,8 +69,15 @@ export const usePushNotifications = () => {
   const status = useState<PushStatus>("push-notification-status", () => "default");
   const message = useState<string | null>("push-notification-message", () => null);
   const loading = useState<boolean>("push-notification-loading", () => false);
+  const notifications = useState<AppNotification[]>(
+    "app-notifications",
+    () => [],
+  );
+  const unreadCount = useState<number>("app-notifications-unread-count", () => 0);
+  const inboxLoading = useState<boolean>("app-notifications-loading", () => false);
 
   const isEnabled = computed(() => status.value === "enabled");
+  const hasUnread = computed(() => unreadCount.value > 0);
   const canAskPermission = computed(
     () => status.value === "default" || status.value === "disabled",
   );
@@ -74,6 +107,132 @@ export const usePushNotifications = () => {
     const registration = await navigator.serviceWorker.register("/sw.js");
     await navigator.serviceWorker.ready;
     return registration;
+  };
+
+  const fetchNotifications = async () => {
+    if (!access_token.value) {
+      notifications.value = [];
+      unreadCount.value = 0;
+      return;
+    }
+
+    inboxLoading.value = true;
+
+    try {
+      const { data, error } = await $customFetch<NotificationListResponse>(
+        `${config.public.URL_BACKEND}/api/notifications`,
+        {
+          method: "GET",
+          headers: authHeaders(),
+        },
+      );
+
+      if (error || !data) return;
+
+      notifications.value = data.notifications ?? [];
+      unreadCount.value = data.unreadCount ?? 0;
+    } finally {
+      inboxLoading.value = false;
+    }
+  };
+
+  const upsertNotification = (notification: AppNotification) => {
+    const alreadyExists = notifications.value.some(
+      (item) => item.id === notification.id,
+    );
+
+    notifications.value = [
+      notification,
+      ...notifications.value.filter((item) => item.id !== notification.id),
+    ].slice(0, 30);
+
+    if (!alreadyExists && !notification.readAt) {
+      unreadCount.value += 1;
+    }
+  };
+
+  const handleServiceWorkerMessage = (event: Event) => {
+    const messageEvent = event as MessageEvent<{
+      type?: string;
+      payload?: ServiceWorkerNotificationPayload;
+    }>;
+
+    if (messageEvent.data?.type !== "PUSH_NOTIFICATION_RECEIVED") return;
+
+    const payload = messageEvent.data.payload;
+
+    if (!payload?.notificationId) {
+      void fetchNotifications();
+      return;
+    }
+
+    upsertNotification({
+      id: payload.notificationId,
+      title: payload.title || "App Quadrangular",
+      body: payload.body || "Você recebeu uma nova notificação.",
+      url: payload.url || "/user",
+      type: payload.type,
+      scheduleId: payload.scheduleId,
+      readAt: null,
+      createdAt: payload.createdAt || new Date().toISOString(),
+    });
+  };
+
+  const startInboxSync = async () => {
+    await fetchNotifications();
+
+    if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) {
+      return;
+    }
+
+    navigator.serviceWorker.removeEventListener(
+      "message",
+      handleServiceWorkerMessage,
+    );
+    navigator.serviceWorker.addEventListener(
+      "message",
+      handleServiceWorkerMessage,
+    );
+  };
+
+  const markNotificationRead = async (notificationId: string) => {
+    const notification = notifications.value.find((item) => item.id === notificationId);
+
+    if (!notification || notification.readAt) return;
+
+    const { data, error } = await $customFetch<AppNotification>(
+      `${config.public.URL_BACKEND}/api/notifications/${notificationId}/read`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+      },
+    );
+
+    if (error || !data) return;
+
+    notifications.value = notifications.value.map((item) =>
+      item.id === notificationId ? data : item,
+    );
+    unreadCount.value = Math.max(unreadCount.value - 1, 0);
+  };
+
+  const markAllNotificationsRead = async () => {
+    const { error } = await $customFetch(
+      `${config.public.URL_BACKEND}/api/notifications/read-all`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+      },
+    );
+
+    if (error) return;
+
+    const now = new Date().toISOString();
+    notifications.value = notifications.value.map((notification) => ({
+      ...notification,
+      readAt: notification.readAt || now,
+    }));
+    unreadCount.value = 0;
   };
 
   const enable = async () => {
@@ -184,8 +343,16 @@ export const usePushNotifications = () => {
     message,
     loading,
     isEnabled,
+    hasUnread,
     canAskPermission,
+    notifications,
+    unreadCount,
+    inboxLoading,
     refreshStatus,
+    fetchNotifications,
+    startInboxSync,
+    markNotificationRead,
+    markAllNotificationsRead,
     enable,
     disable,
   };

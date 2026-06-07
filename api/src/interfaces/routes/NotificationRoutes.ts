@@ -10,6 +10,21 @@ export async function NotificationRoutes(app: FastifyInstance) {
     controllerHandler(adapters.getPublicKey.bind(adapters)),
   );
 
+  app.get(
+    "/api/notifications",
+    controllerHandler(adapters.listNotifications.bind(adapters)),
+  );
+
+  app.patch(
+    "/api/notifications/:id/read",
+    controllerHandler(adapters.markNotificationRead.bind(adapters)),
+  );
+
+  app.patch(
+    "/api/notifications/read-all",
+    controllerHandler(adapters.markAllNotificationsRead.bind(adapters)),
+  );
+
   app.post(
     "/api/notifications/subscribe",
     controllerHandler(adapters.subscribe.bind(adapters)),
