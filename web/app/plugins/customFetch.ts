@@ -1,35 +1,193 @@
 import { defineNuxtPlugin } from "#app";
 import type { FetchOptions } from "ofetch";
 import type { ApiResponse } from "../../composables/useTypes";
+import { jwtDecode } from "jwt-decode";
+
+interface KeycloakPayload {
+  sub: string;
+  email?: string;
+  name?: string;
+  preferred_username?: string;
+  tenant_id?: string;
+  is_admin?: boolean;
+  role?: string;
+  exp?: number;
+}
+
+interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  tenant_id?: string | null;
+  is_admin: boolean;
+  role?: string;
+}
+
+interface RefreshResponse {
+  access_token?: string;
+}
 
 export default defineNuxtPlugin(() => {
+  const config = useRuntimeConfig();
+  const access_token = useState<string | null>("access_token", () => null);
+  const user = useState<AuthUser | null>("user", () => null);
+  let refreshPromise: Promise<string | null> | null = null;
+
+  const isBackendUrl = (url: string) =>
+    url.startsWith(config.public.URL_BACKEND) || url.startsWith("/api/");
+
+  const isPublicAuthUrl = (url: string) =>
+    url.includes("/public/") || url.includes("/api/pastor/signup");
+
+  const shouldRefresh = () => {
+    if (!access_token.value) return false;
+
+    try {
+      const payload = jwtDecode<KeycloakPayload>(access_token.value);
+      const now = Date.now() / 1000;
+
+      return Boolean(payload.exp && payload.exp - now < 60 * 3);
+    } catch {
+      return true;
+    }
+  };
+
+  const updateSession = (token: string) => {
+    access_token.value = token;
+    const payload = jwtDecode<KeycloakPayload>(token);
+
+    user.value = {
+      ...user.value,
+      id: payload.sub,
+      email: payload.email || payload.preferred_username || "",
+      name: payload.name || payload.preferred_username || "",
+      tenant_id: payload.tenant_id,
+      is_admin: payload.is_admin === true,
+      role: payload.role || user.value?.role,
+    };
+  };
+
+  const clearSession = () => {
+    access_token.value = null;
+    user.value = null;
+  };
+
+  const refreshAccessToken = async () => {
+    if (!refreshPromise) {
+      refreshPromise = $fetch<ApiResponse<RefreshResponse> | RefreshResponse>(
+        `${config.public.URL_BACKEND}/public/auth/refresh-token`,
+        {
+          credentials: "include",
+        },
+      )
+        .then((response) => {
+          const token =
+            response && "data" in response
+              ? response.data?.access_token
+              : response.access_token;
+
+          if (!token) {
+            clearSession();
+            return null;
+          }
+
+          updateSession(token);
+          return token;
+        })
+        .catch(() => {
+          clearSession();
+          return null;
+        })
+        .finally(() => {
+          refreshPromise = null;
+        });
+    }
+
+    return refreshPromise;
+  };
+
+  const withAuthHeader = async (url: string, options?: FetchOptions) => {
+    const nextOptions: FetchOptions = {
+      ...options,
+      headers: new Headers(options?.headers as HeadersInit | undefined),
+    };
+
+    const shouldUseAuth = isBackendUrl(url) && !isPublicAuthUrl(url);
+
+    if (shouldUseAuth && shouldRefresh()) {
+      await refreshAccessToken();
+    }
+
+    if (shouldUseAuth && access_token.value) {
+      (nextOptions.headers as Headers).set(
+        "Authorization",
+        `Bearer ${access_token.value}`,
+      );
+    }
+
+    return nextOptions;
+  };
+
+  const normalizeResponse = <T>(response: ApiResponse<T> | T) => {
+    if (
+      response &&
+      typeof response === "object" &&
+      ("data" in response || "error" in response || "status" in response)
+    ) {
+      return response as ApiResponse<T>;
+    }
+
+    return {
+      data: response as T,
+      status: 200,
+    };
+  };
+
+  const normalizeError = <T>(error: any): ApiResponse<T> => {
+    const response = error?.response?._data;
+
+    return {
+      data: response?.data,
+      error: response?.error || error?.message || "Erro ao chamar a API",
+      status: response?.status || error?.response?.status || 500,
+    };
+  };
+
   const customFetch = async <T = unknown>(
     url: string,
     options?: FetchOptions,
   ): Promise<ApiResponse<T>> => {
     try {
-      const response = await $fetch<ApiResponse<T> | T>(url, options);
+      const requestOptions = await withAuthHeader(url, options);
+      const response = await $fetch<ApiResponse<T> | T>(url, requestOptions);
+
+      return normalizeResponse(response);
+    } catch (error: any) {
+      const status = error?.response?.status;
 
       if (
-        response &&
-        typeof response === "object" &&
-        ("data" in response || "error" in response || "status" in response)
+        (status === 401 || status === 403) &&
+        isBackendUrl(url) &&
+        !isPublicAuthUrl(url)
       ) {
-        return response as ApiResponse<T>;
+        const token = await refreshAccessToken();
+
+        if (token) {
+          try {
+            const retryOptions = await withAuthHeader(url, options);
+            const response = await $fetch<ApiResponse<T> | T>(
+              url,
+              retryOptions,
+            );
+
+            return normalizeResponse(response);
+          } catch (retryError: any) {
+            return normalizeError<T>(retryError);
+          }
+        }
       }
 
-      return {
-        data: response as T,
-        status: 200,
-      };
-    } catch (error: any) {
-      const response = error?.response?._data;
-
-      return {
-        data: response?.data,
-        error: response?.error || error?.message || "Erro ao chamar a API",
-        status: response?.status || error?.response?.status || 500,
-      };
+      return normalizeError<T>(error);
     }
   };
 
