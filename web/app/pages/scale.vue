@@ -320,9 +320,6 @@
                       {{ song.metadata?.artist || "Artista não informado" }}
                     </p>
                   </div>
-                  <v-chip size="x-small" color="purple-darken-3" variant="tonal">
-                    Abrir
-                  </v-chip>
                 </div>
 
                 <div class="scale-song-meta">
@@ -332,19 +329,6 @@
                   <v-chip v-if="song.metadata?.bpm" size="small" variant="tonal">
                     {{ song.metadata.bpm }} BPM
                   </v-chip>
-                  <v-btn
-                    v-if="song.url"
-                    :href="song.url"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    color="purple-darken-3"
-                    variant="text"
-                    size="small"
-                    class="text-none"
-                    @click.stop
-                  >
-                    Abrir link
-                  </v-btn>
                 </div>
               </article>
             </div>
@@ -379,10 +363,12 @@
               >
                 <v-tab value="lyrics" class="text-none">Letra</v-tab>
                 <v-tab value="chords" class="text-none">Cifra</v-tab>
-                <v-tab value="notes" class="text-none">Tom</v-tab>
               </v-tabs>
 
-              <div class="scale-song-key-controls">
+              <div
+                v-if="songTabs[activeDetailSong.id] === 'lyrics'"
+                class="scale-song-key-controls"
+              >
                 <v-btn
                   variant="tonal"
                   color="grey-darken-1"
@@ -455,6 +441,7 @@
       mobile-class="scale-song-mobile-sheet"
     >
       <v-card v-if="fullscreenSong" class="scale-fullscreen-song" elevation="0">
+        <div class="scale-details-handle" />
         <div class="scale-fullscreen-header">
           <div class="min-w-0">
             <p class="scale-song-category mb-1">
@@ -474,19 +461,13 @@
           <v-tabs v-model="fullscreenSongTab" color="purple-darken-3">
             <v-tab value="lyrics" class="text-none">Letra</v-tab>
             <v-tab value="chords" class="text-none">Cifra</v-tab>
-            <v-tab value="notes" class="text-none">Tom</v-tab>
           </v-tabs>
-          <div class="scale-song-meta">
-            <v-chip v-if="fullscreenSong.metadata?.key" size="small" variant="tonal">
-              {{ songCurrentKey(fullscreenSong) }}
-            </v-chip>
-            <v-chip v-if="fullscreenSong.metadata?.bpm" size="small" variant="tonal">
-              {{ fullscreenSong.metadata.bpm }} BPM
-            </v-chip>
-          </div>
         </div>
 
-        <div class="scale-fullscreen-key-controls">
+        <div
+          v-if="fullscreenSongTab === 'lyrics'"
+          class="scale-fullscreen-key-controls"
+        >
           <v-btn
             variant="tonal"
             color="grey-darken-1"
@@ -1211,6 +1192,9 @@ const selectedDetailResources = computed(
     ) || [],
 );
 
+const defaultSongTab = (song: ScheduleEvent["mediaItems"][number]) =>
+  song.metadata?.lyrics ? "lyrics" : song.metadata?.chords ? "chords" : "lyrics";
+
 const activeDetailSong = computed(
   () =>
     selectedDetailSongs.value.find((song) => song.id === activeDetailSongId.value) ||
@@ -1321,11 +1305,9 @@ const openScheduleDetails = (event: ScheduleEvent) => {
   const songs = event.mediaItems.filter((item) => item.category === "MUSIC");
   activeDetailSongId.value = songs[0]?.id || "";
   songs.forEach((song) => {
-    songTabs[song.id] ||= song.metadata?.lyrics
-      ? "lyrics"
-      : song.metadata?.chords
-        ? "chords"
-        : "notes";
+    if (!["lyrics", "chords"].includes(songTabs[song.id])) {
+      songTabs[song.id] = defaultSongTab(song);
+    }
   });
 };
 
@@ -1336,11 +1318,9 @@ const closeScheduleDetails = () => {
 
 const selectDetailSong = (song: ScheduleEvent["mediaItems"][number]) => {
   activeDetailSongId.value = song.id;
-  songTabs[song.id] ||= song.metadata?.lyrics
-    ? "lyrics"
-    : song.metadata?.chords
-      ? "chords"
-      : "notes";
+  if (!["lyrics", "chords"].includes(songTabs[song.id])) {
+    songTabs[song.id] = defaultSongTab(song);
+  }
 };
 
 const assignmentStatusText = (event: ScheduleEvent) =>
@@ -1481,8 +1461,9 @@ const getSongTabLines = (
 
 const openSongFullscreen = (song: ScheduleEvent["mediaItems"][number]) => {
   fullscreenSong.value = song;
-  fullscreenSongTab.value =
-    songTabs[song.id] || (song.metadata?.lyrics ? "lyrics" : "chords");
+  fullscreenSongTab.value = ["lyrics", "chords"].includes(songTabs[song.id])
+    ? songTabs[song.id]
+    : defaultSongTab(song);
   isSongFullscreenOpen.value = true;
 };
 
@@ -2425,9 +2406,11 @@ watch(schedules, async () => {
 
 .scale-fullscreen-song {
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
-  min-height: min(100vh, 760px);
+  grid-template-rows: auto auto auto auto minmax(0, 1fr);
+  max-height: min(92vh, 920px);
+  min-height: min(78vh, 760px);
   background: #fff;
+  overflow: hidden;
 }
 
 .scale-fullscreen-header {
@@ -2464,6 +2447,11 @@ watch(schedules, async () => {
   padding: 24px;
 }
 
+.scale-song-mobile-sheet :deep(.v-bottom-sheet__content) {
+  border-radius: 22px 22px 0 0 !important;
+  overflow: hidden;
+}
+
 @media (min-width: 560px) {
   .scale-field-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2472,7 +2460,9 @@ watch(schedules, async () => {
 
 @media (max-width: 420px) {
   .scale-song-mobile-sheet .scale-fullscreen-song {
-    min-height: 100vh;
+    max-height: min(92vh, 920px);
+    min-height: min(78vh, 760px);
+    border-radius: 22px 22px 0 0 !important;
   }
 
   .scale-page-header {
@@ -2511,10 +2501,13 @@ watch(schedules, async () => {
     grid-template-columns: 1fr;
   }
 
-  .scale-details-header,
-  .scale-song-header,
-  .scale-fullscreen-header {
+  .scale-song-header {
     grid-template-columns: 1fr;
+  }
+
+  .scale-details-header,
+  .scale-fullscreen-header {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .scale-details-header-actions {
