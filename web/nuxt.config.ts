@@ -67,7 +67,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      URL_BACKEND: process.env.NUXT_PUBLIC_URL_BACKEND || "http://localhost:8000",
+      URL_BACKEND: process.env.NUXT_PUBLIC_URL_BACKEND || "https://api.appcunch.shop",
     },
   },
 });
