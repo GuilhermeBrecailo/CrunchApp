@@ -1,6 +1,6 @@
 <template>
   <div class="pa-4 bg-grey-lighten-4 min-vh-100">
-    <div class="d-flex justify-space-between align-center mb-6">
+    <div class="scale-page-header mb-5">
       <div>
         <h1 class="text-h5 font-weight-bold text-grey-darken-4">Escalas</h1>
         <p class="text-body-2 text-grey-darken-1 mb-0">
@@ -33,20 +33,20 @@
       </div>
     </div>
 
-    <div v-if="canCreateChurchSchedule" class="leader-summary-grid mb-6">
-      <v-card class="leader-summary-card pa-4 elevation-1 bg-white">
+    <div v-if="canCreateChurchSchedule" class="leader-summary-grid mb-5">
+      <v-card class="leader-summary-card pa-3 elevation-1 bg-white">
         <p class="text-caption text-grey-darken-1 mb-1">Pendentes</p>
         <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
           {{ leaderSummary.pending }}
         </h2>
       </v-card>
-      <v-card class="leader-summary-card pa-4 elevation-1 bg-white">
+      <v-card class="leader-summary-card pa-3 elevation-1 bg-white">
         <p class="text-caption text-grey-darken-1 mb-1">Não viram</p>
         <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
           {{ leaderSummary.notViewed }}
         </h2>
       </v-card>
-      <v-card class="leader-summary-card pa-4 elevation-1 bg-white">
+      <v-card class="leader-summary-card pa-3 elevation-1 bg-white">
         <p class="text-caption text-grey-darken-1 mb-1">Trocas</p>
         <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
           {{ leaderSummary.swapRequests }}
@@ -177,6 +177,77 @@
             </div>
           </div>
 
+          <section
+            v-if="selectedDetailEvent.currentUserAssignment"
+            class="scale-details-section"
+          >
+            <div class="scale-details-section-title">
+              <CheckCircle2 size="18" />
+              <h3>Sua resposta</h3>
+            </div>
+            <div class="scale-response-panel">
+              <div class="min-w-0">
+                <p class="scale-response-status mb-1">
+                  {{ assignmentStatusText(selectedDetailEvent) }}
+                </p>
+                <p class="text-caption text-grey-darken-1 mb-0">
+                  {{ selectedDetailEvent.currentUserAssignment.viewedAt ? "Escala visualizada" : "Ainda não marcada como vista" }}
+                </p>
+              </div>
+              <div class="scale-response-actions">
+                <v-btn
+                  v-if="!selectedDetailEvent.currentUserAssignment.viewedAt"
+                  variant="tonal"
+                  color="indigo-darken-2"
+                  size="small"
+                  class="text-none"
+                  @click="handleMarkScheduleViewed(selectedDetailEvent)"
+                >
+                  <Eye size="16" class="mr-1" /> Vi
+                </v-btn>
+                <v-btn
+                  v-if="selectedDetailEvent.currentUserAssignment.confirmationStatus !== 'CONFIRMED'"
+                  color="purple-darken-3"
+                  size="small"
+                  class="text-none"
+                  @click="handleConfirmSchedule(selectedDetailEvent)"
+                >
+                  Confirmar
+                </v-btn>
+                <v-btn
+                  v-if="selectedDetailEvent.currentUserAssignment.confirmationStatus !== 'DECLINED'"
+                  variant="tonal"
+                  color="red-darken-2"
+                  size="small"
+                  class="text-none"
+                  @click="handleDeclineSchedule(selectedDetailEvent)"
+                >
+                  Não posso
+                </v-btn>
+                <v-btn
+                  v-if="selectedDetailEvent.currentUserAssignment.confirmationStatus !== 'MAYBE'"
+                  variant="tonal"
+                  color="amber-darken-3"
+                  size="small"
+                  class="text-none"
+                  @click="handleMaybeSchedule(selectedDetailEvent)"
+                >
+                  Talvez
+                </v-btn>
+                <v-btn
+                  v-if="selectedDetailEvent.currentUserAssignment.confirmationStatus !== 'SWAP_REQUESTED'"
+                  variant="tonal"
+                  color="indigo-darken-2"
+                  size="small"
+                  class="text-none"
+                  @click="handleRequestSwap(selectedDetailEvent)"
+                >
+                  Troca
+                </v-btn>
+              </div>
+            </div>
+          </section>
+
           <section class="scale-details-section">
             <div class="scale-details-section-title">
               <Users size="18" />
@@ -242,6 +313,12 @@
                 v-for="song in selectedDetailSongs"
                 :key="song.id"
                 class="scale-song-card"
+                :class="{ 'scale-song-card-active': activeDetailSong?.id === song.id }"
+                role="button"
+                tabindex="0"
+                @click="selectDetailSong(song)"
+                @keydown.enter="selectDetailSong(song)"
+                @keydown.space.prevent="selectDetailSong(song)"
               >
                 <div class="scale-song-header">
                   <div class="min-w-0">
@@ -253,19 +330,9 @@
                       {{ song.metadata?.artist || "Artista não informado" }}
                     </p>
                   </div>
-                  <v-tooltip text="Tela cheia" location="bottom">
-                    <template #activator="{ props }">
-                      <v-btn
-                        v-bind="props"
-                        icon
-                        variant="tonal"
-                        color="purple-darken-3"
-                        @click="openSongFullscreen(song)"
-                      >
-                        <Maximize2 size="18" />
-                      </v-btn>
-                    </template>
-                  </v-tooltip>
+                  <v-chip size="x-small" color="purple-darken-3" variant="tonal">
+                    Abrir
+                  </v-chip>
                 </div>
 
                 <div class="scale-song-meta">
@@ -284,19 +351,48 @@
                     variant="text"
                     size="small"
                     class="text-none"
+                    @click.stop
                   >
                     Abrir link
                   </v-btn>
                 </div>
-
-                <v-tabs v-model="songTabs[song.id]" color="purple-darken-3" density="compact">
-                  <v-tab value="lyrics" class="text-none">Letra</v-tab>
-                  <v-tab value="chords" class="text-none">Cifra</v-tab>
-                  <v-tab value="notes" class="text-none">Notas</v-tab>
-                </v-tabs>
-
-                <pre class="scale-song-text">{{ getSongTabText(song, songTabs[song.id]) }}</pre>
               </article>
+            </div>
+
+            <div v-if="activeDetailSong" class="scale-song-reader">
+              <div class="scale-song-reader-header">
+                <div class="min-w-0">
+                  <p class="scale-song-category mb-1">
+                    {{ activeDetailSong.metadata?.songCategory || "Louvor" }}
+                  </p>
+                  <h4 class="scale-song-title mb-0">{{ activeDetailSong.title }}</h4>
+                </div>
+                <v-tooltip text="Tela cheia" location="bottom">
+                  <template #activator="{ props }">
+                    <v-btn
+                      v-bind="props"
+                      icon
+                      variant="tonal"
+                      color="purple-darken-3"
+                      @click="openSongFullscreen(activeDetailSong)"
+                    >
+                      <Maximize2 size="18" />
+                    </v-btn>
+                  </template>
+                </v-tooltip>
+              </div>
+
+              <v-tabs
+                v-model="songTabs[activeDetailSong.id]"
+                color="purple-darken-3"
+                density="compact"
+              >
+                <v-tab value="lyrics" class="text-none">Letra</v-tab>
+                <v-tab value="chords" class="text-none">Cifra</v-tab>
+                <v-tab value="notes" class="text-none">Notas</v-tab>
+              </v-tabs>
+
+              <pre class="scale-song-text">{{ getSongTabText(activeDetailSong, songTabs[activeDetailSong.id]) }}</pre>
             </div>
           </section>
 
@@ -746,7 +842,9 @@
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 import {
   Calendar,
+  CheckCircle2,
   Clock,
+  Eye,
   FileText,
   Maximize2,
   Music,
@@ -802,6 +900,7 @@ const editingScheduleId = ref("");
 const isPrefillingScheduleForm = ref(false);
 const pendingDeleteSchedule = ref<ScheduleEvent | null>(null);
 const selectedDetailEvent = ref<ScheduleEvent | null>(null);
+const activeDetailSongId = ref("");
 const isSongFullscreenOpen = ref(false);
 const fullscreenSong = ref<ScheduleEvent["mediaItems"][number] | null>(null);
 const fullscreenSongTab = ref("lyrics");
@@ -1017,6 +1116,12 @@ const selectedDetailResources = computed(
     ) || [],
 );
 
+const activeDetailSong = computed(
+  () =>
+    selectedDetailSongs.value.find((song) => song.id === activeDetailSongId.value) ||
+    null,
+);
+
 const canCreateChurchSchedule = computed(
   () => manageableDepartments.value.length > 0,
 );
@@ -1118,6 +1223,7 @@ const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
 
 const openScheduleDetails = (event: ScheduleEvent) => {
   selectedDetailEvent.value = event;
+  activeDetailSongId.value = "";
   event.mediaItems
     .filter((item) => item.category === "MUSIC")
     .forEach((song) => {
@@ -1131,7 +1237,20 @@ const openScheduleDetails = (event: ScheduleEvent) => {
 
 const closeScheduleDetails = () => {
   selectedDetailEvent.value = null;
+  activeDetailSongId.value = "";
 };
+
+const selectDetailSong = (song: ScheduleEvent["mediaItems"][number]) => {
+  activeDetailSongId.value = song.id;
+  songTabs[song.id] ||= song.metadata?.lyrics
+    ? "lyrics"
+    : song.metadata?.chords
+      ? "chords"
+      : "notes";
+};
+
+const assignmentStatusText = (event: ScheduleEvent) =>
+  responseStatusLabel(event.currentUserAssignment?.confirmationStatus);
 
 const openAssignmentsFromDetails = () => {
   if (!selectedDetailEvent.value) return;
@@ -1193,6 +1312,11 @@ const updateLocalAssignment = (
       ),
     };
   });
+
+  const updatedSchedule = schedules.value.find((schedule) => schedule.id === scheduleId);
+  if (updatedSchedule && selectedDetailEvent.value?.id === scheduleId) {
+    selectedDetailEvent.value = toScheduleEvent(updatedSchedule);
+  }
 };
 
 const updateMyScheduleResponse = async (
@@ -1685,6 +1809,13 @@ watch(schedules, async () => {
   gap: 8px;
 }
 
+.scale-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
 .filter-strip {
   position: relative;
   margin-right: -16px;
@@ -1877,6 +2008,28 @@ watch(schedules, async () => {
   font-weight: 750;
 }
 
+.scale-response-panel {
+  display: grid;
+  gap: 14px;
+  border: 1px solid #ede9fe;
+  border-radius: 8px;
+  background: #faf5ff;
+  padding: 14px;
+}
+
+.scale-response-status {
+  color: #111827;
+  font-size: 0.92rem;
+  font-weight: 850;
+}
+
+.scale-response-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .scale-details-section {
   display: grid;
   gap: 12px;
@@ -1951,7 +2104,8 @@ watch(schedules, async () => {
 
 .scale-song-list {
   display: grid;
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
 }
 
 .scale-song-card {
@@ -1961,6 +2115,28 @@ watch(schedules, async () => {
   border-radius: 8px;
   background: #fdfcff;
   padding: 14px;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
+}
+
+.scale-song-card:hover {
+  border-color: #c084fc;
+  box-shadow: 0 10px 22px rgba(126, 34, 206, 0.08);
+  transform: translateY(-1px);
+}
+
+.scale-song-card:focus-visible {
+  outline: 3px solid rgba(168, 85, 247, 0.28);
+  outline-offset: 2px;
+}
+
+.scale-song-card-active {
+  border-color: #a855f7;
+  background: #faf5ff;
 }
 
 .scale-song-header {
@@ -1989,6 +2165,22 @@ watch(schedules, async () => {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.scale-song-reader {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #ede9fe;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 14px;
+}
+
+.scale-song-reader-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
 }
 
 .scale-song-text,
@@ -2055,6 +2247,15 @@ watch(schedules, async () => {
 }
 
 @media (max-width: 420px) {
+  .scale-page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .scale-page-header .v-btn {
+    width: 100%;
+  }
+
   .filter-strip {
     margin-right: -12px;
     margin-left: -12px;

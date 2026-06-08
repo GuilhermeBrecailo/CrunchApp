@@ -1,10 +1,10 @@
 <template>
   <div class="pa-4 bg-grey-lighten-4 min-vh-100">
-    <div class="d-flex justify-space-between align-center mb-6">
+    <div class="ministery-page-header mb-5">
       <div>
         <h1 class="text-h5 font-weight-bold text-grey-darken-4">Ministérios</h1>
         <p class="text-body-2 text-grey-darken-1 mb-0">
-          Selecione um ministério
+          Organize equipes, escalas e repertórios
         </p>
       </div>
       <v-btn
@@ -14,8 +14,23 @@
         elevation="2"
         @click="isDepartmentDialogOpen = true"
       >
-        <Plus size="18" class="mr-1" /> Ministério
+        <Plus size="18" class="mr-1" /> Novo
       </v-btn>
+    </div>
+
+    <div v-if="departments.length" class="ministery-summary mb-5">
+      <div class="ministery-summary-item">
+        <span>{{ departments.length }}</span>
+        <small>ministérios</small>
+      </div>
+      <div class="ministery-summary-item">
+        <span>{{ activeDepartmentsCount }}</span>
+        <small>ativos</small>
+      </div>
+      <div class="ministery-summary-item">
+        <span>{{ worshipDepartmentsCount }}</span>
+        <small>louvor</small>
+      </div>
     </div>
 
     <v-card
@@ -28,15 +43,18 @@
       </p>
     </v-card>
 
-    <div v-else class="d-flex flex-column gap-3">
+    <div v-else class="ministery-grid">
       <MinisteryListItem
         v-for="department in departments"
         :key="department.id"
-          :ministerio="{
-            nome: department.name,
-            lider: department.leader.name,
-            tipo: departmentTypeLabel(department.type),
-          }"
+        :ministerio="{
+          nome: department.name,
+          lider: department.leader.name,
+          tipo: departmentTypeLabel(department.type),
+          membros: department.membersCount || 0,
+          escalas: department.schedulesCount || 0,
+          musicas: department.songsCount || 0,
+        }"
         @click="goToMinisterio(department.id)"
       />
     </div>
@@ -198,6 +216,15 @@ const isChurchWideManager = computed(
     user.value?.is_admin === true,
 );
 const canCreateDepartment = computed(() => isChurchWideManager.value);
+const activeDepartmentsCount = computed(
+  () => departments.value.filter((department) => department.isActive).length,
+);
+const worshipDepartmentsCount = computed(
+  () =>
+    departments.value.filter((department) =>
+      ["WORSHIP", "MUSIC"].includes(department.type),
+    ).length,
+);
 const leaderOptions = computed(() =>
   members.value.map((member) => ({
     label: `${member.name} (${member.email})`,
@@ -281,6 +308,43 @@ onMounted(async () => {
 .gap-3 {
   gap: 12px;
 }
+.ministery-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.ministery-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.ministery-summary-item {
+  display: grid;
+  min-height: 68px;
+  align-content: center;
+  gap: 4px;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+}
+.ministery-summary-item span {
+  color: #111827;
+  font-size: 1.2rem;
+  font-weight: 900;
+  line-height: 1;
+}
+.ministery-summary-item small {
+  color: #6b7280;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+.ministery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
 .border-subtle {
   border: 1px solid #f3f4f6;
 }
@@ -291,5 +355,23 @@ onMounted(async () => {
   min-height: 48px;
   padding-top: 10px;
   padding-bottom: 10px;
+}
+@media (max-width: 520px) {
+  .ministery-page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .ministery-page-header .v-btn {
+    width: 100%;
+  }
+
+  .ministery-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .ministery-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

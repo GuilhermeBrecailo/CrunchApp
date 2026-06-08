@@ -1,6 +1,6 @@
 <template>
   <div class="pa-4 bg-grey-lighten-4 min-vh-100">
-    <div class="d-flex align-center mb-4">
+    <div class="ministery-back-row mb-4">
       <v-btn icon variant="text" class="mr-2" @click="router.back()">
         <ArrowLeft size="20" />
       </v-btn>
@@ -20,21 +20,40 @@
     </v-alert>
 
     <template v-if="department">
-      <div class="d-flex align-start justify-space-between ga-4 mb-5">
-        <div>
+      <div class="ministery-detail-header mb-5">
+        <div class="min-w-0">
+          <p class="text-caption text-purple-darken-3 font-weight-bold mb-1">
+            {{ departmentTypeLabel(department.type) }}
+          </p>
           <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">
             {{ department.name }}
           </h1>
-          <p class="text-body-2 text-grey-darken-1 mb-2">
-            Líder: {{ department.leader.name }}
+          <p class="text-body-2 text-grey-darken-1 mb-0">
+            {{ department.leader.name }}
           </p>
-          <v-chip size="small" color="purple-darken-3" variant="tonal">
-            {{ departmentTypeLabel(department.type) }}
-          </v-chip>
+        </div>
+
+        <v-chip
+          size="small"
+          :color="department.isActive ? 'teal-darken-2' : 'grey-darken-1'"
+          variant="tonal"
+        >
+          {{ department.isActive ? "Ativo" : "Inativo" }}
+        </v-chip>
+      </div>
+
+      <div class="ministery-detail-summary mb-5">
+        <div
+          v-for="item in detailSummary"
+          :key="item.label"
+          class="ministery-detail-summary-item"
+        >
+          <span>{{ item.value }}</span>
+          <small>{{ item.label }}</small>
         </div>
       </div>
 
-      <div class="tabs-row mb-6">
+      <div class="tabs-row mb-5">
         <v-chip
           v-for="tab in tabs"
           :key="tab.value"
@@ -48,8 +67,8 @@
         </v-chip>
       </div>
 
-      <section v-if="activeTab === 'overview'" class="d-flex flex-column ga-3">
-        <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
+      <section v-if="activeTab === 'overview'" class="ministery-card-grid">
+        <v-card class="ministery-content-card pa-4 elevation-1 bg-white">
           <p class="text-caption text-grey-darken-1 mb-1">Líder</p>
           <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
             {{ department.leader.name }}
@@ -59,7 +78,7 @@
           </p>
         </v-card>
 
-        <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
+        <v-card class="ministery-content-card pa-4 elevation-1 bg-white">
           <p class="text-caption text-grey-darken-1 mb-1">Status</p>
           <v-chip
             size="small"
@@ -72,7 +91,7 @@
       </section>
 
       <section v-if="activeTab === 'schedules'">
-        <div class="d-flex justify-end mb-4">
+        <div class="ministery-section-actions mb-4">
           <v-btn
             v-if="canManageSchedules"
             color="#A855F7"
@@ -93,11 +112,11 @@
           </p>
         </v-card>
 
-        <div v-else class="d-flex flex-column ga-3">
+        <div v-else class="ministery-card-grid">
           <v-card
             v-for="schedule in schedules"
             :key="schedule.id"
-            class="rounded-xl pa-4 elevation-1 bg-white border-subtle"
+            class="ministery-content-card pa-4 elevation-1 bg-white"
           >
             <div class="d-flex justify-space-between align-start ga-3">
               <div>
@@ -148,10 +167,8 @@
               </div>
             </div>
 
-            <v-divider class="my-3"></v-divider>
-            <div class="d-flex justify-center align-center ga-2">
+            <div v-if="canManageSchedules" class="ministery-card-actions mt-3">
               <v-btn
-                v-if="canManageSchedules"
                 variant="text"
                 color="primary"
                 class="text-none font-weight-medium"
@@ -162,7 +179,6 @@
                 Adicionar voluntário
               </v-btn>
               <v-btn
-                v-if="canManageSchedules"
                 icon
                 variant="text"
                 color="grey-darken-1"
@@ -172,7 +188,6 @@
                 <Pencil size="16" />
               </v-btn>
               <v-btn
-                v-if="canManageSchedules"
                 icon
                 variant="text"
                 color="red-darken-2"
@@ -197,7 +212,7 @@
       </section>
 
       <section v-if="activeTab === 'tasks'">
-        <div class="d-flex justify-end mb-4">
+        <div class="ministery-section-actions mb-4">
           <v-btn
             v-if="canManageDepartment"
             color="#A855F7"
@@ -218,11 +233,11 @@
           </p>
         </v-card>
 
-        <div v-else class="d-flex flex-column ga-3">
+        <div v-else class="ministery-card-grid">
           <v-card
             v-for="task in tasks"
             :key="task.id"
-            class="rounded-xl pa-4 elevation-1 bg-white border-subtle"
+            class="ministery-content-card pa-4 elevation-1 bg-white"
           >
             <div class="d-flex justify-space-between align-start ga-3">
               <div>
@@ -243,9 +258,8 @@
                 {{ priorityLabel(task.priority) }}
               </v-chip>
             </div>
-            <div class="d-flex justify-end ga-2 mt-3">
+            <div v-if="canManageDepartment" class="ministery-card-actions mt-3">
               <v-btn
-                v-if="canManageDepartment"
                 icon
                 variant="text"
                 color="grey-darken-1"
@@ -255,7 +269,6 @@
                 <Pencil size="16" />
               </v-btn>
               <v-btn
-                v-if="canManageDepartment"
                 icon
                 variant="text"
                 color="red-darken-2"
@@ -280,7 +293,7 @@
       </section>
 
       <section v-if="activeTab === 'resources'">
-        <div class="d-flex justify-end mb-4">
+        <div class="ministery-section-actions mb-4">
           <v-btn
             v-if="canManageDepartment"
             color="#A855F7"
@@ -301,11 +314,11 @@
           </p>
         </v-card>
 
-        <div v-else class="d-flex flex-column ga-3">
+        <div v-else class="ministery-card-grid">
           <v-card
             v-for="resource in resources"
             :key="resource.id"
-            class="rounded-xl pa-4 elevation-1 bg-white border-subtle"
+            class="ministery-content-card pa-4 elevation-1 bg-white"
           >
             <div class="d-flex justify-space-between align-start ga-3">
               <div>
@@ -331,9 +344,8 @@
                 {{ resource.category }}
               </v-chip>
             </div>
-            <div class="d-flex justify-end ga-2 mt-3">
+            <div v-if="canManageDepartment" class="ministery-card-actions mt-3">
               <v-btn
-                v-if="canManageDepartment"
                 icon
                 variant="text"
                 color="grey-darken-1"
@@ -343,7 +355,6 @@
                 <Pencil size="16" />
               </v-btn>
               <v-btn
-                v-if="canManageDepartment"
                 icon
                 variant="text"
                 color="red-darken-2"
@@ -368,7 +379,7 @@
       </section>
 
       <section v-if="activeTab === 'songs'">
-        <div class="d-flex justify-end mb-4">
+        <div class="ministery-section-actions mb-4">
           <v-btn
             v-if="canManageDepartment"
             color="#A855F7"
@@ -389,11 +400,11 @@
           </p>
         </v-card>
 
-        <div v-else class="d-flex flex-column ga-3">
+        <div v-else class="ministery-card-grid">
           <v-card
             v-for="song in songs"
             :key="song.id"
-            class="rounded-xl pa-4 elevation-1 bg-white border-subtle"
+            class="ministery-content-card pa-4 elevation-1 bg-white"
           >
             <div class="d-flex justify-space-between align-start ga-3">
               <div class="min-w-0">
@@ -452,7 +463,7 @@
               {{ song.metadata.notes }}
             </p>
 
-            <div v-if="canManageDepartment" class="d-flex justify-end ga-2 mt-3">
+            <div v-if="canManageDepartment" class="ministery-card-actions mt-3">
               <v-btn
                 icon
                 variant="text"
@@ -1649,6 +1660,15 @@ const selectedSchedule = computed(() =>
   schedules.value.find((schedule) => schedule.id === selectedScheduleId.value),
 );
 
+const detailSummary = computed(() => [
+  { label: "escalas", value: schedules.value.length },
+  { label: "tarefas", value: tasks.value.length },
+  { label: "recursos", value: resources.value.length },
+  ...(["WORSHIP", "MUSIC"].includes(department.value?.type || "")
+    ? [{ label: "músicas", value: songs.value.length }]
+    : []),
+]);
+
 const isDeleteDialogOpen = computed({
   get: () => Boolean(pendingDelete.value),
   set: (value: boolean) => {
@@ -2482,6 +2502,64 @@ onMounted(async () => {
 .border-subtle {
   border: 1px solid #f3f4f6;
 }
+.ministery-back-row,
+.ministery-detail-header,
+.ministery-section-actions,
+.ministery-card-actions {
+  display: flex;
+  align-items: center;
+}
+.ministery-back-row {
+  gap: 2px;
+}
+.ministery-detail-header {
+  justify-content: space-between;
+  gap: 16px;
+}
+.ministery-detail-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.ministery-detail-summary-item {
+  display: grid;
+  min-height: 68px;
+  align-content: center;
+  gap: 4px;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+}
+.ministery-detail-summary-item span {
+  color: #111827;
+  font-size: 1.16rem;
+  font-weight: 900;
+  line-height: 1;
+}
+.ministery-detail-summary-item small {
+  color: #6b7280;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+.ministery-section-actions {
+  justify-content: flex-end;
+}
+.ministery-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+.ministery-content-card {
+  border: 1px solid #eef2f7;
+  border-radius: 8px !important;
+}
+.ministery-card-actions {
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid #f3f4f6;
+  padding-top: 10px;
+}
 .schedule-media-list {
   display: flex;
   flex-wrap: wrap;
@@ -2633,6 +2711,20 @@ onMounted(async () => {
   }
 }
 @media (max-width: 420px) {
+  .ministery-detail-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .ministery-detail-summary,
+  .ministery-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ministery-section-actions .v-btn {
+    width: 100%;
+  }
+
   .tabs-row {
     gap: 6px;
     margin-right: -12px;

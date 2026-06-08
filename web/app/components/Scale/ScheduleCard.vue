@@ -1,7 +1,7 @@
 <template>
   <v-card
     :id="`schedule-${event.id}`"
-    class="rounded-xl pa-4 mb-4 elevation-1 bg-white schedule-card"
+    class="rounded-lg pa-4 mb-4 elevation-1 bg-white schedule-card"
     :class="{ 'schedule-card-selected': selected }"
     role="button"
     tabindex="0"
@@ -9,48 +9,52 @@
     @keydown.enter="$emit('open-details', event)"
     @keydown.space.prevent="$emit('open-details', event)"
   >
-    <div class="schedule-card-header mb-4">
+    <div class="schedule-card-header">
       <div class="min-w-0">
         <h3 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-1 schedule-title">
           {{ event.title }}
         </h3>
-        <p class="text-caption text-grey-darken-1 mb-0">
-          {{ event.date }}
+        <p class="schedule-date mb-0">
+          <CalendarDays size="14" />
+          <span>{{ event.date }}</span>
         </p>
       </div>
 
-      <v-chip
-        size="small"
-        color="grey-lighten-3"
-        text-color="grey-darken-3"
-        class="schedule-time-chip"
-      >
-        <Clock size="14" class="mr-1" />
-        <span>{{ event.time }}</span>
-      </v-chip>
+      <div class="schedule-card-side">
+        <v-chip
+          size="small"
+          color="grey-lighten-3"
+          text-color="grey-darken-3"
+          class="schedule-time-chip"
+        >
+          <Clock size="14" class="mr-1" />
+          <span>{{ event.time }}</span>
+        </v-chip>
+        <ChevronRight size="18" class="schedule-open-icon" />
+      </div>
     </div>
 
-    <div v-if="event.rehearsalLabel" class="schedule-rehearsal mb-4">
+    <div class="schedule-summary-row mt-4">
+      <div class="schedule-summary-item">
+        <Users size="15" />
+        <span>{{ volunteerLabel }}</span>
+      </div>
+      <div class="schedule-summary-item">
+        <CheckCircle2 size="15" />
+        <span>{{ event.confirmedCount || 0 }} confirmados</span>
+      </div>
+      <div v-if="musicCount" class="schedule-summary-item">
+        <Music size="15" />
+        <span>{{ musicCount }} músicas</span>
+      </div>
+    </div>
+
+    <div v-if="event.rehearsalLabel" class="schedule-rehearsal mt-3">
       <Clock size="15" />
       <span>Ensaio: {{ event.rehearsalLabel }}</span>
     </div>
 
-    <div class="schedule-dashboard-strip mb-4">
-      <div class="schedule-dashboard-metric">
-        <span>{{ event.volunteerCount }}</span>
-        <small>pessoas</small>
-      </div>
-      <div class="schedule-dashboard-metric">
-        <span>{{ event.confirmedCount || 0 }}</span>
-        <small>confirmados</small>
-      </div>
-      <div class="schedule-dashboard-metric">
-        <span>{{ musicCount }}</span>
-        <small>músicas</small>
-      </div>
-    </div>
-
-    <div class="schedule-volunteers mb-4">
+    <div class="schedule-volunteers mt-4">
       <div v-if="event.volunteerCount > 0" class="avatar-stack">
         <v-avatar
           v-for="(volunteer, idx) in visibleVolunteers"
@@ -87,104 +91,36 @@
       </div>
     </div>
 
-    <div
-      v-if="currentUserAssignment"
-      class="assignment-confirmation mb-4"
-      @click.stop
-    >
-      <div class="min-w-0">
-        <p class="text-caption font-weight-bold text-grey-darken-4 mb-1">
-          Sua resposta
-        </p>
-        <p class="text-caption text-grey-darken-1 mb-0">
-          {{ userAssignmentStatusLabel }}
-        </p>
-      </div>
-      <div class="assignment-confirmation-actions">
-        <v-btn
-          v-if="!hasViewed"
-          variant="tonal"
-          color="indigo-darken-2"
-          size="small"
-          class="text-none"
-          @click.stop="$emit('mark-viewed', event)"
-        >
-          Vi a escala
-        </v-btn>
-        <v-btn
-          v-if="!isConfirmed"
-          color="purple-darken-3"
-          size="small"
-          class="text-none"
-          @click.stop="$emit('confirm-presence', event)"
-        >
-          Confirmar presença
-        </v-btn>
-        <v-chip
-          v-else
-          size="small"
-          color="teal-darken-2"
-          variant="tonal"
-        >
-          Confirmado
-        </v-chip>
-        <v-btn
-          v-if="!isDeclined"
-          variant="tonal"
-          color="red-darken-2"
-          size="small"
-          class="text-none"
-          @click.stop="$emit('decline-presence', event)"
-        >
-          Não posso
-        </v-btn>
-        <v-btn
-          v-if="!isMaybe"
-          variant="tonal"
-          color="amber-darken-3"
-          size="small"
-          class="text-none"
-          @click.stop="$emit('maybe-presence', event)"
-        >
-          Talvez
-        </v-btn>
-        <v-btn
-          v-if="!needsSwap"
-          variant="tonal"
-          color="indigo-darken-2"
-          size="small"
-          class="text-none"
-          @click.stop="$emit('request-swap', event)"
-        >
-          Troca
-        </v-btn>
-      </div>
+    <div v-if="currentUserAssignment" class="assignment-summary mt-4">
+      <span>Sua resposta</span>
+      <v-chip
+        size="small"
+        :color="assignmentStatusColor"
+        variant="tonal"
+      >
+        {{ userAssignmentStatusLabel }}
+      </v-chip>
     </div>
 
-    <div v-if="event.mediaItems?.length" class="schedule-media-list">
-      <v-chip
-        v-for="item in visibleMediaItems"
-        :key="item.id"
-        size="small"
-        :color="item.category === 'MUSIC' ? 'purple-darken-3' : 'teal-darken-2'"
-        variant="tonal"
-      >
-        {{ item.title }}
-      </v-chip>
-      <v-chip
-        v-if="hiddenMediaCount > 0"
-        size="small"
-        color="grey-darken-1"
-        variant="tonal"
-      >
-        +{{ hiddenMediaCount }}
-      </v-chip>
+    <div v-if="event.mediaItems?.length" class="schedule-media-summary mt-3">
+      <Music v-if="musicCount" size="14" />
+      <FileText v-else size="14" />
+      <span>{{ mediaSummary }}</span>
     </div>
   </v-card>
 </template>
 
 <script setup>
-import { Clock, UserPlus } from "lucide-vue-next";
+import {
+  CalendarDays,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  FileText,
+  Music,
+  UserPlus,
+  Users,
+} from "lucide-vue-next";
 import { computed } from "vue";
 
 defineEmits([
@@ -222,12 +158,8 @@ const avatarColors = [
 ];
 
 const visibleVolunteers = computed(() => props.event.volunteers?.slice(0, 4) || []);
-const visibleMediaItems = computed(() => props.event.mediaItems?.slice(0, 3) || []);
 const extraVolunteerCount = computed(() =>
   Math.max((props.event.volunteerCount || 0) - visibleVolunteers.value.length, 0),
-);
-const hiddenMediaCount = computed(() =>
-  Math.max((props.event.mediaItems?.length || 0) - visibleMediaItems.value.length, 0),
 );
 const musicCount = computed(
   () => props.event.mediaItems?.filter((item) => item.category === "MUSIC").length || 0,
@@ -237,7 +169,6 @@ const volunteerLabel = computed(() => {
   return count === 1 ? "1 voluntário" : `${count} voluntários`;
 });
 const currentUserAssignment = computed(() => props.event.currentUserAssignment);
-const hasViewed = computed(() => Boolean(currentUserAssignment.value?.viewedAt));
 const isConfirmed = computed(
   () => currentUserAssignment.value?.confirmationStatus === "CONFIRMED",
 );
@@ -250,24 +181,47 @@ const isMaybe = computed(
 const needsSwap = computed(
   () => currentUserAssignment.value?.confirmationStatus === "SWAP_REQUESTED",
 );
+const assignmentStatusColor = computed(() => {
+  if (isConfirmed.value) return "teal-darken-2";
+  if (isDeclined.value) return "red-darken-2";
+  if (isMaybe.value) return "amber-darken-3";
+  if (needsSwap.value) return "indigo-darken-2";
+  if (currentUserAssignment.value?.viewedAt) return "indigo-darken-2";
+  return "grey";
+});
 const confirmationSummary = computed(() => {
   if (!props.event.volunteerCount) return "Equipe ainda vazia";
 
   return `${props.event.confirmedCount || 0} confirmados · ${props.event.viewedCount || 0} viram`;
 });
+const mediaSummary = computed(() => {
+  const total = props.event.mediaItems?.length || 0;
+  const resources = Math.max(total - musicCount.value, 0);
+  const parts = [];
+
+  if (musicCount.value) {
+    parts.push(musicCount.value === 1 ? "1 música" : `${musicCount.value} músicas`);
+  }
+
+  if (resources) {
+    parts.push(resources === 1 ? "1 recurso" : `${resources} recursos`);
+  }
+
+  return parts.join(" · ");
+});
 const userAssignmentStatusLabel = computed(() => {
-  if (isConfirmed.value) return "Você confirmou presença nesta escala.";
-  if (isDeclined.value) return "Você marcou que não pode ir.";
-  if (isMaybe.value) return "Você marcou talvez.";
-  if (needsSwap.value) return "Você pediu troca nesta escala.";
-  if (hasViewed.value) return "Você já marcou que viu esta escala.";
-  return "Marque que viu e confirme se você vai.";
+  if (isConfirmed.value) return "Confirmou";
+  if (isDeclined.value) return "Não pode";
+  if (isMaybe.value) return "Talvez";
+  if (needsSwap.value) return "Troca";
+  if (currentUserAssignment.value?.viewedAt) return "Viu";
+  return "Pendente";
 });
 </script>
 
 <style scoped>
 .schedule-card {
-  border: 1px solid transparent;
+  border: 1px solid #eef2f7;
   cursor: pointer;
   overflow: hidden;
   transition:
@@ -277,7 +231,7 @@ const userAssignmentStatusLabel = computed(() => {
 }
 
 .schedule-card:hover {
-  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.08) !important;
+  box-shadow: 0 12px 26px rgba(17, 24, 39, 0.07) !important;
   transform: translateY(-1px);
 }
 
@@ -293,9 +247,56 @@ const userAssignmentStatusLabel = computed(() => {
   gap: 12px;
 }
 
+.schedule-card-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.schedule-open-icon {
+  color: #9ca3af;
+}
+
 .schedule-title {
   line-height: 1.25;
   overflow-wrap: anywhere;
+}
+
+.schedule-date,
+.schedule-summary-item,
+.schedule-media-summary {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 6px;
+  color: #6b7280;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.schedule-date span,
+.schedule-summary-item span,
+.schedule-media-summary span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.schedule-summary-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.schedule-summary-item {
+  min-height: 30px;
+  border: 1px solid #f3f4f6;
+  border-radius: 999px;
+  background: #fafafa;
+  padding: 6px 9px;
 }
 
 .schedule-volunteers {
@@ -303,84 +304,10 @@ const userAssignmentStatusLabel = computed(() => {
   align-items: center;
   gap: 14px;
   min-height: 42px;
-  border-radius: 14px;
-  background: #fafafa;
   border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  background: #ffffff;
   padding: 10px 12px;
-}
-
-.schedule-dashboard-strip {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.schedule-dashboard-metric {
-  display: grid;
-  gap: 2px;
-  min-height: 58px;
-  align-content: center;
-  border: 1px solid #f3f4f6;
-  border-radius: 8px;
-  background: #ffffff;
-  padding: 8px 10px;
-}
-
-.schedule-dashboard-metric span {
-  color: #1f2937;
-  font-size: 1.05rem;
-  font-weight: 850;
-  line-height: 1;
-}
-
-.schedule-dashboard-metric small {
-  color: #6b7280;
-  font-size: 0.72rem;
-  font-weight: 700;
-  line-height: 1.15;
-}
-
-.schedule-role-list {
-  display: grid;
-  gap: 8px;
-}
-
-.schedule-role-item {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  padding: 9px 10px;
-  border: 1px solid #f3f4f6;
-  border-radius: 8px;
-  background: #ffffff;
-}
-
-.schedule-role-name,
-.schedule-role-value {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.schedule-role-name {
-  color: #1f2937;
-  font-size: 0.82rem;
-  font-weight: 700;
-}
-
-.schedule-role-value {
-  color: #6d28d9;
-  font-size: 0.78rem;
-  font-weight: 800;
-}
-
-.schedule-role-more {
-  color: #6b7280;
-  font-size: 0.78rem;
-  font-weight: 700;
-  text-align: center;
 }
 
 .schedule-rehearsal {
@@ -396,93 +323,26 @@ const userAssignmentStatusLabel = computed(() => {
   padding: 9px 11px;
 }
 
-.schedule-media-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+.schedule-media-summary {
+  color: #6d28d9;
 }
 
-.assignment-confirmation {
+.assignment-summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   border: 1px solid #ede9fe;
-  border-radius: 14px;
-  background: #faf5ff;
-  padding: 12px;
-}
-
-.assignment-confirmation-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: 8px;
-  flex: 0 0 auto;
-}
-
-.schedule-media-chip-clickable {
-  cursor: pointer;
-}
-
-.song-viewer {
-  overflow: hidden;
-}
-
-.song-viewer-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 20px;
-}
-
-.song-viewer-body {
-  max-height: min(680px, 75vh);
-  overflow-y: auto;
-  padding: 20px;
-}
-
-.song-text-block {
-  border: 1px solid #f3f4f6;
   border-radius: 8px;
-  background: #fafafa;
-  color: #1f2937;
-  font-family: inherit;
-  font-size: 0.92rem;
-  line-height: 1.65;
-  margin: 0;
-  min-height: 180px;
-  overflow-x: auto;
-  padding: 16px;
-  white-space: pre-wrap;
+  background: #faf5ff;
+  padding: 9px 10px;
 }
 
-.song-chords-block {
-  font-family: "Courier New", monospace;
-}
-
-.song-chords-input :deep(textarea) {
-  font-family: "Courier New", monospace;
-}
-
-.schedule-input :deep(.v-field) {
-  border-radius: 14px;
-}
-
-.personal-chords-panel {
-  display: grid;
-  gap: 12px;
-}
-
-.personal-chords-heading,
-.personal-chords-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+.assignment-summary span {
+  min-width: 0;
+  color: #4b5563;
+  font-size: 0.78rem;
+  font-weight: 800;
 }
 
 .avatar-stack {
@@ -544,7 +404,7 @@ const userAssignmentStatusLabel = computed(() => {
 
 .schedule-card-selected {
   border-color: #a855f7;
-  box-shadow: 0 10px 26px rgba(168, 85, 247, 0.18) !important;
+  box-shadow: 0 10px 24px rgba(168, 85, 247, 0.14) !important;
 }
 
 .schedule-time-chip {
@@ -565,21 +425,16 @@ const userAssignmentStatusLabel = computed(() => {
     grid-template-columns: 1fr;
   }
 
+  .schedule-card-side {
+    justify-content: space-between;
+  }
+
   .schedule-card-header :deep(.v-chip) {
     width: fit-content;
     max-width: 100%;
   }
 
   .schedule-actions {
-    justify-content: flex-start;
-  }
-
-  .assignment-confirmation {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .assignment-confirmation-actions {
     justify-content: flex-start;
   }
 
