@@ -15,7 +15,6 @@
           @mark-viewed="$emit('mark-viewed', $event)"
           @confirm-presence="$emit('confirm-presence', $event)"
           @decline-presence="$emit('decline-presence', $event)"
-          @maybe-presence="$emit('maybe-presence', $event)"
           @request-swap="$emit('request-swap', $event)"
         />
       </div>
@@ -32,7 +31,6 @@ defineEmits([
   "mark-viewed",
   "confirm-presence",
   "decline-presence",
-  "maybe-presence",
   "request-swap",
 ]);
 

@@ -760,6 +760,22 @@ export class UserAdapters {
       throw new DomainError("Email do membro e obrigatorio");
     }
 
+    if (
+      body.role !== undefined &&
+      manager.role !== "PASTOR" &&
+      manager.role !== "ADMIN" &&
+      manager.role !== "SUPER_ADMIN"
+    ) {
+      throw new DomainError("Apenas pastores ou admins podem alterar cargos");
+    }
+
+    if (
+      body.role !== undefined &&
+      !["MEMBER", "PASTOR"].includes(body.role.trim() || "MEMBER")
+    ) {
+      throw new DomainError("Cargo invalido");
+    }
+
     const normalizedEmail = body.email?.trim().toLowerCase();
 
     if (normalizedEmail && normalizedEmail !== member.email) {

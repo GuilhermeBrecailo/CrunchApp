@@ -68,7 +68,6 @@
         @mark-viewed="handleMarkScheduleViewed"
         @confirm-presence="handleConfirmSchedule"
         @decline-presence="handleDeclineSchedule"
-        @maybe-presence="handleMaybeSchedule"
         @request-swap="handleRequestSwap"
       />
 
@@ -224,16 +223,6 @@
                   @click="handleDeclineSchedule(selectedDetailEvent)"
                 >
                   Não posso
-                </v-btn>
-                <v-btn
-                  v-if="selectedDetailEvent.currentUserAssignment.confirmationStatus !== 'MAYBE'"
-                  variant="tonal"
-                  color="amber-darken-3"
-                  size="small"
-                  class="text-none"
-                  @click="handleMaybeSchedule(selectedDetailEvent)"
-                >
-                  Talvez
                 </v-btn>
                 <v-btn
                   v-if="selectedDetailEvent.currentUserAssignment.confirmationStatus !== 'SWAP_REQUESTED'"
@@ -393,7 +382,45 @@
                 <v-tab value="notes" class="text-none">Tom</v-tab>
               </v-tabs>
 
-              <pre class="scale-song-text">{{ getSongTabText(activeDetailSong, songTabs[activeDetailSong.id]) }}</pre>
+              <div class="scale-song-key-controls">
+                <v-btn
+                  variant="tonal"
+                  color="grey-darken-1"
+                  size="small"
+                  class="text-none"
+                  @click="transposeSong(activeDetailSong.id, -1)"
+                >
+                  -1 tom
+                </v-btn>
+                <v-chip size="small" color="orange-darken-3" variant="tonal">
+                  {{ songCurrentKey(activeDetailSong) }}
+                </v-chip>
+                <v-btn
+                  variant="tonal"
+                  color="grey-darken-1"
+                  size="small"
+                  class="text-none"
+                  @click="transposeSong(activeDetailSong.id, 1)"
+                >
+                  +1 tom
+                </v-btn>
+              </div>
+
+              <div class="scale-song-text song-text-renderer">
+                <span
+                  v-for="(line, lineIndex) in getSongTabLines(activeDetailSong, songTabs[activeDetailSong.id])"
+                  :key="lineIndex"
+                  class="song-line"
+                >
+                  <span
+                    v-for="(segment, segmentIndex) in line"
+                    :key="segmentIndex"
+                    :class="segment.type === 'chord' ? 'song-chord' : 'song-lyric'"
+                  >
+                    {{ segment.text }}
+                  </span>
+                </span>
+              </div>
             </div>
           </section>
 
@@ -451,7 +478,7 @@
           </v-tabs>
           <div class="scale-song-meta">
             <v-chip v-if="fullscreenSong.metadata?.key" size="small" variant="tonal">
-              Tom {{ fullscreenSong.metadata.key }}
+              {{ songCurrentKey(fullscreenSong) }}
             </v-chip>
             <v-chip v-if="fullscreenSong.metadata?.bpm" size="small" variant="tonal">
               {{ fullscreenSong.metadata.bpm }} BPM
@@ -459,7 +486,45 @@
           </div>
         </div>
 
-        <pre class="scale-fullscreen-text">{{ getSongTabText(fullscreenSong, fullscreenSongTab) }}</pre>
+        <div class="scale-fullscreen-key-controls">
+          <v-btn
+            variant="tonal"
+            color="grey-darken-1"
+            size="small"
+            class="text-none"
+            @click="transposeSong(fullscreenSong.id, -1)"
+          >
+            -1 tom
+          </v-btn>
+          <v-chip size="small" color="orange-darken-3" variant="tonal">
+            {{ songCurrentKey(fullscreenSong) }}
+          </v-chip>
+          <v-btn
+            variant="tonal"
+            color="grey-darken-1"
+            size="small"
+            class="text-none"
+            @click="transposeSong(fullscreenSong.id, 1)"
+          >
+            +1 tom
+          </v-btn>
+        </div>
+
+        <div class="scale-fullscreen-text song-text-renderer">
+          <span
+            v-for="(line, lineIndex) in getSongTabLines(fullscreenSong, fullscreenSongTab)"
+            :key="lineIndex"
+            class="song-line"
+          >
+            <span
+              v-for="(segment, segmentIndex) in line"
+              :key="segmentIndex"
+              :class="segment.type === 'chord' ? 'song-chord' : 'song-lyric'"
+            >
+              {{ segment.text }}
+            </span>
+          </span>
+        </div>
       </v-card>
     </UtilsResponsiveOverlay>
 
@@ -934,6 +999,7 @@ const isSongFullscreenOpen = ref(false);
 const fullscreenSong = ref<ScheduleEvent["mediaItems"][number] | null>(null);
 const fullscreenSongTab = ref("lyrics");
 const songTabs = reactive<Record<string, string>>({});
+const songTransposeSteps = reactive<Record<string, number>>({});
 
 const scheduleForm = reactive({
   title: "",
@@ -1025,7 +1091,7 @@ const responseStatusLabel = (status?: string) => {
   const labels: Record<string, string> = {
     CONFIRMED: "Confirmou",
     DECLINED: "Não pode",
-    MAYBE: "Talvez",
+    MAYBE: "Pendente",
     SWAP_REQUESTED: "Troca",
     PENDING: "Pendente",
   };
@@ -1037,7 +1103,7 @@ const responseStatusColor = (status?: string) => {
   const colors: Record<string, string> = {
     CONFIRMED: "teal-darken-2",
     DECLINED: "red-darken-2",
-    MAYBE: "amber-darken-3",
+    MAYBE: "grey",
     SWAP_REQUESTED: "indigo-darken-2",
     PENDING: "grey",
   };
@@ -1252,16 +1318,15 @@ const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
 
 const openScheduleDetails = (event: ScheduleEvent) => {
   selectedDetailEvent.value = event;
-  activeDetailSongId.value = "";
-  event.mediaItems
-    .filter((item) => item.category === "MUSIC")
-    .forEach((song) => {
-      songTabs[song.id] ||= song.metadata?.lyrics
-        ? "lyrics"
-        : song.metadata?.chords
-          ? "chords"
-          : "notes";
-    });
+  const songs = event.mediaItems.filter((item) => item.category === "MUSIC");
+  activeDetailSongId.value = songs[0]?.id || "";
+  songs.forEach((song) => {
+    songTabs[song.id] ||= song.metadata?.lyrics
+      ? "lyrics"
+      : song.metadata?.chords
+        ? "chords"
+        : "notes";
+  });
 };
 
 const closeScheduleDetails = () => {
@@ -1309,10 +1374,19 @@ const getSongTabText = (
   song: ScheduleEvent["mediaItems"][number],
   tab = "lyrics",
 ) => {
-  if (tab === "chords") return song.metadata?.chords || "Cifra não cadastrada.";
+  if (tab === "chords") {
+    return transposeChords(
+      song.metadata?.chords || "Cifra não cadastrada.",
+      songTransposeSteps[song.id] || 0,
+    );
+  }
   if (tab === "notes") {
+    const currentKey = transposeKey(
+      song.metadata?.key || "",
+      songTransposeSteps[song.id] || 0,
+    );
     const items = [
-      song.metadata?.key ? `Tom: ${song.metadata.key}` : "",
+      currentKey ? `Tom: ${currentKey}` : "",
       song.metadata?.bpm ? `BPM: ${song.metadata.bpm}` : "",
       song.metadata?.notes || "",
     ].filter(Boolean);
@@ -1322,6 +1396,88 @@ const getSongTabText = (
 
   return song.metadata?.lyrics || "Letra não cadastrada.";
 };
+
+type SongTextSegment = {
+  text: string;
+  type: "lyric" | "chord";
+};
+
+const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+const flatToSharp: Record<string, string> = {
+  Db: "C#",
+  Eb: "D#",
+  Gb: "F#",
+  Ab: "G#",
+  Bb: "A#",
+};
+const chordTokenRegex = /^[A-G](?:#|b)?(?:m|maj|min|dim|aug|sus|add)?[0-9]*(?:\/[A-G](?:#|b)?)?$/;
+
+const transposeKey = (key: string, steps: number) => {
+  const match = key.trim().match(/^([A-G](?:#|b)?)(.*)$/);
+  if (!match || !steps) return key;
+
+  const normalized = flatToSharp[match[1]] || match[1];
+  const index = noteNames.indexOf(normalized);
+  if (index === -1) return key;
+
+  return `${noteNames[(index + steps + noteNames.length) % noteNames.length]}${match[2] || ""}`;
+};
+
+const transposeChords = (text: string, steps: number) => {
+  if (!steps) return text;
+
+  return text.replace(
+    /\b([A-G](?:#|b)?)(m|maj|min|dim|aug|sus|add)?([0-9]*)?(\/([A-G](?:#|b)?))?/g,
+    (match, root, quality = "", extension = "", slash = "", bass = "") => {
+      const nextRoot = transposeKey(root, steps);
+      const nextBass = bass ? `/${transposeKey(bass, steps)}` : "";
+      return `${nextRoot}${quality || ""}${extension || ""}${nextBass}`;
+    },
+  );
+};
+
+const transposeSong = (songId: string, steps: number) => {
+  songTransposeSteps[songId] = (songTransposeSteps[songId] || 0) + steps;
+};
+
+const songCurrentKey = (song: ScheduleEvent["mediaItems"][number]) => {
+  const currentKey = transposeKey(
+    song.metadata?.key || "",
+    songTransposeSteps[song.id] || 0,
+  );
+  return currentKey ? `Tom ${currentKey}` : "Tom não cadastrado";
+};
+
+const isChordToken = (token: string) =>
+  chordTokenRegex.test(token.replace(/[()[\],.;:]/g, ""));
+
+const isChordLine = (line: string) => {
+  const tokens = line.trim().split(/\s+/).filter(Boolean);
+  if (!tokens.length) return false;
+
+  const chordTokens = tokens.filter((token) => token === "|" || isChordToken(token)).length;
+  return chordTokens > 0 && chordTokens / tokens.length >= 0.65;
+};
+
+const tokenizeSongLine = (line: string, tab: string): SongTextSegment[] => {
+  if (!line) return [{ text: "\u00a0", type: "lyric" }];
+  if (tab !== "chords") return [{ text: line, type: "lyric" }];
+
+  const inlineParts = line.split(/(\[[^\]]+\])/g).filter((part) => part.length);
+  if (inlineParts.length > 1) {
+    return inlineParts.map((part) => ({
+      text: part,
+      type: part.startsWith("[") && part.endsWith("]") ? "chord" : "lyric",
+    }));
+  }
+
+  return [{ text: line, type: isChordLine(line) ? "chord" : "lyric" }];
+};
+
+const getSongTabLines = (
+  song: ScheduleEvent["mediaItems"][number],
+  tab = "lyrics",
+) => getSongTabText(song, tab).split("\n").map((line) => tokenizeSongLine(line, tab));
 
 const openSongFullscreen = (song: ScheduleEvent["mediaItems"][number]) => {
   fullscreenSong.value = song;
@@ -1358,7 +1514,7 @@ const updateLocalAssignment = (
 
 const updateMyScheduleResponse = async (
   event: ScheduleEvent,
-  action: "VIEWED" | "CONFIRMED" | "DECLINED" | "MAYBE" | "SWAP_REQUESTED",
+  action: "VIEWED" | "CONFIRMED" | "DECLINED" | "SWAP_REQUESTED",
   fallbackError: string,
 ) => {
   schedulesError.value = "";
@@ -1395,14 +1551,6 @@ const handleDeclineSchedule = async (event: ScheduleEvent) => {
     event,
     "DECLINED",
     "Não foi possível informar ausência.",
-  );
-};
-
-const handleMaybeSchedule = async (event: ScheduleEvent) => {
-  await updateMyScheduleResponse(
-    event,
-    "MAYBE",
-    "Não foi possível marcar talvez.",
   );
 };
 
@@ -2236,11 +2384,38 @@ watch(schedules, async () => {
   border: 1px solid #f3f4f6;
   border-radius: 8px;
   background: #ffffff;
-  color: #1f2937;
+  color: #111111;
   font-family: "Courier New", monospace;
-  font-size: 0.95rem;
-  line-height: 1.7;
+  font-size: 1.04rem;
+  line-height: 1.82;
   padding: 14px;
+}
+
+.song-text-renderer {
+  display: block;
+}
+
+.song-line {
+  display: block;
+  min-height: 1.82em;
+}
+
+.song-lyric {
+  color: #111111;
+  font-weight: 650;
+}
+
+.song-chord {
+  color: #ea580c;
+  font-weight: 900;
+}
+
+.scale-song-key-controls,
+.scale-fullscreen-key-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .scale-song-text {
@@ -2250,7 +2425,7 @@ watch(schedules, async () => {
 
 .scale-fullscreen-song {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto auto minmax(0, 1fr);
   min-height: min(100vh, 760px);
   background: #fff;
 }
@@ -2274,13 +2449,18 @@ watch(schedules, async () => {
   border-bottom: 1px solid #f3f4f6;
 }
 
+.scale-fullscreen-key-controls {
+  padding: 10px 22px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
 .scale-fullscreen-text {
   min-height: 0;
   overflow: auto;
   border: 0;
   border-radius: 0;
-  font-size: 1.08rem;
-  line-height: 1.85;
+  font-size: 1.16rem;
+  line-height: 1.92;
   padding: 24px;
 }
 

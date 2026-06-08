@@ -742,6 +742,102 @@
       />
     </div>
 
+    <section v-if="isChurchWideManager" class="church-admin-section mb-8">
+      <div class="section-heading mb-4">
+        <div>
+          <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
+            Relatório pastoral
+          </h2>
+          <p class="text-caption text-grey-darken-1 mb-0">
+            Visão geral de presença, respostas, liderança e atividade dos ministérios.
+          </p>
+        </div>
+      </div>
+
+      <div class="pastoral-report-grid mb-4">
+        <v-card class="report-kpi-card pa-4 elevation-1 bg-white border-subtle">
+          <span>{{ churchReport.confirmationRate }}%</span>
+          <small>confirmação nas escalas</small>
+        </v-card>
+        <v-card class="report-kpi-card pa-4 elevation-1 bg-white border-subtle">
+          <span>{{ churchReport.attendanceRate }}%</span>
+          <small>presença registrada</small>
+        </v-card>
+        <v-card class="report-kpi-card pa-4 elevation-1 bg-white border-subtle">
+          <span>{{ churchReport.pendingResponses }}</span>
+          <small>respostas pendentes</small>
+        </v-card>
+        <v-card class="report-kpi-card pa-4 elevation-1 bg-white border-subtle">
+          <span>{{ churchReport.openTasks }}</span>
+          <small>tarefas cadastradas</small>
+        </v-card>
+      </div>
+
+      <div class="pastoral-report-layout">
+        <v-card class="report-panel pa-4 elevation-1 bg-white border-subtle">
+          <div class="report-panel-title mb-3">
+            <BarChart3 size="18" />
+            <h3>Ministérios</h3>
+          </div>
+          <div class="report-bars">
+            <div
+              v-for="row in departmentReportRows"
+              :key="row.id"
+              class="report-row"
+            >
+              <div class="report-row-top">
+                <strong>{{ row.name }}</strong>
+                <span>{{ row.confirmationRate }}%</span>
+              </div>
+              <div class="report-track">
+                <span :style="{ width: `${row.confirmationRate}%` }" />
+              </div>
+              <small>
+                {{ row.assignments }} escalados · {{ row.schedules }} escalas · {{ row.tasks }} tarefas
+              </small>
+            </div>
+          </div>
+        </v-card>
+
+        <v-card class="report-panel pa-4 elevation-1 bg-white border-subtle">
+          <div class="report-panel-title mb-3">
+            <UserCheck size="18" />
+            <h3>Liderança</h3>
+          </div>
+          <div class="leadership-summary">
+            <div>
+              <strong>{{ pastoralLeadership.pastors.length }}</strong>
+              <span>pastores</span>
+            </div>
+            <div>
+              <strong>{{ pastoralLeadership.leaders.length }}</strong>
+              <span>líderes</span>
+            </div>
+            <div>
+              <strong>{{ pastoralLeadership.managers.length }}</strong>
+              <span>gestores</span>
+            </div>
+          </div>
+          <div class="leadership-list mt-4">
+            <div
+              v-for="leader in pastoralLeadership.leaders"
+              :key="leader.id"
+              class="leadership-row"
+            >
+              <span>{{ leader.name }}</span>
+              <small>{{ leader.departments.join(", ") }}</small>
+            </div>
+            <p
+              v-if="pastoralLeadership.leaders.length === 0"
+              class="text-caption text-grey-darken-1 mb-0"
+            >
+              Nenhum líder definido nos ministérios.
+            </p>
+          </div>
+        </v-card>
+      </div>
+    </section>
+
     <section class="church-admin-section mb-8">
       <div class="section-heading mb-4">
         <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
@@ -791,6 +887,14 @@
 
           <div class="member-badges">
             <v-chip
+              v-if="leaderDepartmentNames(member.id).length"
+              size="small"
+              color="indigo-darken-2"
+              variant="tonal"
+            >
+              Líder
+            </v-chip>
+            <v-chip
               v-if="member.canManageMembers"
               size="small"
               color="teal-darken-2"
@@ -799,7 +903,7 @@
               Permissão
             </v-chip>
             <v-chip size="small" color="purple-darken-3" variant="tonal">
-              {{ member.role === "PASTOR" ? "Pastor" : "Membro" }}
+              {{ churchMemberRoleLabel(member) }}
             </v-chip>
           </div>
         </v-card>
@@ -1178,6 +1282,33 @@
           :disabled="isUpdatingMember"
         />
 
+        <v-select
+          v-model="selectedMemberForm.role"
+          label="Cargo"
+          :items="memberRoleOptions"
+          item-title="label"
+          item-value="value"
+          prepend-inner-icon="mdi-badge-account-outline"
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          bg-color="white"
+          class="admin-input mb-4"
+          hide-details="auto"
+          :readonly="!canEditMemberPermissions"
+          :disabled="isUpdatingMember"
+        />
+
+        <v-alert
+          v-if="selectedMember && leaderDepartmentNames(selectedMember.id).length"
+          type="info"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          Lidera: {{ leaderDepartmentNames(selectedMember.id).join(", ") }}
+        </v-alert>
+
         <v-divider class="mb-4" />
 
         <div class="member-permission-row">
@@ -1340,12 +1471,14 @@ import {
   UserCheck,
   Church,
   ArrowRight,
+  BarChart3,
 } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useMembers, type ChurchMember } from "../../composables/useMembers";
 import {
   useDepartments,
   type ChurchDepartment,
+  type DepartmentSchedule,
 } from "../../composables/useDepartments";
 import {
   useAdmin,
@@ -1366,6 +1499,7 @@ const {
 } = useMembers();
 const {
   getDepartments,
+  getChurchSchedules,
   createDepartment,
   updateDepartment,
   deleteDepartment,
@@ -1377,6 +1511,7 @@ const {
 
 const members = ref<ChurchMember[]>([]);
 const departments = ref<ChurchDepartment[]>([]);
+const churchSchedules = ref<DepartmentSchedule[]>([]);
 const adminChurches = ref<AdminChurch[]>([]);
 const selectedChurch = ref<AdminChurchDetails | null>(null);
 const membersError = ref("");
@@ -1498,6 +1633,96 @@ const churchTotals = computed(() => ({
   ),
 }));
 
+const churchAssignments = computed(() =>
+  churchSchedules.value.flatMap((schedule) => schedule.assignments || []),
+);
+
+const percentage = (value: number, total: number) =>
+  total > 0 ? Math.round((value / total) * 100) : 0;
+
+const churchReport = computed(() => {
+  const assignments = churchAssignments.value;
+  const totalAssignments = assignments.length;
+  const confirmed = assignments.filter(
+    (assignment) => assignment.confirmationStatus === "CONFIRMED",
+  ).length;
+  const present = assignments.filter(
+    (assignment) => assignment.attendanceStatus === "PRESENT",
+  ).length;
+  const attendanceTracked = assignments.filter(
+    (assignment) => assignment.attendanceStatus !== "PENDING",
+  ).length;
+
+  return {
+    totalAssignments,
+    confirmationRate: percentage(confirmed, totalAssignments),
+    attendanceRate: percentage(present, attendanceTracked),
+    pendingResponses: assignments.filter(
+      (assignment) =>
+        !assignment.confirmationStatus ||
+        assignment.confirmationStatus === "PENDING" ||
+        assignment.confirmationStatus === "MAYBE",
+    ).length,
+    declined: assignments.filter(
+      (assignment) => assignment.confirmationStatus === "DECLINED",
+    ).length,
+    swapRequests: assignments.filter(
+      (assignment) => assignment.confirmationStatus === "SWAP_REQUESTED",
+    ).length,
+    openTasks: departments.value.reduce(
+      (total, department) => total + (department.tasksCount || 0),
+      0,
+    ),
+  };
+});
+
+const departmentReportRows = computed(() =>
+  departments.value
+    .map((department) => {
+      const schedules = churchSchedules.value.filter(
+        (schedule) => schedule.departmentId === department.id,
+      );
+      const assignments = schedules.flatMap((schedule) => schedule.assignments || []);
+      const confirmed = assignments.filter(
+        (assignment) => assignment.confirmationStatus === "CONFIRMED",
+      ).length;
+
+      return {
+        id: department.id,
+        name: department.name,
+        schedules: schedules.length || department.schedulesCount || 0,
+        assignments: assignments.length,
+        tasks: department.tasksCount || 0,
+        confirmationRate: percentage(confirmed, assignments.length),
+      };
+    })
+    .sort((first, second) => second.confirmationRate - first.confirmationRate),
+);
+
+const pastoralLeadership = computed(() => {
+  const leaderMap = new Map<string, ChurchMember & { departments: string[] }>();
+
+  departments.value.forEach((department) => {
+    const leader = members.value.find((member) => member.id === department.leaderId);
+    if (!leader) return;
+
+    const current = leaderMap.get(leader.id) || {
+      ...leader,
+      departments: [],
+    };
+    current.departments.push(department.name);
+    leaderMap.set(leader.id, current);
+  });
+
+  return {
+    pastors: members.value.filter((member) => member.role === "PASTOR"),
+    leaders: Array.from(leaderMap.values()).sort((first, second) =>
+      first.name.localeCompare(second.name),
+    ),
+    managers: members.value.filter((member) => member.canManageMembers),
+  };
+});
+
 const isDeleteDialogOpen = computed({
   get: () => Boolean(pendingDeleteDepartment.value || pendingDeleteMember.value),
   set: (value: boolean) => {
@@ -1541,6 +1766,7 @@ const selectedMemberForm = reactive({
   name: "",
   email: "",
   phone: "",
+  role: "MEMBER",
 });
 
 const departmentTypes = [
@@ -1552,8 +1778,24 @@ const departmentTypes = [
   { label: "Intercessão", value: "INTERCESSION" },
   { label: "Outro", value: "OTHER" },
 ];
+const memberRoleOptions = [
+  { label: "Membro", value: "MEMBER" },
+  { label: "Pastor", value: "PASTOR" },
+];
 const departmentTypeLabel = (value: string) =>
   departmentTypes.find((type) => type.value === value)?.label || "Outro";
+
+const leaderDepartmentNames = (memberId: string) =>
+  departments.value
+    .filter((department) => department.leaderId === memberId)
+    .map((department) => department.name);
+
+const churchMemberRoleLabel = (member: ChurchMember) => {
+  if (member.role === "PASTOR") return "Pastor";
+  if (["ADMIN", "SUPER_ADMIN"].includes(member.role)) return "Admin";
+  if (leaderDepartmentNames(member.id).length) return "Líder";
+  return "Membro";
+};
 
 const adminUserRoleLabel = (role: string) => {
   if (role === "PASTOR") return "Pastor";
@@ -1605,6 +1847,11 @@ const loadDepartments = async () => {
   }
 
   departments.value = data ?? [];
+};
+
+const loadChurchSchedules = async () => {
+  const { data } = await getChurchSchedules();
+  churchSchedules.value = data ?? [];
 };
 
 const loadPlatformChurches = async () => {
@@ -1730,6 +1977,7 @@ const openMemberDetails = (member: ChurchMember) => {
   selectedMemberForm.name = member.name;
   selectedMemberForm.email = member.email;
   selectedMemberForm.phone = member.phone || "";
+  selectedMemberForm.role = member.role || "MEMBER";
   permissionError.value = "";
   isMemberDetailsOpen.value = true;
 };
@@ -1741,6 +1989,7 @@ const closeMemberDetails = () => {
   selectedMemberForm.name = "";
   selectedMemberForm.email = "";
   selectedMemberForm.phone = "";
+  selectedMemberForm.role = "MEMBER";
 };
 
 const handleCreateMember = async () => {
@@ -1881,6 +2130,7 @@ const handleUpdateMember = async () => {
     name,
     email,
     phone: selectedMemberForm.phone.trim(),
+    ...(canEditMemberPermissions.value ? { role: selectedMemberForm.role } : {}),
   });
 
   isUpdatingMember.value = false;
@@ -1966,7 +2216,7 @@ onMounted(async () => {
     return;
   }
 
-  await Promise.all([loadMembers(), loadDepartments()]);
+  await Promise.all([loadMembers(), loadDepartments(), loadChurchSchedules()]);
 });
 </script>
 
@@ -2357,6 +2607,146 @@ onMounted(async () => {
   min-width: 0;
 }
 
+.pastoral-report-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.report-kpi-card {
+  display: grid;
+  gap: 6px;
+  border-radius: 8px !important;
+}
+
+.report-kpi-card span {
+  color: #111827;
+  font-size: 1.4rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.report-kpi-card small {
+  color: #6b7280;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.pastoral-report-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.report-panel {
+  border-radius: 8px !important;
+}
+
+.report-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6d28d9;
+}
+
+.report-panel-title h3 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 0.92rem;
+  font-weight: 850;
+}
+
+.report-bars,
+.leadership-list {
+  display: grid;
+  gap: 12px;
+}
+
+.report-row {
+  display: grid;
+  gap: 7px;
+}
+
+.report-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #374151;
+  font-size: 0.82rem;
+}
+
+.report-row-top strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.report-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #f3f4f6;
+}
+
+.report-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #a855f7;
+}
+
+.report-row small,
+.leadership-row small {
+  color: #6b7280;
+  font-size: 0.74rem;
+  font-weight: 650;
+}
+
+.leadership-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.leadership-summary div {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  background: #fafafa;
+  padding: 10px;
+}
+
+.leadership-summary strong {
+  color: #111827;
+  font-size: 1.1rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.leadership-summary span {
+  color: #6b7280;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.leadership-row {
+  display: grid;
+  gap: 3px;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px 11px;
+}
+
+.leadership-row span {
+  color: #111827;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
 .section-heading {
   display: flex;
   align-items: center;
@@ -2516,6 +2906,14 @@ onMounted(async () => {
 
   .church-stats-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .pastoral-report-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .pastoral-report-layout {
+    grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
   }
 
   .church-directory-grid {

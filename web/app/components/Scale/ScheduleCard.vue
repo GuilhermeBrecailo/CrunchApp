@@ -131,7 +131,6 @@ defineEmits([
   "mark-viewed",
   "confirm-presence",
   "decline-presence",
-  "maybe-presence",
   "request-swap",
 ]);
 
@@ -175,16 +174,12 @@ const isConfirmed = computed(
 const isDeclined = computed(
   () => currentUserAssignment.value?.confirmationStatus === "DECLINED",
 );
-const isMaybe = computed(
-  () => currentUserAssignment.value?.confirmationStatus === "MAYBE",
-);
 const needsSwap = computed(
   () => currentUserAssignment.value?.confirmationStatus === "SWAP_REQUESTED",
 );
 const assignmentStatusColor = computed(() => {
   if (isConfirmed.value) return "teal-darken-2";
   if (isDeclined.value) return "red-darken-2";
-  if (isMaybe.value) return "amber-darken-3";
   if (needsSwap.value) return "indigo-darken-2";
   if (currentUserAssignment.value?.viewedAt) return "indigo-darken-2";
   return "grey";
@@ -212,7 +207,7 @@ const mediaSummary = computed(() => {
 const userAssignmentStatusLabel = computed(() => {
   if (isConfirmed.value) return "Confirmou";
   if (isDeclined.value) return "Não pode";
-  if (isMaybe.value) return "Talvez";
+  if (currentUserAssignment.value?.confirmationStatus === "MAYBE") return "Pendente";
   if (needsSwap.value) return "Troca";
   if (currentUserAssignment.value?.viewedAt) return "Viu";
   return "Pendente";

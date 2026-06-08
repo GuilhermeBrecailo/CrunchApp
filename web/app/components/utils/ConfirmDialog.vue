@@ -1,6 +1,18 @@
 <template>
   <v-dialog :model-value="modelValue" max-width="420" @update:model-value="emitClose">
     <v-card class="confirm-card pa-5 bg-white" elevation="0">
+      <v-btn
+        icon
+        variant="text"
+        color="grey-darken-1"
+        size="small"
+        class="confirm-close-btn"
+        :disabled="loading"
+        @click="$emit('cancel')"
+      >
+        <v-icon size="20">mdi-close</v-icon>
+      </v-btn>
+
       <div class="d-flex align-start ga-3 mb-4">
         <v-avatar color="#FEE2E2" size="42">
           <Trash2 size="20" color="#B91C1C" />
@@ -74,7 +86,14 @@ const emitClose = (value: boolean) => {
 
 <style scoped>
 .confirm-card {
+  position: relative;
   border-radius: 8px;
   border: 1px solid #fee2e2;
+}
+
+.confirm-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
 }
 </style>
