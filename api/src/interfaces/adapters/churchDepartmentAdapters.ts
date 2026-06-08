@@ -1,5 +1,7 @@
 import { FastifyRequest } from "fastify/types/request";
 import crypto from "node:crypto";
+import path from "node:path";
+import { mkdir, writeFile } from "node:fs/promises";
 import { Prisma } from "@prisma/client";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
@@ -31,6 +33,16 @@ type DepartmentWithStats = {
     category: string;
   }[];
 };
+
+type UploadedPdf = {
+  url: string;
+  key: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
+};
+
+const PDF_MAX_SIZE_BYTES = 10 * 1024 * 1024;
 
 function getAuthUserId(request: FastifyRequest) {
   const authHeader = request.headers.authorization;
@@ -141,6 +153,41 @@ export class ChurchDepartmentAdapters {
   private songSelect = {
     ...this.resourceSelect,
   };
+
+  private normalizePdfMetadata(body: {
+    pdfUrl?: string | null;
+    pdfKey?: string | null;
+    pdfFileName?: string | null;
+    pdfMimeType?: string | null;
+    pdfSize?: number | string | null;
+    removePdf?: boolean;
+  }) {
+    if (body.removePdf) {
+      return { pdf: null };
+    }
+
+    if (body.pdfUrl === undefined) {
+      return {};
+    }
+
+    const url = body.pdfUrl?.trim();
+    if (!url) {
+      return { pdf: null };
+    }
+
+    return {
+      pdf: {
+        url,
+        key: body.pdfKey?.trim() || "",
+        fileName: body.pdfFileName?.trim() || "material.pdf",
+        mimeType: body.pdfMimeType?.trim() || "application/pdf",
+        size:
+          body.pdfSize === undefined || body.pdfSize === null
+            ? 0
+            : Number(body.pdfSize) || 0,
+      },
+    };
+  }
 
   private departmentSelect = {
     id: true,
@@ -283,6 +330,76 @@ export class ChurchDepartmentAdapters {
     }
 
     return this.mapDepartment(department);
+  }
+
+  async uploadChurchDepartmentPdf(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+
+    if (!id) {
+      throw new DomainError("Ministério não informado");
+    }
+
+    await this.assertCanManageDepartment(user, id);
+
+    const multipartRequest = request as FastifyRequest & {
+      file: (options?: unknown) => Promise<{
+        filename: string;
+        mimetype: string;
+        toBuffer: () => Promise<Buffer>;
+      } | undefined>;
+    };
+    const file = await multipartRequest.file({
+      limits: {
+        fileSize: PDF_MAX_SIZE_BYTES,
+        files: 1,
+      },
+    });
+
+    if (!file) {
+      throw new DomainError("Arquivo PDF não enviado");
+    }
+
+    if (file.mimetype !== "application/pdf") {
+      throw new DomainError("Envie um arquivo PDF válido");
+    }
+
+    const buffer = await file.toBuffer();
+    if (buffer.byteLength > PDF_MAX_SIZE_BYTES) {
+      throw new DomainError("O PDF deve ter no máximo 10 MB");
+    }
+
+    const safeOriginalName = file.filename
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9._-]/g, "-")
+      .replace(/-+/g, "-")
+      .slice(0, 120);
+    const fileName = safeOriginalName.toLowerCase().endsWith(".pdf")
+      ? safeOriginalName
+      : `${safeOriginalName || "material"}.pdf`;
+    const key = path.posix.join(
+      "church",
+      user.crunchId!,
+      "departments",
+      id,
+      `${crypto.randomUUID()}-${fileName}`,
+    );
+    const targetPath = path.join(process.cwd(), "uploads", key);
+
+    await mkdir(path.dirname(targetPath), { recursive: true });
+    await writeFile(targetPath, buffer);
+
+    const host = request.headers.host || `localhost:${process.env.API_PORT || 8000}`;
+    const baseUrl = process.env.URL_BACKEND || `http://${host}`;
+
+    return {
+      url: `${baseUrl.replace(/\/$/, "")}/uploads/${key}`,
+      key,
+      fileName,
+      mimeType: file.mimetype,
+      size: buffer.byteLength,
+    } satisfies UploadedPdf;
   }
 
   private async getScheduleFromCurrentChurch(scheduleId: string, crunchId: string) {
@@ -1387,6 +1504,11 @@ export class ChurchDepartmentAdapters {
       notes?: string;
       lyrics?: string;
       chords?: string;
+      pdfUrl?: string | null;
+      pdfKey?: string | null;
+      pdfFileName?: string | null;
+      pdfMimeType?: string | null;
+      pdfSize?: number | string | null;
     };
 
     if (!id) {
@@ -1407,6 +1529,7 @@ export class ChurchDepartmentAdapters {
       notes: body.notes?.trim() || "",
       lyrics: body.lyrics?.trim() || "",
       chords: body.chords?.trim() || "",
+      ...this.normalizePdfMetadata(body),
     };
 
     return await $prismaClient.mediaItem.create({
@@ -1438,6 +1561,12 @@ export class ChurchDepartmentAdapters {
       notes?: string | null;
       lyrics?: string | null;
       chords?: string | null;
+      pdfUrl?: string | null;
+      pdfKey?: string | null;
+      pdfFileName?: string | null;
+      pdfMimeType?: string | null;
+      pdfSize?: number | string | null;
+      removePdf?: boolean;
     };
 
     if (!departmentId || !songId) {
@@ -1473,6 +1602,7 @@ export class ChurchDepartmentAdapters {
       ...(body.notes !== undefined ? { notes: body.notes?.trim() || "" } : {}),
       ...(body.lyrics !== undefined ? { lyrics: body.lyrics?.trim() || "" } : {}),
       ...(body.chords !== undefined ? { chords: body.chords?.trim() || "" } : {}),
+      ...this.normalizePdfMetadata(body),
     };
 
     const data: Prisma.MediaItemUpdateInput = {
@@ -1647,6 +1777,11 @@ export class ChurchDepartmentAdapters {
       url?: string;
       category?: string;
       notes?: string;
+      pdfUrl?: string | null;
+      pdfKey?: string | null;
+      pdfFileName?: string | null;
+      pdfMimeType?: string | null;
+      pdfSize?: number | string | null;
     };
 
     if (!id) {
@@ -1663,13 +1798,25 @@ export class ChurchDepartmentAdapters {
 
     await this.assertCanManageDepartment(user, id);
 
+    const pdfMetadata = this.normalizePdfMetadata({
+      pdfUrl: body.pdfUrl || body.url,
+      pdfKey: body.pdfKey,
+      pdfFileName: body.pdfFileName,
+      pdfMimeType: body.pdfMimeType,
+      pdfSize: body.pdfSize,
+    });
+    const metadata = {
+      ...(body.notes?.trim() ? { notes: body.notes.trim() } : {}),
+      ...pdfMetadata,
+    };
+
     return await $prismaClient.mediaItem.create({
       data: {
         id: crypto.randomUUID(),
         title: body.title.trim(),
         url: body.url.trim(),
         category: body.category?.trim() || "Geral",
-        metadata: body.notes?.trim() ? { notes: body.notes.trim() } : undefined,
+        metadata: Object.keys(metadata).length ? metadata : undefined,
         departmentId: id,
       },
       select: this.resourceSelect,
@@ -1687,6 +1834,12 @@ export class ChurchDepartmentAdapters {
       url?: string;
       category?: string;
       notes?: string | null;
+      pdfUrl?: string | null;
+      pdfKey?: string | null;
+      pdfFileName?: string | null;
+      pdfMimeType?: string | null;
+      pdfSize?: number | string | null;
+      removePdf?: boolean;
     };
 
     if (!departmentId || !resourceId) {
@@ -1694,7 +1847,11 @@ export class ChurchDepartmentAdapters {
     }
 
     await this.assertCanManageDepartment(user, departmentId);
-    await this.getResourceFromCurrentChurch(resourceId, departmentId, user.crunchId!);
+    const resource = await this.getResourceFromCurrentChurch(
+      resourceId,
+      departmentId,
+      user.crunchId!,
+    );
 
     const data: Prisma.MediaItemUpdateInput = {};
 
@@ -1718,8 +1875,25 @@ export class ChurchDepartmentAdapters {
       data.category = body.category.trim() || "Geral";
     }
 
-    if (body.notes !== undefined) {
-      data.metadata = body.notes?.trim() ? { notes: body.notes.trim() } : Prisma.JsonNull;
+    const shouldUpdateMetadata =
+      body.notes !== undefined ||
+      body.pdfUrl !== undefined ||
+      body.removePdf !== undefined;
+
+    if (shouldUpdateMetadata) {
+      const currentMetadata =
+        resource.metadata &&
+        typeof resource.metadata === "object" &&
+        !Array.isArray(resource.metadata)
+          ? (resource.metadata as Record<string, unknown>)
+          : {};
+      const metadata = {
+        ...currentMetadata,
+        ...(body.notes !== undefined ? { notes: body.notes?.trim() || "" } : {}),
+        ...this.normalizePdfMetadata(body),
+      };
+
+      data.metadata = metadata;
     }
 
     return await $prismaClient.mediaItem.update({

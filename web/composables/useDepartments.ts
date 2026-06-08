@@ -79,6 +79,7 @@ export interface DepartmentResource {
   category: string;
   metadata?: {
     notes?: string;
+    pdf?: DepartmentPdfMetadata | null;
   } | null;
   departmentId: string;
 }
@@ -96,8 +97,24 @@ export interface DepartmentSong {
     notes?: string;
     lyrics?: string;
     chords?: string;
+    pdf?: DepartmentPdfMetadata | null;
   } | null;
   departmentId: string;
+}
+
+export interface DepartmentPdfMetadata {
+  url: string;
+  key?: string;
+  fileName?: string;
+  mimeType?: string;
+  size?: number;
+}
+
+export interface UploadedDepartmentPdf extends DepartmentPdfMetadata {
+  key: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
 }
 
 export interface SongPreference {
@@ -167,6 +184,11 @@ interface CreateDepartmentResourceDTO {
   url: string;
   category?: string;
   notes?: string;
+  pdfUrl?: string;
+  pdfKey?: string;
+  pdfFileName?: string;
+  pdfMimeType?: string;
+  pdfSize?: number;
 }
 
 interface UpdateDepartmentResourceDTO {
@@ -174,6 +196,12 @@ interface UpdateDepartmentResourceDTO {
   url?: string;
   category?: string;
   notes?: string | null;
+  pdfUrl?: string | null;
+  pdfKey?: string | null;
+  pdfFileName?: string | null;
+  pdfMimeType?: string | null;
+  pdfSize?: number | null;
+  removePdf?: boolean;
 }
 
 interface CreateDepartmentSongDTO {
@@ -186,6 +214,11 @@ interface CreateDepartmentSongDTO {
   notes?: string;
   lyrics?: string;
   chords?: string;
+  pdfUrl?: string;
+  pdfKey?: string;
+  pdfFileName?: string;
+  pdfMimeType?: string;
+  pdfSize?: number;
 }
 
 interface UpdateDepartmentSongDTO {
@@ -198,6 +231,12 @@ interface UpdateDepartmentSongDTO {
   notes?: string | null;
   lyrics?: string | null;
   chords?: string | null;
+  pdfUrl?: string | null;
+  pdfKey?: string | null;
+  pdfFileName?: string | null;
+  pdfMimeType?: string | null;
+  pdfSize?: number | null;
+  removePdf?: boolean;
 }
 
 interface UpdateScheduleAssignmentsDTO {
@@ -230,6 +269,12 @@ export const useDepartments = () => {
 
   const authHeaders = () => ({
     "Content-Type": "application/json",
+    ...(access_token.value
+      ? { Authorization: `Bearer ${access_token.value}` }
+      : {}),
+  });
+
+  const authOnlyHeaders = () => ({
     ...(access_token.value
       ? { Authorization: `Bearer ${access_token.value}` }
       : {}),
@@ -470,6 +515,23 @@ export const useDepartments = () => {
     );
   };
 
+  const uploadDepartmentPdf = async (
+    departmentId: string,
+    file: File,
+  ): Promise<ApiResponse<UploadedDepartmentPdf>> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    return await $customFetch<UploadedDepartmentPdf>(
+      `${config.public.URL_BACKEND}/api/church/departments/${departmentId}/uploads/pdf`,
+      {
+        method: "POST",
+        headers: authOnlyHeaders(),
+        body: formData,
+      },
+    );
+  };
+
   const getDepartmentResources = async (
     id: string,
   ): Promise<ApiResponse<DepartmentResource[]>> => {
@@ -623,6 +685,7 @@ export const useDepartments = () => {
     updateScheduleAssignments,
     updateMyScheduleAssignment,
     updateScheduleAssignmentAttendance,
+    uploadDepartmentPdf,
     getDepartmentResources,
     createDepartmentResource,
     updateDepartmentResource,

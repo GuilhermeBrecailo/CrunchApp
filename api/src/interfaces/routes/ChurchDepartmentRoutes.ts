@@ -108,6 +108,11 @@ export async function ChurchDepartmentRoutes(app: FastifyInstance) {
   );
 
   app.post(
+    "/api/church/departments/:id/uploads/pdf",
+    controllerHandler(adapters.uploadChurchDepartmentPdf.bind(adapters)),
+  );
+
+  app.post(
     "/api/church/departments/:id/songs",
     controllerHandler(adapters.createChurchDepartmentSong.bind(adapters)),
   );

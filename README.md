@@ -23,6 +23,9 @@ O foco do MVP foi demonstrar um produto realista, com regras de permissao no bac
 - Regras por perfil: administrador da plataforma, pastor titular, lider de ministerio e membro.
 - Criacao e gerenciamento de escalas por ministerio.
 - Controle de voluntarios nas escalas.
+- Repertorio de louvor com letra, cifra, observacoes e anexo PDF.
+- Ministerio infantil com cadastro de atividades em PDF.
+- Upload protegido de PDF por ministerio, com validacao de permissao, tipo e tamanho.
 - Regras de edicao: somente pastor e lider do ministerio alteram informacoes de ministerios e escalas.
 - Perfil do usuario com ministerio principal, funcao, telefone e indisponibilidade.
 - Redefinicao de senha obrigatoria para usuarios criados pelo pastor.
@@ -50,6 +53,8 @@ O foco do MVP foi demonstrar um produto realista, com regras de permissao no bac
 - Node.js
 - TypeScript
 - Fastify
+- @fastify/multipart
+- @fastify/static
 - Prisma ORM
 - PostgreSQL
 - Keycloak
@@ -128,10 +133,24 @@ O foco do MVP foi demonstrar um produto realista, com regras de permissao no bac
 
 - Criacao e listagem de ministerios.
 - Definicao de lider do ministerio.
-- Detalhe do ministerio com abas para escalas, tarefas e recursos.
+- Detalhe do ministerio com abas para escalas, tarefas, recursos, musicas e aulas quando aplicavel.
 - Pastor titular e lider do ministerio podem gerenciar escalas.
 - Membro comum nao altera escalas.
 - Voluntarios podem ser vinculados a uma escala com uma funcao.
+- Ministerios de louvor podem salvar musicas com PDF anexo.
+- Ministerios infantis podem salvar atividades/aulas com PDF anexo.
+
+### PDFs e materiais
+
+- A API disponibiliza `POST /api/church/departments/:id/uploads/pdf` para upload de PDF.
+- O endpoint exige usuario autenticado e permissao para gerenciar o ministerio.
+- Apenas arquivos `application/pdf` sao aceitos.
+- O limite atual e de 10 MB por arquivo.
+- Em desenvolvimento local, os arquivos ficam em `api/uploads` e sao servidos por `/uploads/...`.
+- O banco nao armazena o binario do PDF: guarda apenas `url`, `key`, nome, MIME type e tamanho no `metadata` do `MediaItem`.
+- Para louvor, o PDF fica em `metadata.pdf` da musica.
+- Para ministerio infantil, atividades sao `MediaItem` com `category: ACTIVITY` e `url` apontando para o PDF.
+- Para producao, a recomendacao e trocar o armazenamento local por S3, Cloudflare R2, MinIO ou outro storage compativel, mantendo o mesmo contrato de retorno do upload.
 
 ### Perfil do usuario
 

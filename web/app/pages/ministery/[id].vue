@@ -305,7 +305,7 @@
         </div>
 
         <v-card
-          v-if="resources.length === 0 && !resourcesError"
+          v-if="resourceMaterials.length === 0 && !resourcesError"
           class="rounded-xl pa-8 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
         >
           <FileText size="32" color="#9CA3AF" class="mb-3" />
@@ -316,7 +316,7 @@
 
         <div v-else class="ministery-card-grid">
           <v-card
-            v-for="resource in resources"
+            v-for="resource in resourceMaterials"
             :key="resource.id"
             class="ministery-content-card pa-4 elevation-1 bg-white"
           >
@@ -440,6 +440,14 @@
                   >
                     Cifra
                   </v-chip>
+                  <v-chip
+                    v-if="song.metadata?.pdf?.url"
+                    size="x-small"
+                    color="deep-purple-darken-2"
+                    variant="tonal"
+                  >
+                    PDF
+                  </v-chip>
                 </div>
               </div>
               <v-btn
@@ -462,6 +470,20 @@
             >
               {{ song.metadata.notes }}
             </p>
+
+            <div v-if="song.metadata?.pdf?.url" class="mt-3">
+              <v-btn
+                :href="song.metadata.pdf.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="tonal"
+                color="purple-darken-3"
+                size="small"
+                class="text-none"
+              >
+                <FileText size="16" class="mr-2" /> Abrir PDF
+              </v-btn>
+            </div>
 
             <div v-if="canManageDepartment" class="ministery-card-actions mt-3">
               <v-btn
@@ -522,9 +544,85 @@
       </section>
 
       <section v-if="activeTab === 'classes'">
-        <div class="text-center py-10 text-grey-darken-1 text-body-2">
-          Aulas, materiais e faixas etárias entram aqui
+        <div class="ministery-section-actions mb-4">
+          <v-btn
+            v-if="canManageDepartment"
+            color="#A855F7"
+            class="rounded-lg text-none"
+            @click="isActivityDialogOpen = true"
+          >
+            <Plus size="18" class="mr-1" /> Nova atividade
+          </v-btn>
         </div>
+
+        <v-card
+          v-if="activityResources.length === 0 && !resourcesError"
+          class="rounded-xl pa-8 elevation-1 bg-white d-flex flex-column align-center justify-center border-subtle"
+        >
+          <BookOpen size="32" color="#9CA3AF" class="mb-3" />
+          <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
+            Nenhuma atividade cadastrada ainda
+          </p>
+        </v-card>
+
+        <div v-else class="ministery-card-grid">
+          <v-card
+            v-for="activity in activityResources"
+            :key="activity.id"
+            class="ministery-content-card pa-4 elevation-1 bg-white"
+          >
+            <div class="d-flex justify-space-between align-start ga-3">
+              <div class="min-w-0">
+                <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-1">
+                  {{ activity.title }}
+                </h3>
+                <p
+                  v-if="activity.metadata?.notes"
+                  class="text-caption text-grey-darken-1 mb-0"
+                >
+                  {{ activity.metadata.notes }}
+                </p>
+              </div>
+              <v-chip size="small" color="purple-darken-3" variant="tonal">
+                PDF
+              </v-chip>
+            </div>
+
+            <div class="ministery-card-actions mt-3">
+              <v-btn
+                :href="activity.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="tonal"
+                color="purple-darken-3"
+                size="small"
+                class="text-none"
+              >
+                <FileText size="16" class="mr-2" /> Abrir PDF
+              </v-btn>
+              <v-btn
+                v-if="canManageDepartment"
+                icon
+                variant="text"
+                color="red-darken-2"
+                size="small"
+                @click="handleDeleteResource(activity)"
+              >
+                <Trash2 size="16" />
+              </v-btn>
+            </div>
+          </v-card>
+        </div>
+
+        <v-alert
+          v-if="resourcesError"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="mt-4"
+        >
+          {{ resourcesError }}
+        </v-alert>
       </section>
     </template>
 
@@ -941,6 +1039,48 @@
             :disabled="isCreatingSong"
           />
 
+          <div v-if="songForm.pdfUrl && !songForm.removePdf" class="pdf-current-card mb-4">
+            <div class="min-w-0">
+              <p class="text-caption font-weight-bold text-grey-darken-4 mb-0">
+                PDF anexado
+              </p>
+              <a
+                :href="songForm.pdfUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-caption text-purple-darken-3"
+              >
+                {{ songForm.pdfFileName || "Abrir PDF" }}
+              </a>
+            </div>
+            <v-btn
+              variant="text"
+              color="red-darken-2"
+              size="small"
+              class="text-none"
+              :disabled="isCreatingSong"
+              @click="removeSongPdf"
+            >
+              Remover
+            </v-btn>
+          </div>
+
+          <v-file-input
+            v-model="songPdfFile"
+            label="PDF da música"
+            accept="application/pdf"
+            prepend-inner-icon="mdi-file-pdf-box"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            class="ministery-input mb-4"
+            hide-details="auto"
+            show-size
+            clearable
+            :disabled="isCreatingSong"
+          />
+
           <v-alert
             v-if="createSongError"
             type="error"
@@ -1015,6 +1155,18 @@
               class="text-none"
             >
               Abrir link
+            </v-btn>
+            <v-btn
+              v-if="selectedSong.metadata?.pdf?.url"
+              :href="selectedSong.metadata.pdf.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              color="purple-darken-3"
+              variant="tonal"
+              size="small"
+              class="text-none"
+            >
+              Abrir PDF
             </v-btn>
           </div>
 
@@ -1120,6 +1272,99 @@
           </div>
           <pre v-else class="song-text-block">{{ selectedSong.metadata?.notes || "Sem observações." }}</pre>
         </div>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="isActivityDialogOpen" max-width="520">
+      <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+        <div class="d-flex align-center mb-5">
+          <v-avatar color="#FAF5FF" size="44" class="mr-3">
+            <BookOpen size="20" color="#A855F7" />
+          </v-avatar>
+          <div>
+            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
+              Nova atividade
+            </h2>
+            <p class="text-body-2 text-grey-darken-1 mb-0">
+              Salve o material em PDF do ministério infantil.
+            </p>
+          </div>
+        </div>
+
+        <v-form autocomplete="off" @submit.prevent="handleSaveActivity">
+          <v-text-field
+            v-model="activityForm.title"
+            label="Título"
+            prepend-inner-icon="mdi-book-open-page-variant-outline"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            class="ministery-input mb-4"
+            hide-details="auto"
+            :disabled="isCreatingActivity"
+          />
+
+          <v-text-field
+            v-model="activityForm.notes"
+            label="Observações"
+            prepend-inner-icon="mdi-text"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            class="ministery-input mb-4"
+            hide-details="auto"
+            :disabled="isCreatingActivity"
+          />
+
+          <v-file-input
+            v-model="activityPdfFile"
+            label="PDF da atividade"
+            accept="application/pdf"
+            prepend-inner-icon="mdi-file-pdf-box"
+            variant="outlined"
+            density="comfortable"
+            color="purple-darken-3"
+            bg-color="white"
+            class="ministery-input mb-4"
+            hide-details="auto"
+            show-size
+            clearable
+            :disabled="isCreatingActivity"
+          />
+
+          <v-alert
+            v-if="createActivityError"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mb-4"
+          >
+            {{ createActivityError }}
+          </v-alert>
+
+          <div class="dialog-actions">
+            <v-btn
+              variant="text"
+              color="grey-darken-1"
+              class="text-none"
+              :disabled="isCreatingActivity"
+              @click="closeActivityDialog"
+            >
+              Cancelar
+            </v-btn>
+            <v-btn
+              type="submit"
+              color="purple-darken-3"
+              class="text-none font-weight-bold"
+              :loading="isCreatingActivity"
+              :disabled="isCreatingActivity"
+            >
+              Salvar atividade
+            </v-btn>
+          </div>
+        </v-form>
       </v-card>
     </v-dialog>
 
@@ -1466,6 +1711,7 @@ const {
   createDepartmentSong,
   updateDepartmentSong,
   deleteDepartmentSong,
+  uploadDepartmentPdf,
   getSongPreference,
   updateSongPreference,
   updateScheduleAssignments,
@@ -1489,6 +1735,7 @@ const createTaskError = ref("");
 const createScheduleError = ref("");
 const createResourceError = ref("");
 const createSongError = ref("");
+const createActivityError = ref("");
 const songPreferenceError = ref("");
 const assignmentsError = ref("");
 const activeTab = ref("overview");
@@ -1496,12 +1743,14 @@ const isTaskDialogOpen = ref(false);
 const isScheduleDialogOpen = ref(false);
 const isResourceDialogOpen = ref(false);
 const isSongDialogOpen = ref(false);
+const isActivityDialogOpen = ref(false);
 const isSongViewerOpen = ref(false);
 const isAssignmentsDialogOpen = ref(false);
 const isCreatingTask = ref(false);
 const isCreatingSchedule = ref(false);
 const isCreatingResource = ref(false);
 const isCreatingSong = ref(false);
+const isCreatingActivity = ref(false);
 const isLoadingSongPreference = ref(false);
 const isSavingSongPreference = ref(false);
 const isSavingAssignments = ref(false);
@@ -1572,7 +1821,21 @@ const songForm = reactive({
   notes: "",
   lyrics: "",
   chords: "",
+  pdfUrl: "",
+  pdfKey: "",
+  pdfFileName: "",
+  pdfMimeType: "",
+  pdfSize: 0,
+  removePdf: false,
 });
+
+const activityForm = reactive({
+  title: "",
+  notes: "",
+});
+
+const songPdfFile = ref<File | File[] | null>(null);
+const activityPdfFile = ref<File | File[] | null>(null);
 
 const personalSongForm = reactive({
   personalKey: "",
@@ -1649,11 +1912,19 @@ const songOptions = computed(() =>
   })),
 );
 
+const resourceMaterials = computed(() =>
+  resources.value.filter((resource) => resource.category !== "ACTIVITY"),
+);
+
 const resourceOptions = computed(() =>
-  resources.value.map((resource) => ({
+  resourceMaterials.value.map((resource) => ({
     label: `${resource.title} (${resource.category})`,
     value: resource.id,
   })),
+);
+
+const activityResources = computed(() =>
+  resources.value.filter((resource) => resource.category === "ACTIVITY"),
 );
 
 const selectedSchedule = computed(() =>
@@ -1847,6 +2118,32 @@ const closeResourceDialog = () => {
   resetResourceForm();
 };
 
+const getSelectedFile = (value: File | File[] | null) =>
+  Array.isArray(value) ? value[0] || null : value;
+
+const uploadPdfFile = async (
+  value: File | File[] | null,
+  fallbackError: string,
+) => {
+  const file = getSelectedFile(value);
+
+  if (!file) {
+    return null;
+  }
+
+  if (file.type !== "application/pdf") {
+    throw new Error("Selecione um arquivo PDF válido.");
+  }
+
+  const { data, error } = await uploadDepartmentPdf(departmentId, file);
+
+  if (error || !data) {
+    throw new Error(error || fallbackError);
+  }
+
+  return data;
+};
+
 const resetSongForm = () => {
   songForm.title = "";
   songForm.artist = "";
@@ -1857,6 +2154,13 @@ const resetSongForm = () => {
   songForm.notes = "";
   songForm.lyrics = "";
   songForm.chords = "";
+  songForm.pdfUrl = "";
+  songForm.pdfKey = "";
+  songForm.pdfFileName = "";
+  songForm.pdfMimeType = "";
+  songForm.pdfSize = 0;
+  songForm.removePdf = false;
+  songPdfFile.value = null;
   editingSongId.value = "";
 };
 
@@ -1864,6 +2168,28 @@ const closeSongDialog = () => {
   isSongDialogOpen.value = false;
   createSongError.value = "";
   resetSongForm();
+};
+
+const removeSongPdf = () => {
+  songForm.pdfUrl = "";
+  songForm.pdfKey = "";
+  songForm.pdfFileName = "";
+  songForm.pdfMimeType = "";
+  songForm.pdfSize = 0;
+  songForm.removePdf = true;
+  songPdfFile.value = null;
+};
+
+const resetActivityForm = () => {
+  activityForm.title = "";
+  activityForm.notes = "";
+  activityPdfFile.value = null;
+};
+
+const closeActivityDialog = () => {
+  isActivityDialogOpen.value = false;
+  createActivityError.value = "";
+  resetActivityForm();
 };
 
 const openSongViewer = (song: DepartmentSong) => {
@@ -2179,6 +2505,13 @@ const openSongEditDialog = (song: DepartmentSong) => {
   songForm.notes = song.metadata?.notes || "";
   songForm.lyrics = song.metadata?.lyrics || "";
   songForm.chords = song.metadata?.chords || "";
+  songForm.pdfUrl = song.metadata?.pdf?.url || "";
+  songForm.pdfKey = song.metadata?.pdf?.key || "";
+  songForm.pdfFileName = song.metadata?.pdf?.fileName || "";
+  songForm.pdfMimeType = song.metadata?.pdf?.mimeType || "";
+  songForm.pdfSize = song.metadata?.pdf?.size || 0;
+  songForm.removePdf = false;
+  songPdfFile.value = null;
   createSongError.value = "";
   isSongDialogOpen.value = true;
 };
@@ -2194,6 +2527,26 @@ const handleSaveSong = async () => {
 
   isCreatingSong.value = true;
 
+  try {
+    const uploadedPdf = await uploadPdfFile(
+      songPdfFile.value,
+      "Não foi possível enviar o PDF da música.",
+    );
+
+    if (uploadedPdf) {
+      songForm.pdfUrl = uploadedPdf.url;
+      songForm.pdfKey = uploadedPdf.key;
+      songForm.pdfFileName = uploadedPdf.fileName;
+      songForm.pdfMimeType = uploadedPdf.mimeType;
+      songForm.pdfSize = uploadedPdf.size;
+      songForm.removePdf = false;
+    }
+  } catch (error: any) {
+    isCreatingSong.value = false;
+    createSongError.value = error?.message || "Não foi possível enviar o PDF.";
+    return;
+  }
+
   const payload = {
     title,
     artist: songForm.artist,
@@ -2204,6 +2557,16 @@ const handleSaveSong = async () => {
     notes: songForm.notes,
     lyrics: songForm.lyrics,
     chords: songForm.chords,
+    ...(songForm.pdfUrl
+      ? {
+          pdfUrl: songForm.pdfUrl,
+          pdfKey: songForm.pdfKey,
+          pdfFileName: songForm.pdfFileName,
+          pdfMimeType: songForm.pdfMimeType,
+          pdfSize: songForm.pdfSize,
+        }
+      : {}),
+    ...(songForm.removePdf ? { removePdf: true } : {}),
   };
 
   const { data, error } = editingSongId.value
@@ -2225,6 +2588,65 @@ const handleSaveSong = async () => {
     current.title.localeCompare(next.title),
   );
   closeSongDialog();
+};
+
+const handleSaveActivity = async () => {
+  createActivityError.value = "";
+  const title = activityForm.title.trim();
+
+  if (!title) {
+    createActivityError.value = "Informe o título da atividade.";
+    return;
+  }
+
+  if (!getSelectedFile(activityPdfFile.value)) {
+    createActivityError.value = "Selecione o PDF da atividade.";
+    return;
+  }
+
+  isCreatingActivity.value = true;
+
+  let uploadedPdf;
+  try {
+    uploadedPdf = await uploadPdfFile(
+      activityPdfFile.value,
+      "Não foi possível enviar o PDF da atividade.",
+    );
+  } catch (error: any) {
+    isCreatingActivity.value = false;
+    createActivityError.value = error?.message || "Não foi possível enviar o PDF.";
+    return;
+  }
+
+  if (!uploadedPdf) {
+    isCreatingActivity.value = false;
+    createActivityError.value = "Selecione o PDF da atividade.";
+    return;
+  }
+
+  const { data, error } = await createDepartmentResource(departmentId, {
+    title,
+    url: uploadedPdf.url,
+    category: "ACTIVITY",
+    notes: activityForm.notes,
+    pdfUrl: uploadedPdf.url,
+    pdfKey: uploadedPdf.key,
+    pdfFileName: uploadedPdf.fileName,
+    pdfMimeType: uploadedPdf.mimeType,
+    pdfSize: uploadedPdf.size,
+  });
+
+  isCreatingActivity.value = false;
+
+  if (error || !data) {
+    createActivityError.value = error || "Não foi possível salvar a atividade.";
+    return;
+  }
+
+  resources.value = [...resources.value, data].sort((current, next) =>
+    current.title.localeCompare(next.title),
+  );
+  closeActivityDialog();
 };
 
 const handleDeleteTask = (task: DepartmentTask) => {
@@ -2559,6 +2981,16 @@ onMounted(async () => {
   gap: 8px;
   border-top: 1px solid #f3f4f6;
   padding-top: 10px;
+}
+.pdf-current-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #ede9fe;
+  border-radius: 8px;
+  background: #faf5ff;
+  padding: 11px 12px;
 }
 .schedule-media-list {
   display: flex;
