@@ -8,6 +8,7 @@
           :event="event"
           :selected="event.id === selectedEventId"
           :can-manage="event.canManage"
+          @open-details="$emit('open-details', $event)"
           @add-volunteer="$emit('add-volunteer', $event)"
           @edit="$emit('edit', $event)"
           @delete="$emit('delete', $event)"
@@ -24,6 +25,7 @@
 
 <script setup>
 defineEmits([
+  "open-details",
   "add-volunteer",
   "edit",
   "delete",

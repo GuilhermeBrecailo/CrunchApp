@@ -61,6 +61,7 @@
         :title="section.category"
         :events="section.events"
         :selected-event-id="focusedScheduleId"
+        @open-details="openScheduleDetails"
         @add-volunteer="openAssignmentsDialog"
         @edit="openScheduleEditDialog"
         @delete="handleDeleteSchedule"
@@ -91,6 +92,275 @@
         {{ schedulesError }}
       </v-alert>
     </div>
+
+    <v-bottom-sheet
+      v-model="isScheduleDetailsOpen"
+      scrollable
+      :scrim="true"
+      max-width="980"
+    >
+      <v-card v-if="selectedDetailEvent" class="scale-details-sheet" elevation="0">
+        <div class="scale-details-handle" />
+
+        <div class="scale-details-header">
+          <div class="min-w-0">
+            <p class="scale-details-kicker mb-1">
+              {{ selectedDetailEvent.date }} · {{ selectedDetailEvent.time }}
+            </p>
+            <h2 class="scale-details-title mb-1">
+              {{ selectedDetailEvent.title }}
+            </h2>
+            <p class="text-body-2 text-grey-darken-1 mb-0">
+              {{ selectedDetailDepartmentName }}
+            </p>
+          </div>
+
+          <div class="scale-details-header-actions">
+            <v-tooltip v-if="selectedDetailEvent.canManage" text="Voluntários" location="bottom">
+              <template #activator="{ props }">
+                <v-btn
+                  v-bind="props"
+                  icon
+                  variant="tonal"
+                  color="primary"
+                  @click="openAssignmentsFromDetails"
+                >
+                  <UserPlus size="18" />
+                </v-btn>
+              </template>
+            </v-tooltip>
+            <v-tooltip v-if="selectedDetailEvent.canManage" text="Editar" location="bottom">
+              <template #activator="{ props }">
+                <v-btn
+                  v-bind="props"
+                  icon
+                  variant="tonal"
+                  color="grey-darken-2"
+                  @click="openEditFromDetails"
+                >
+                  <Pencil size="18" />
+                </v-btn>
+              </template>
+            </v-tooltip>
+            <v-tooltip v-if="selectedDetailEvent.canManage" text="Apagar" location="bottom">
+              <template #activator="{ props }">
+                <v-btn
+                  v-bind="props"
+                  icon
+                  variant="tonal"
+                  color="red-darken-2"
+                  @click="openDeleteFromDetails"
+                >
+                  <Trash2 size="18" />
+                </v-btn>
+              </template>
+            </v-tooltip>
+            <v-btn icon variant="text" color="grey-darken-1" @click="closeScheduleDetails">
+              <v-icon size="20">mdi-close</v-icon>
+            </v-btn>
+          </div>
+        </div>
+
+        <div class="scale-details-body">
+          <div class="scale-details-stats">
+            <div class="scale-details-stat">
+              <span>{{ selectedDetailEvent.volunteerCount }}</span>
+              <small>escalados</small>
+            </div>
+            <div class="scale-details-stat">
+              <span>{{ selectedDetailEvent.confirmedCount }}</span>
+              <small>confirmados</small>
+            </div>
+            <div class="scale-details-stat">
+              <span>{{ selectedDetailSongs.length }}</span>
+              <small>músicas</small>
+            </div>
+          </div>
+
+          <section class="scale-details-section">
+            <div class="scale-details-section-title">
+              <Users size="18" />
+              <h3>Equipe</h3>
+            </div>
+
+            <div v-if="selectedDetailEvent.volunteers.length" class="scale-details-team">
+              <div
+                v-for="volunteer in selectedDetailEvent.volunteers"
+                :key="`${volunteer.name}-${volunteer.role}`"
+                class="scale-details-person"
+              >
+                <div>
+                  <p class="scale-details-person-name mb-0">{{ volunteer.name }}</p>
+                  <p class="scale-details-person-role mb-0">{{ volunteer.role }}</p>
+                </div>
+                <v-chip
+                  size="small"
+                  :color="responseStatusColor(volunteer.confirmationStatus)"
+                  variant="tonal"
+                >
+                  {{ responseStatusLabel(volunteer.confirmationStatus) }}
+                </v-chip>
+              </div>
+            </div>
+
+            <v-card v-else class="scale-details-empty" elevation="0">
+              <UserPlus size="20" />
+              <span>Nenhum voluntário escalado.</span>
+            </v-card>
+          </section>
+
+          <section
+            v-if="selectedDetailEvent.rehearsalLabel || selectedDetailEvent.rehearsalNotes"
+            class="scale-details-section"
+          >
+            <div class="scale-details-section-title">
+              <Clock size="18" />
+              <h3>Ensaio</h3>
+            </div>
+            <div class="scale-details-note">
+              <strong v-if="selectedDetailEvent.rehearsalLabel">
+                {{ selectedDetailEvent.rehearsalLabel }}
+              </strong>
+              <span v-if="selectedDetailEvent.rehearsalNotes">
+                {{ selectedDetailEvent.rehearsalNotes }}
+              </span>
+            </div>
+          </section>
+
+          <section v-if="selectedDetailSongs.length" class="scale-details-section">
+            <div class="scale-details-section-title scale-details-section-title-row">
+              <div>
+                <div class="d-flex align-center ga-2">
+                  <Music size="18" />
+                  <h3>Louvor</h3>
+                </div>
+              </div>
+            </div>
+
+            <div class="scale-song-list">
+              <article
+                v-for="song in selectedDetailSongs"
+                :key="song.id"
+                class="scale-song-card"
+              >
+                <div class="scale-song-header">
+                  <div class="min-w-0">
+                    <p class="scale-song-category mb-1">
+                      {{ song.metadata?.songCategory || "Música" }}
+                    </p>
+                    <h4 class="scale-song-title mb-1">{{ song.title }}</h4>
+                    <p class="scale-song-artist mb-0">
+                      {{ song.metadata?.artist || "Artista não informado" }}
+                    </p>
+                  </div>
+                  <v-tooltip text="Tela cheia" location="bottom">
+                    <template #activator="{ props }">
+                      <v-btn
+                        v-bind="props"
+                        icon
+                        variant="tonal"
+                        color="purple-darken-3"
+                        @click="openSongFullscreen(song)"
+                      >
+                        <Maximize2 size="18" />
+                      </v-btn>
+                    </template>
+                  </v-tooltip>
+                </div>
+
+                <div class="scale-song-meta">
+                  <v-chip v-if="song.metadata?.key" size="small" variant="tonal">
+                    Tom {{ song.metadata.key }}
+                  </v-chip>
+                  <v-chip v-if="song.metadata?.bpm" size="small" variant="tonal">
+                    {{ song.metadata.bpm }} BPM
+                  </v-chip>
+                  <v-btn
+                    v-if="song.url"
+                    :href="song.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    color="purple-darken-3"
+                    variant="text"
+                    size="small"
+                    class="text-none"
+                  >
+                    Abrir link
+                  </v-btn>
+                </div>
+
+                <v-tabs v-model="songTabs[song.id]" color="purple-darken-3" density="compact">
+                  <v-tab value="lyrics" class="text-none">Letra</v-tab>
+                  <v-tab value="chords" class="text-none">Cifra</v-tab>
+                  <v-tab value="notes" class="text-none">Notas</v-tab>
+                </v-tabs>
+
+                <pre class="scale-song-text">{{ getSongTabText(song, songTabs[song.id]) }}</pre>
+              </article>
+            </div>
+          </section>
+
+          <section v-if="selectedDetailResources.length" class="scale-details-section">
+            <div class="scale-details-section-title">
+              <FileText size="18" />
+              <h3>Recursos</h3>
+            </div>
+            <div class="scale-resource-list">
+              <a
+                v-for="resource in selectedDetailResources"
+                :key="resource.id"
+                :href="resource.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="scale-resource-item"
+              >
+                <span>{{ resource.title }}</span>
+                <v-chip size="x-small" color="teal-darken-2" variant="tonal">
+                  {{ resource.category }}
+                </v-chip>
+              </a>
+            </div>
+          </section>
+        </div>
+      </v-card>
+    </v-bottom-sheet>
+
+    <v-dialog v-model="isSongFullscreenOpen" fullscreen transition="dialog-bottom-transition">
+      <v-card v-if="fullscreenSong" class="scale-fullscreen-song" elevation="0">
+        <div class="scale-fullscreen-header">
+          <div class="min-w-0">
+            <p class="scale-song-category mb-1">
+              {{ fullscreenSong.metadata?.songCategory || "Louvor" }}
+            </p>
+            <h2 class="scale-fullscreen-title mb-1">{{ fullscreenSong.title }}</h2>
+            <p class="scale-song-artist mb-0">
+              {{ fullscreenSong.metadata?.artist || "Artista não informado" }}
+            </p>
+          </div>
+          <v-btn icon variant="text" color="grey-darken-1" @click="closeSongFullscreen">
+            <v-icon size="24">mdi-close</v-icon>
+          </v-btn>
+        </div>
+
+        <div class="scale-fullscreen-toolbar">
+          <v-tabs v-model="fullscreenSongTab" color="purple-darken-3">
+            <v-tab value="lyrics" class="text-none">Letra</v-tab>
+            <v-tab value="chords" class="text-none">Cifra</v-tab>
+            <v-tab value="notes" class="text-none">Notas</v-tab>
+          </v-tabs>
+          <div class="scale-song-meta">
+            <v-chip v-if="fullscreenSong.metadata?.key" size="small" variant="tonal">
+              Tom {{ fullscreenSong.metadata.key }}
+            </v-chip>
+            <v-chip v-if="fullscreenSong.metadata?.bpm" size="small" variant="tonal">
+              {{ fullscreenSong.metadata.bpm }} BPM
+            </v-chip>
+          </div>
+        </div>
+
+        <pre class="scale-fullscreen-text">{{ getSongTabText(fullscreenSong, fullscreenSongTab) }}</pre>
+      </v-card>
+    </v-dialog>
 
     <v-dialog v-model="isScheduleDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
@@ -474,7 +744,18 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
-import { Calendar, Plus, UserPlus } from "lucide-vue-next";
+import {
+  Calendar,
+  Clock,
+  FileText,
+  Maximize2,
+  Music,
+  Pencil,
+  Plus,
+  Trash2,
+  UserPlus,
+  Users,
+} from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import {
   useDepartments,
@@ -520,6 +801,11 @@ const focusedScheduleId = ref("");
 const editingScheduleId = ref("");
 const isPrefillingScheduleForm = ref(false);
 const pendingDeleteSchedule = ref<ScheduleEvent | null>(null);
+const selectedDetailEvent = ref<ScheduleEvent | null>(null);
+const isSongFullscreenOpen = ref(false);
+const fullscreenSong = ref<ScheduleEvent["mediaItems"][number] | null>(null);
+const fullscreenSongTab = ref("lyrics");
+const songTabs = reactive<Record<string, string>>({});
 
 const scheduleForm = reactive({
   title: "",
@@ -666,6 +952,15 @@ const isDeleteScheduleDialogOpen = computed({
   },
 });
 
+const isScheduleDetailsOpen = computed({
+  get: () => Boolean(selectedDetailEvent.value),
+  set: (value: boolean) => {
+    if (!value) {
+      selectedDetailEvent.value = null;
+    }
+  },
+});
+
 type ScheduleEvent = {
   id: string;
   title: string;
@@ -676,7 +971,14 @@ type ScheduleEvent = {
   volunteerCount: number;
   viewedCount: number;
   confirmedCount: number;
-  volunteers: { initials: string; name: string; role: string }[];
+  volunteers: {
+    initials: string;
+    name: string;
+    role: string;
+    confirmationStatus?: string;
+    attendanceStatus?: string;
+    viewedAt?: string | null;
+  }[];
   currentUserAssignment?: {
     id: string;
     viewedAt?: string | null;
@@ -692,6 +994,28 @@ type ScheduleEvent = {
   }[];
   canManage: boolean;
 };
+
+const selectedDetailDepartmentName = computed(() => {
+  const event = selectedDetailEvent.value;
+  if (!event) return "";
+
+  const schedule = schedules.value.find((item) => item.id === event.id);
+  return schedule?.department?.name || "Sem ministério";
+});
+
+const selectedDetailSongs = computed(
+  () =>
+    selectedDetailEvent.value?.mediaItems.filter(
+      (item) => item.category === "MUSIC",
+    ) || [],
+);
+
+const selectedDetailResources = computed(
+  () =>
+    selectedDetailEvent.value?.mediaItems.filter(
+      (item) => item.category !== "MUSIC",
+    ) || [],
+);
 
 const canCreateChurchSchedule = computed(
   () => manageableDepartments.value.length > 0,
@@ -779,6 +1103,9 @@ const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
       schedule.assignments?.map((assignment) => ({
         name: assignment.user.name,
         role: assignment.role,
+        confirmationStatus: assignment.confirmationStatus,
+        attendanceStatus: assignment.attendanceStatus,
+        viewedAt: assignment.viewedAt,
         initials: assignment.user.name
           .split(" ")
           .filter(Boolean)
@@ -787,6 +1114,69 @@ const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
           .join(""),
       })) || [],
   };
+};
+
+const openScheduleDetails = (event: ScheduleEvent) => {
+  selectedDetailEvent.value = event;
+  event.mediaItems
+    .filter((item) => item.category === "MUSIC")
+    .forEach((song) => {
+      songTabs[song.id] ||= song.metadata?.lyrics
+        ? "lyrics"
+        : song.metadata?.chords
+          ? "chords"
+          : "notes";
+    });
+};
+
+const closeScheduleDetails = () => {
+  selectedDetailEvent.value = null;
+};
+
+const openAssignmentsFromDetails = () => {
+  if (!selectedDetailEvent.value) return;
+
+  const event = selectedDetailEvent.value;
+  closeScheduleDetails();
+  openAssignmentsDialog(event);
+};
+
+const openEditFromDetails = () => {
+  if (!selectedDetailEvent.value) return;
+
+  const event = selectedDetailEvent.value;
+  closeScheduleDetails();
+  void openScheduleEditDialog(event);
+};
+
+const openDeleteFromDetails = () => {
+  if (!selectedDetailEvent.value) return;
+
+  const event = selectedDetailEvent.value;
+  closeScheduleDetails();
+  handleDeleteSchedule(event);
+};
+
+const getSongTabText = (
+  song: ScheduleEvent["mediaItems"][number],
+  tab = "lyrics",
+) => {
+  if (tab === "chords") return song.metadata?.chords || "Cifra não cadastrada.";
+  if (tab === "notes") return song.metadata?.notes || "Sem observações.";
+
+  return song.metadata?.lyrics || "Letra não cadastrada.";
+};
+
+const openSongFullscreen = (song: ScheduleEvent["mediaItems"][number]) => {
+  fullscreenSong.value = song;
+  fullscreenSongTab.value =
+    songTabs[song.id] || (song.metadata?.lyrics ? "lyrics" : "chords");
+  isSongFullscreenOpen.value = true;
+};
+
+const closeSongFullscreen = () => {
+  isSongFullscreenOpen.value = false;
+  fullscreenSong.value = null;
 };
 
 const updateLocalAssignment = (
@@ -1399,6 +1789,265 @@ watch(schedules, async () => {
   min-width: 112px;
 }
 
+.scale-details-sheet {
+  max-height: min(92vh, 920px);
+  overflow: hidden;
+  border-radius: 22px 22px 0 0 !important;
+  background: #ffffff;
+}
+
+.scale-details-handle {
+  width: 42px;
+  height: 4px;
+  margin: 10px auto 2px;
+  border-radius: 999px;
+  background: #d1d5db;
+}
+
+.scale-details-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.scale-details-kicker,
+.scale-song-category {
+  color: #7e22ce;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.scale-details-title,
+.scale-fullscreen-title {
+  color: #111827;
+  font-size: 1.35rem;
+  font-weight: 850;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.scale-details-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.scale-details-body {
+  display: grid;
+  gap: 18px;
+  max-height: calc(min(92vh, 920px) - 96px);
+  overflow-y: auto;
+  padding: 18px 20px 24px;
+}
+
+.scale-details-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.scale-details-stat {
+  display: grid;
+  gap: 4px;
+  min-height: 74px;
+  align-content: center;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  background: #fafafa;
+  padding: 12px;
+}
+
+.scale-details-stat span {
+  color: #111827;
+  font-size: 1.35rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.scale-details-stat small {
+  color: #6b7280;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.scale-details-section {
+  display: grid;
+  gap: 12px;
+}
+
+.scale-details-section-title,
+.scale-details-section-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scale-details-section-title h3 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 0.95rem;
+  font-weight: 850;
+}
+
+.scale-details-team,
+.scale-resource-list {
+  display: grid;
+  gap: 8px;
+}
+
+.scale-details-person,
+.scale-resource-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 11px 12px;
+  text-decoration: none;
+}
+
+.scale-details-person-name,
+.scale-resource-item span {
+  color: #111827;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.scale-details-person-role {
+  color: #6d28d9;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.scale-details-empty,
+.scale-details-note {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  background: #fafafa;
+  color: #6b7280;
+  padding: 14px;
+}
+
+.scale-details-note {
+  align-items: flex-start;
+  flex-direction: column;
+  border-style: solid;
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fef3c7;
+}
+
+.scale-song-list {
+  display: grid;
+  gap: 14px;
+}
+
+.scale-song-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #ede9fe;
+  border-radius: 8px;
+  background: #fdfcff;
+  padding: 14px;
+}
+
+.scale-song-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.scale-song-title {
+  color: #111827;
+  font-size: 1rem;
+  font-weight: 850;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.scale-song-artist {
+  color: #6b7280;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.scale-song-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.scale-song-text,
+.scale-fullscreen-text {
+  margin: 0;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f2937;
+  font-family: "Courier New", monospace;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  padding: 14px;
+}
+
+.scale-song-text {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.scale-fullscreen-song {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  min-height: 100vh;
+  background: #fff;
+}
+
+.scale-fullscreen-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+  padding: 18px 22px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.scale-fullscreen-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 22px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.scale-fullscreen-text {
+  min-height: 0;
+  overflow: auto;
+  border: 0;
+  border-radius: 0;
+  font-size: 1.08rem;
+  line-height: 1.85;
+  padding: 24px;
+}
+
 @media (min-width: 560px) {
   .scale-field-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1431,6 +2080,31 @@ watch(schedules, async () => {
 
   .leader-summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .scale-details-header,
+  .scale-song-header,
+  .scale-fullscreen-header {
+    grid-template-columns: 1fr;
+  }
+
+  .scale-details-header-actions {
+    justify-content: flex-start;
+  }
+
+  .scale-details-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .scale-details-person,
+  .scale-resource-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .scale-fullscreen-text {
+    font-size: 1rem;
+    padding: 18px;
   }
 }
 </style>

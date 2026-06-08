@@ -250,6 +250,22 @@ export class ChurchDepartmentAdapters {
     return department;
   }
 
+  private async getChurchAdminNotificationRecipientIds(crunchId: string) {
+    const admins = await $prismaClient.user.findMany({
+      where: {
+        crunchId,
+        role: {
+          in: ["ADMIN", "SUPER_ADMIN"],
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return admins.map((admin) => admin.id);
+  }
+
   private async getDepartmentFromCurrentChurch(
     departmentId: string,
     crunchId: string,
@@ -1218,6 +1234,9 @@ export class ChurchDepartmentAdapters {
     });
 
     if (body.action !== "VIEWED") {
+      const adminRecipientIds = await this.getChurchAdminNotificationRecipientIds(
+        user.crunchId!,
+      );
       const actionLabels: Record<string, string> = {
         CONFIRMED: "confirmou presenca",
         DECLINED: "marcou que nao pode ir",
@@ -1226,7 +1245,11 @@ export class ChurchDepartmentAdapters {
       };
 
       await pushNotificationService.sendToUsers(
-        [schedule.department.leaderId, user.crunch?.userMainId || ""],
+        [
+          schedule.department.leaderId,
+          user.crunch?.userMainId || "",
+          ...adminRecipientIds,
+        ],
         {
           title: "Resposta de escala",
           body: `${user.name} ${actionLabels[body.action || ""] || "respondeu"} em ${schedule.description}`,

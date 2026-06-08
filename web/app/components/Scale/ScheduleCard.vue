@@ -3,6 +3,11 @@
     :id="`schedule-${event.id}`"
     class="rounded-xl pa-4 mb-4 elevation-1 bg-white schedule-card"
     :class="{ 'schedule-card-selected': selected }"
+    role="button"
+    tabindex="0"
+    @click="$emit('open-details', event)"
+    @keydown.enter="$emit('open-details', event)"
+    @keydown.space.prevent="$emit('open-details', event)"
   >
     <div class="schedule-card-header mb-4">
       <div class="min-w-0">
@@ -28,6 +33,21 @@
     <div v-if="event.rehearsalLabel" class="schedule-rehearsal mb-4">
       <Clock size="15" />
       <span>Ensaio: {{ event.rehearsalLabel }}</span>
+    </div>
+
+    <div class="schedule-dashboard-strip mb-4">
+      <div class="schedule-dashboard-metric">
+        <span>{{ event.volunteerCount }}</span>
+        <small>pessoas</small>
+      </div>
+      <div class="schedule-dashboard-metric">
+        <span>{{ event.confirmedCount || 0 }}</span>
+        <small>confirmados</small>
+      </div>
+      <div class="schedule-dashboard-metric">
+        <span>{{ musicCount }}</span>
+        <small>músicas</small>
+      </div>
     </div>
 
     <div class="schedule-volunteers mb-4">
@@ -67,23 +87,10 @@
       </div>
     </div>
 
-    <div v-if="event.volunteers?.length" class="schedule-role-list mb-4">
-      <div
-        v-for="volunteer in visibleRoleAssignments"
-        :key="`${volunteer.name}-${volunteer.role}`"
-        class="schedule-role-item"
-      >
-        <span class="schedule-role-name">{{ volunteer.name }}</span>
-        <span class="schedule-role-value">{{ volunteer.role }}</span>
-      </div>
-      <div v-if="hiddenRoleCount > 0" class="schedule-role-more">
-        +{{ hiddenRoleCount }} funções
-      </div>
-    </div>
-
     <div
       v-if="currentUserAssignment"
       class="assignment-confirmation mb-4"
+      @click.stop
     >
       <div class="min-w-0">
         <p class="text-caption font-weight-bold text-grey-darken-4 mb-1">
@@ -100,7 +107,7 @@
           color="indigo-darken-2"
           size="small"
           class="text-none"
-          @click="$emit('mark-viewed', event)"
+          @click.stop="$emit('mark-viewed', event)"
         >
           Vi a escala
         </v-btn>
@@ -109,7 +116,7 @@
           color="purple-darken-3"
           size="small"
           class="text-none"
-          @click="$emit('confirm-presence', event)"
+          @click.stop="$emit('confirm-presence', event)"
         >
           Confirmar presença
         </v-btn>
@@ -127,7 +134,7 @@
           color="red-darken-2"
           size="small"
           class="text-none"
-          @click="$emit('decline-presence', event)"
+          @click.stop="$emit('decline-presence', event)"
         >
           Não posso
         </v-btn>
@@ -137,7 +144,7 @@
           color="amber-darken-3"
           size="small"
           class="text-none"
-          @click="$emit('maybe-presence', event)"
+          @click.stop="$emit('maybe-presence', event)"
         >
           Talvez
         </v-btn>
@@ -147,219 +154,41 @@
           color="indigo-darken-2"
           size="small"
           class="text-none"
-          @click="$emit('request-swap', event)"
+          @click.stop="$emit('request-swap', event)"
         >
           Troca
         </v-btn>
       </div>
     </div>
 
-    <div v-if="event.mediaItems?.length" class="schedule-media-list mb-4">
+    <div v-if="event.mediaItems?.length" class="schedule-media-list">
       <v-chip
-        v-for="item in event.mediaItems"
+        v-for="item in visibleMediaItems"
         :key="item.id"
         size="small"
         :color="item.category === 'MUSIC' ? 'purple-darken-3' : 'teal-darken-2'"
         variant="tonal"
-        :class="{ 'schedule-media-chip-clickable': item.category === 'MUSIC' }"
-        @click="item.category === 'MUSIC' ? openSongViewer(item) : undefined"
       >
         {{ item.title }}
       </v-chip>
-    </div>
-
-    <v-divider class="mb-3"></v-divider>
-    <div class="schedule-actions">
-      <v-btn
-        v-if="canManage"
-        variant="text"
-        color="primary"
-        class="text-none font-weight-medium add-volunteer-btn"
+      <v-chip
+        v-if="hiddenMediaCount > 0"
         size="small"
-        @click="$emit('add-volunteer', event)"
-      >
-        <UserPlus size="16" class="mr-2" />
-        Adicionar Voluntário
-      </v-btn>
-      <v-btn
-        v-if="canManage"
-        icon
-        variant="text"
         color="grey-darken-1"
-        size="small"
-        @click="$emit('edit', event)"
+        variant="tonal"
       >
-        <Pencil size="16" />
-      </v-btn>
-      <v-btn
-        v-if="canManage"
-        icon
-        variant="text"
-        color="red-darken-2"
-        size="small"
-        @click="$emit('delete', event)"
-      >
-        <Trash2 size="16" />
-      </v-btn>
+        +{{ hiddenMediaCount }}
+      </v-chip>
     </div>
-
-    <v-dialog v-model="isSongViewerOpen" max-width="760" scrollable>
-      <v-card v-if="selectedSong" class="rounded-xl bg-white song-viewer" elevation="0">
-        <div class="song-viewer-header">
-          <div class="min-w-0">
-            <p class="text-caption text-purple-darken-3 font-weight-bold mb-1">
-              {{ selectedSong.metadata?.songCategory || "Louvor" }}
-            </p>
-            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
-              {{ selectedSong.title }}
-            </h2>
-            <p class="text-body-2 text-grey-darken-1 mb-0 text-truncate">
-              {{ selectedSong.metadata?.artist || "Artista não informado" }}
-            </p>
-          </div>
-          <v-btn icon variant="text" color="grey-darken-1" @click="closeSongViewer">
-            <v-icon size="20">mdi-close</v-icon>
-          </v-btn>
-        </div>
-
-        <v-divider />
-
-        <div class="song-viewer-body">
-          <div class="d-flex flex-wrap ga-2 mb-4">
-            <v-chip v-if="selectedSong.metadata?.key" size="small" variant="tonal">
-              Tom {{ selectedSong.metadata.key }}
-            </v-chip>
-            <v-chip v-if="selectedSong.metadata?.bpm" size="small" variant="tonal">
-              {{ selectedSong.metadata.bpm }} BPM
-            </v-chip>
-            <v-btn
-              v-if="selectedSong.url"
-              :href="selectedSong.url"
-              target="_blank"
-              rel="noopener noreferrer"
-              color="purple-darken-3"
-              variant="tonal"
-              size="small"
-              class="text-none"
-              @click.stop
-            >
-              Abrir link
-            </v-btn>
-          </div>
-
-          <v-tabs v-model="songViewerTab" color="purple-darken-3" class="mb-4">
-            <v-tab value="lyrics" class="text-none">Letra</v-tab>
-            <v-tab value="chords" class="text-none">Cifra</v-tab>
-            <v-tab value="notes" class="text-none">Notas</v-tab>
-          </v-tabs>
-
-          <pre v-if="songViewerTab === 'lyrics'" class="song-text-block">{{ selectedSong.metadata?.lyrics || "Letra não cadastrada." }}</pre>
-          <div v-else-if="songViewerTab === 'chords'" class="personal-chords-panel">
-            <div class="personal-chords-heading">
-              <div>
-                <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-1">
-                  Minha cifra
-                </h3>
-                <p class="text-caption text-grey-darken-1 mb-0">
-                  Esta versão aparece somente para você.
-                </p>
-              </div>
-              <v-chip v-if="personalSongForm.personalKey" size="small" variant="tonal">
-                Meu tom {{ personalSongForm.personalKey }}
-              </v-chip>
-            </div>
-
-            <v-text-field
-              v-model="personalSongForm.personalKey"
-              label="Meu tom"
-              placeholder="ex: C, Dm, F#"
-              variant="outlined"
-              density="comfortable"
-              color="purple-darken-3"
-              bg-color="white"
-              class="schedule-input mb-3"
-              hide-details="auto"
-              :disabled="isLoadingSongPreference || isSavingSongPreference"
-            />
-
-            <v-textarea
-              v-model="personalSongForm.chords"
-              label="Minha cifra"
-              variant="outlined"
-              density="comfortable"
-              color="purple-darken-3"
-              bg-color="white"
-              class="schedule-input song-chords-input mb-3"
-              hide-details="auto"
-              rows="9"
-              auto-grow
-              :disabled="isLoadingSongPreference || isSavingSongPreference"
-            />
-
-            <div class="personal-chords-actions">
-              <div class="d-flex ga-2">
-                <v-btn
-                  variant="tonal"
-                  color="grey-darken-1"
-                  size="small"
-                  class="text-none"
-                  @click="transposePersonalChords(-1)"
-                >
-                  -1 tom
-                </v-btn>
-                <v-btn
-                  variant="tonal"
-                  color="grey-darken-1"
-                  size="small"
-                  class="text-none"
-                  @click="transposePersonalChords(1)"
-                >
-                  +1 tom
-                </v-btn>
-              </div>
-              <v-btn
-                variant="text"
-                color="grey-darken-1"
-                class="text-none"
-                :disabled="isLoadingSongPreference || isSavingSongPreference"
-                @click="useOfficialChords"
-              >
-                Usar cifra da escala
-              </v-btn>
-              <v-btn
-                color="purple-darken-3"
-                class="text-none"
-                :loading="isSavingSongPreference"
-                :disabled="isLoadingSongPreference"
-                @click="saveSongPreference"
-              >
-                Salvar minha cifra
-              </v-btn>
-            </div>
-
-            <v-alert
-              v-if="songPreferenceError"
-              type="error"
-              variant="tonal"
-              density="compact"
-              class="mt-3"
-            >
-              {{ songPreferenceError }}
-            </v-alert>
-          </div>
-          <pre v-else class="song-text-block">{{ selectedSong.metadata?.notes || "Sem observações." }}</pre>
-        </div>
-      </v-card>
-    </v-dialog>
   </v-card>
 </template>
 
 <script setup>
-import { Clock, Pencil, Trash2, UserPlus } from "lucide-vue-next";
-import { computed, reactive, ref } from "vue";
-import { useDepartments } from "../../../composables/useDepartments";
+import { Clock, UserPlus } from "lucide-vue-next";
+import { computed } from "vue";
 
 defineEmits([
+  "open-details",
   "add-volunteer",
   "edit",
   "delete",
@@ -385,118 +214,6 @@ const props = defineProps({
   },
 });
 
-const selectedSong = ref(null);
-const isSongViewerOpen = ref(false);
-const songViewerTab = ref("lyrics");
-const isLoadingSongPreference = ref(false);
-const isSavingSongPreference = ref(false);
-const songPreferenceError = ref("");
-const personalSongForm = reactive({
-  personalKey: "",
-  chords: "",
-});
-const { getSongPreference, updateSongPreference } = useDepartments();
-
-const openSongViewer = (song) => {
-  selectedSong.value = song;
-  songViewerTab.value = song.metadata?.lyrics
-    ? "lyrics"
-    : song.metadata?.chords
-      ? "chords"
-      : "notes";
-  isSongViewerOpen.value = true;
-  void loadSongPreference(song);
-};
-
-const closeSongViewer = () => {
-  selectedSong.value = null;
-  isSongViewerOpen.value = false;
-  songPreferenceError.value = "";
-  personalSongForm.personalKey = "";
-  personalSongForm.chords = "";
-};
-
-const loadSongPreference = async (song) => {
-  songPreferenceError.value = "";
-  isLoadingSongPreference.value = true;
-  personalSongForm.personalKey = "";
-  personalSongForm.chords = song.metadata?.chords || "";
-
-  const { data, error } = await getSongPreference(song.id);
-
-  isLoadingSongPreference.value = false;
-
-  if (error) {
-    songPreferenceError.value = error;
-    return;
-  }
-
-  personalSongForm.personalKey = data?.personalKey || "";
-  personalSongForm.chords = data?.chords || song.metadata?.chords || "";
-};
-
-const useOfficialChords = () => {
-  personalSongForm.personalKey = selectedSong.value?.metadata?.key || "";
-  personalSongForm.chords = selectedSong.value?.metadata?.chords || "";
-};
-
-const saveSongPreference = async () => {
-  if (!selectedSong.value) return;
-
-  songPreferenceError.value = "";
-  isSavingSongPreference.value = true;
-
-  const { data, error } = await updateSongPreference(selectedSong.value.id, {
-    personalKey: personalSongForm.personalKey,
-    chords: personalSongForm.chords,
-  });
-
-  isSavingSongPreference.value = false;
-
-  if (error || !data) {
-    songPreferenceError.value = error || "Não foi possível salvar sua cifra.";
-    return;
-  }
-
-  personalSongForm.personalKey = data.personalKey || "";
-  personalSongForm.chords = data.chords || "";
-};
-
-const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-const flatToSharp = {
-  Db: "C#",
-  Eb: "D#",
-  Gb: "F#",
-  Ab: "G#",
-  Bb: "A#",
-};
-
-const transposeNote = (note, steps) => {
-  const normalized = flatToSharp[note] || note;
-  const index = noteNames.indexOf(normalized);
-
-  if (index === -1) return note;
-
-  return noteNames[(index + steps + noteNames.length) % noteNames.length];
-};
-
-const transposePersonalChords = (steps) => {
-  const chordRegex = /\b([A-G](?:#|b)?)(m|maj|min|dim|aug|sus|add)?([0-9]*)?(\/([A-G](?:#|b)?))?/g;
-
-  personalSongForm.chords = personalSongForm.chords.replace(
-    chordRegex,
-    (match, root, quality = "", extension = "", slash = "", bass = "") => {
-      const nextRoot = transposeNote(root, steps);
-      const nextBass = bass ? `/${transposeNote(bass, steps)}` : "";
-      return `${nextRoot}${quality || ""}${extension || ""}${nextBass}`;
-    },
-  );
-
-  if (personalSongForm.personalKey) {
-    personalSongForm.personalKey = transposeNote(personalSongForm.personalKey, steps);
-  }
-};
-
 const avatarColors = [
   { bg: "#EEF2FF", text: "#4F46E5" },
   { bg: "#F0FDFA", text: "#0F766E" },
@@ -505,14 +222,15 @@ const avatarColors = [
 ];
 
 const visibleVolunteers = computed(() => props.event.volunteers?.slice(0, 4) || []);
-const visibleRoleAssignments = computed(
-  () => props.event.volunteers?.slice(0, 6) || [],
-);
+const visibleMediaItems = computed(() => props.event.mediaItems?.slice(0, 3) || []);
 const extraVolunteerCount = computed(() =>
   Math.max((props.event.volunteerCount || 0) - visibleVolunteers.value.length, 0),
 );
-const hiddenRoleCount = computed(() =>
-  Math.max((props.event.volunteerCount || 0) - visibleRoleAssignments.value.length, 0),
+const hiddenMediaCount = computed(() =>
+  Math.max((props.event.mediaItems?.length || 0) - visibleMediaItems.value.length, 0),
+);
+const musicCount = computed(
+  () => props.event.mediaItems?.filter((item) => item.category === "MUSIC").length || 0,
 );
 const volunteerLabel = computed(() => {
   const count = props.event.volunteerCount || 0;
@@ -550,10 +268,22 @@ const userAssignmentStatusLabel = computed(() => {
 <style scoped>
 .schedule-card {
   border: 1px solid transparent;
+  cursor: pointer;
   overflow: hidden;
   transition:
     border-color 0.16s ease,
-    box-shadow 0.16s ease;
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
+}
+
+.schedule-card:hover {
+  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.08) !important;
+  transform: translateY(-1px);
+}
+
+.schedule-card:focus-visible {
+  outline: 3px solid rgba(168, 85, 247, 0.32);
+  outline-offset: 3px;
 }
 
 .schedule-card-header {
@@ -577,6 +307,37 @@ const userAssignmentStatusLabel = computed(() => {
   background: #fafafa;
   border: 1px solid #f3f4f6;
   padding: 10px 12px;
+}
+
+.schedule-dashboard-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.schedule-dashboard-metric {
+  display: grid;
+  gap: 2px;
+  min-height: 58px;
+  align-content: center;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 8px 10px;
+}
+
+.schedule-dashboard-metric span {
+  color: #1f2937;
+  font-size: 1.05rem;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.schedule-dashboard-metric small {
+  color: #6b7280;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.15;
 }
 
 .schedule-role-list {
