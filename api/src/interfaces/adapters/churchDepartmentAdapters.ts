@@ -983,7 +983,7 @@ export class ChurchDepartmentAdapters {
     await this.assertMediaItemsFromDepartment(songIds, departmentId, "MUSIC");
     await this.assertMediaItemsFromDepartment(resourceIds, departmentId, "RESOURCE");
 
-    return await $prismaClient.schedule.create({
+    const createdSchedule = await $prismaClient.schedule.create({
       data: {
         id: crypto.randomUUID(),
         date: scheduleDate,
@@ -1000,6 +1000,8 @@ export class ChurchDepartmentAdapters {
       },
       select: this.scheduleSelect,
     });
+
+    return createdSchedule;
   }
 
   async updateChurchSchedule(request: FastifyRequest) {
@@ -1123,7 +1125,63 @@ export class ChurchDepartmentAdapters {
       });
     }
 
-    return await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+    const updatedSchedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+    const assignedUserIds =
+      updatedSchedule.assignments?.map((assignment) => assignment.userId) || [];
+
+    if (assignedUserIds.length > 0) {
+      await pushNotificationService.sendToUsers(assignedUserIds, {
+        title: "Escala atualizada",
+        body: `${updatedSchedule.department.name} - ${updatedSchedule.description}`,
+        url: `/scale?schedule=${updatedSchedule.id}`,
+        type: "schedule-updated",
+        scheduleId: updatedSchedule.id,
+      });
+    }
+
+    return updatedSchedule;
+  }
+
+  async sendChurchScheduleReminder(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+
+    if (!id) {
+      throw new DomainError("Escala nao informada");
+    }
+
+    const schedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+    await this.assertCanManageScheduleDepartment(user, schedule.departmentId);
+
+    const assignedUserIds =
+      schedule.assignments?.map((assignment) => assignment.userId) || [];
+
+    if (assignedUserIds.length === 0) {
+      throw new DomainError("Nao ha voluntarios nesta escala para notificar");
+    }
+
+    const rehearsalText = schedule.rehearsalAt
+      ? `Ensaio em ${new Intl.DateTimeFormat("pt-BR", {
+          dateStyle: "short",
+          timeStyle: "short",
+        }).format(schedule.rehearsalAt)}`
+      : `Lembrete da escala em ${new Intl.DateTimeFormat("pt-BR", {
+          dateStyle: "short",
+          timeStyle: "short",
+        }).format(schedule.date)}`;
+
+    await pushNotificationService.sendToUsers(assignedUserIds, {
+      title: "Lembrete de escala",
+      body: `${rehearsalText} - ${schedule.description}`,
+      url: `/scale?schedule=${schedule.id}`,
+      type: "schedule-reminder",
+      scheduleId: schedule.id,
+    });
+
+    return {
+      success: true,
+      notifiedCount: [...new Set(assignedUserIds)].length,
+    };
   }
 
   async deleteChurchSchedule(request: FastifyRequest) {
@@ -1260,9 +1318,9 @@ export class ChurchDepartmentAdapters {
     const updatedSchedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
 
     await pushNotificationService.sendToUsers(newlyAssignedUserIds, {
-      title: "Voce foi escalado",
+      title: "Nova escala publicada",
       body: `${updatedSchedule.department.name} - ${updatedSchedule.description}`,
-      url: `/user`,
+      url: `/scale?schedule=${updatedSchedule.id}`,
       type: "schedule-assigned",
       scheduleId: updatedSchedule.id,
     });

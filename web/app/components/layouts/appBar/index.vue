@@ -210,11 +210,11 @@ const notificationTitle = computed(() => {
 });
 
 const notificationDescription = computed(() => {
-  if (isEnabled.value) return "Você será avisado quando entrar em uma escala.";
+  if (isEnabled.value) return "Você será avisado sobre escalas, alterações e lembretes.";
   if (status.value === "denied") return "Libere a permissão nas configurações do navegador.";
   if (status.value === "unsupported") return "No celular, abra o app por HTTPS para receber push.";
 
-  return "Receba aviso no aparelho quando você for escalado.";
+  return "Receba avisos de escala, alteração e ensaio neste aparelho.";
 });
 
 const showNotificationMessage = computed({

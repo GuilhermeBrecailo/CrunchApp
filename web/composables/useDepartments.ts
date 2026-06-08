@@ -254,6 +254,11 @@ interface UpdateScheduleAssignmentAttendanceDTO {
   attendanceStatus: "PENDING" | "PRESENT" | "ABSENT";
 }
 
+interface SendScheduleReminderResponse {
+  success: boolean;
+  notifiedCount: number;
+}
+
 interface UpdateSongPreferenceDTO {
   personalKey?: string | null;
   chords?: string | null;
@@ -474,6 +479,18 @@ export const useDepartments = () => {
     );
   };
 
+  const sendScheduleReminder = async (
+    scheduleId: string,
+  ): Promise<ApiResponse<SendScheduleReminderResponse>> => {
+    return await $customFetch<SendScheduleReminderResponse>(
+      `${config.public.URL_BACKEND}/api/church/schedules/${scheduleId}/reminders`,
+      {
+        method: "POST",
+        headers: authHeaders(),
+      },
+    );
+  };
+
   const updateScheduleAssignmentAttendance = async (
     scheduleId: string,
     assignmentId: string,
@@ -684,6 +701,7 @@ export const useDepartments = () => {
     deleteChurchSchedule,
     updateScheduleAssignments,
     updateMyScheduleAssignment,
+    sendScheduleReminder,
     updateScheduleAssignmentAttendance,
     uploadDepartmentPdf,
     getDepartmentResources,

@@ -90,6 +90,173 @@
         </v-card>
       </section>
 
+      <section v-if="activeTab === 'leader'" class="leader-panel">
+        <div class="leader-panel-heading mb-4">
+          <div>
+            <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-1">
+              Painel do líder
+            </h2>
+            <p class="text-caption text-grey-darken-1 mb-0">
+              Pendências, lembretes e relatórios deste ministério.
+            </p>
+          </div>
+          <v-btn
+            color="purple-darken-3"
+            class="text-none rounded-lg"
+            @click="activeTab = 'schedules'"
+          >
+            <Calendar size="17" class="mr-2" /> Escalas
+          </v-btn>
+        </div>
+
+        <v-alert
+          v-if="leaderMessage"
+          type="success"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          {{ leaderMessage }}
+        </v-alert>
+
+        <v-alert
+          v-if="leaderError"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          {{ leaderError }}
+        </v-alert>
+
+        <div class="leader-metric-grid mb-4">
+          <v-card
+            v-for="metric in leaderMetrics"
+            :key="metric.label"
+            class="leader-metric-card pa-4 elevation-1 bg-white"
+          >
+            <div class="leader-metric-icon" :class="metric.className">
+              <component :is="metric.icon" size="18" />
+            </div>
+            <span>{{ metric.value }}</span>
+            <small>{{ metric.label }}</small>
+          </v-card>
+        </div>
+
+        <div class="leader-panel-grid mb-4">
+          <v-card class="ministery-content-card pa-4 elevation-1 bg-white">
+            <div class="leader-card-title mb-3">
+              <AlertTriangle size="18" color="#B45309" />
+              <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+                Pendências
+              </h3>
+            </div>
+
+            <div v-if="leaderPendingItems.length" class="leader-list">
+              <div
+                v-for="item in leaderPendingItems"
+                :key="item.label"
+                class="leader-list-row"
+              >
+                <div class="min-w-0">
+                  <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-0">
+                    {{ item.label }}
+                  </p>
+                  <p class="text-caption text-grey-darken-1 mb-0">
+                    {{ item.description }}
+                  </p>
+                </div>
+                <v-chip size="small" :color="item.color" variant="tonal">
+                  {{ item.value }}
+                </v-chip>
+              </div>
+            </div>
+            <p v-else class="text-caption text-grey-darken-1 mb-0">
+              Nenhuma pendência crítica no momento.
+            </p>
+          </v-card>
+
+          <v-card class="ministery-content-card pa-4 elevation-1 bg-white">
+            <div class="leader-card-title mb-3">
+              <BarChart3 size="18" color="#4F46E5" />
+              <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+                Relatório rápido
+              </h3>
+            </div>
+
+            <div class="report-bars">
+              <div
+                v-for="item in reportRows"
+                :key="item.label"
+                class="report-row"
+              >
+                <div class="report-row-top">
+                  <span>{{ item.label }}</span>
+                  <strong>{{ item.value }}%</strong>
+                </div>
+                <div class="report-track">
+                  <span :style="{ width: `${item.value}%` }" />
+                </div>
+              </div>
+            </div>
+          </v-card>
+        </div>
+
+        <v-card class="ministery-content-card pa-4 elevation-1 bg-white mb-4">
+          <div class="leader-card-title mb-3">
+            <BellRing size="18" color="#9333EA" />
+            <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+              Lembretes de escala
+            </h3>
+          </div>
+
+          <div v-if="upcomingLeaderSchedules.length" class="leader-list">
+            <div
+              v-for="schedule in upcomingLeaderSchedules"
+              :key="schedule.id"
+              class="leader-schedule-row"
+            >
+              <div class="min-w-0">
+                <p class="text-body-2 font-weight-bold text-grey-darken-4 mb-1">
+                  {{ schedule.description }}
+                </p>
+                <p class="text-caption text-grey-darken-1 mb-0">
+                  {{ formatScheduleDate(schedule.date) }}
+                  <span v-if="schedule.rehearsalAt">
+                    · Ensaio {{ formatScheduleDate(schedule.rehearsalAt) }}
+                  </span>
+                </p>
+                <div class="d-flex flex-wrap ga-2 mt-2">
+                  <v-chip size="x-small" color="indigo-darken-2" variant="tonal">
+                    {{ schedule.assignments?.length || 0 }} escalados
+                  </v-chip>
+                  <v-chip size="x-small" color="teal-darken-2" variant="tonal">
+                    {{ confirmedAssignments(schedule) }} confirmados
+                  </v-chip>
+                  <v-chip size="x-small" color="amber-darken-3" variant="tonal">
+                    {{ notViewedAssignments(schedule) }} não viram
+                  </v-chip>
+                </div>
+              </div>
+
+              <v-btn
+                variant="tonal"
+                color="purple-darken-3"
+                class="text-none leader-reminder-btn"
+                :loading="isSendingReminderId === schedule.id"
+                :disabled="Boolean(isSendingReminderId) || !(schedule.assignments?.length)"
+                @click="sendReminder(schedule)"
+              >
+                <Send size="16" class="mr-2" /> Lembrar
+              </v-btn>
+            </div>
+          </div>
+          <p v-else class="text-caption text-grey-darken-1 mb-0">
+            Nenhuma escala futura para acompanhar.
+          </p>
+        </v-card>
+      </section>
+
       <section v-if="activeTab === 'schedules'">
         <div class="ministery-section-actions mb-4">
           <v-btn
@@ -1677,18 +1844,24 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import {
+  AlertTriangle,
   ArrowLeft,
+  BarChart3,
+  BellRing,
   BookOpen,
   Calendar,
   CheckSquare,
+  Clock,
   ExternalLink,
   FileText,
   Info,
   Music,
   Pencil,
   Plus,
+  Send,
   Trash2,
   UserPlus,
+  Users,
 } from "lucide-vue-next";
 import {
   useDepartments,
@@ -1726,6 +1899,7 @@ const {
   getSongPreference,
   updateSongPreference,
   updateScheduleAssignments,
+  sendScheduleReminder,
   updateScheduleAssignmentAttendance,
 } = useDepartments();
 const { getMembers } = useMembers();
@@ -1749,6 +1923,8 @@ const createSongError = ref("");
 const createActivityError = ref("");
 const songPreferenceError = ref("");
 const assignmentsError = ref("");
+const leaderError = ref("");
+const leaderMessage = ref("");
 const activeTab = ref("overview");
 const isTaskDialogOpen = ref(false);
 const isScheduleDialogOpen = ref(false);
@@ -1765,6 +1941,7 @@ const isCreatingActivity = ref(false);
 const isLoadingSongPreference = ref(false);
 const isSavingSongPreference = ref(false);
 const isSavingAssignments = ref(false);
+const isSendingReminderId = ref("");
 const isConfirmingDelete = ref(false);
 const selectedScheduleId = ref("");
 const editingTaskId = ref("");
@@ -1898,6 +2075,10 @@ const baseTabs = [
 const tabs = computed(() => {
   const items = [...baseTabs];
 
+  if (canManageDepartment.value) {
+    items.splice(1, 0, { label: "Líder", value: "leader", icon: BarChart3 });
+  }
+
   if (["WORSHIP", "MUSIC"].includes(department.value?.type || "")) {
     items.push({ label: "Músicas", value: "songs", icon: Music });
   }
@@ -1941,6 +2122,163 @@ const activityResources = computed(() =>
 const selectedSchedule = computed(() =>
   schedules.value.find((schedule) => schedule.id === selectedScheduleId.value),
 );
+
+const allAssignments = computed(() =>
+  schedules.value.flatMap((schedule) =>
+    (schedule.assignments || []).map((assignment) => ({
+      ...assignment,
+      scheduleId: schedule.id,
+      scheduleDate: schedule.date,
+    })),
+  ),
+);
+
+const upcomingLeaderSchedules = computed(() => {
+  const now = Date.now();
+
+  return schedules.value
+    .filter((schedule) => new Date(schedule.date).getTime() >= now)
+    .sort(
+      (current, next) =>
+        new Date(current.date).getTime() - new Date(next.date).getTime(),
+    )
+    .slice(0, 5);
+});
+
+const pendingResponseCount = computed(
+  () =>
+    allAssignments.value.filter(
+      (assignment) =>
+        !assignment.confirmationStatus ||
+        assignment.confirmationStatus === "PENDING",
+    ).length,
+);
+
+const notViewedCount = computed(
+  () => allAssignments.value.filter((assignment) => !assignment.viewedAt).length,
+);
+
+const swapRequestCount = computed(
+  () =>
+    allAssignments.value.filter(
+      (assignment) => assignment.confirmationStatus === "SWAP_REQUESTED",
+    ).length,
+);
+
+const attendanceAssignments = computed(() =>
+  allAssignments.value.filter(
+    (assignment) =>
+      assignment.attendanceStatus === "PRESENT" ||
+      assignment.attendanceStatus === "ABSENT",
+  ),
+);
+
+const percent = (value: number, total: number) =>
+  total > 0 ? Math.round((value / total) * 100) : 0;
+
+const leaderMetrics = computed(() => [
+  {
+    label: "pendentes",
+    value: pendingResponseCount.value,
+    icon: Clock,
+    className: "leader-metric-amber",
+  },
+  {
+    label: "não viram",
+    value: notViewedCount.value,
+    icon: AlertTriangle,
+    className: "leader-metric-red",
+  },
+  {
+    label: "trocas",
+    value: swapRequestCount.value,
+    icon: Users,
+    className: "leader-metric-indigo",
+  },
+  {
+    label: "presença",
+    value: `${attendanceRate.value}%`,
+    icon: BarChart3,
+    className: "leader-metric-teal",
+  },
+]);
+
+const schedulesWithoutVolunteers = computed(
+  () =>
+    upcomingLeaderSchedules.value.filter(
+      (schedule) => (schedule.assignments?.length || 0) === 0,
+    ).length,
+);
+
+const openTaskCount = computed(
+  () => tasks.value.filter((task) => task.status !== "DONE").length,
+);
+
+const leaderPendingItems = computed(() =>
+  [
+    {
+      label: "Respostas pendentes",
+      description: "Voluntários ainda não confirmaram a escala.",
+      value: pendingResponseCount.value,
+      color: "amber-darken-3",
+    },
+    {
+      label: "Escalas não visualizadas",
+      description: "Pessoas que ainda não abriram a convocação.",
+      value: notViewedCount.value,
+      color: "indigo-darken-2",
+    },
+    {
+      label: "Pedidos de troca",
+      description: "Respostas que pedem substituição ou alinhamento.",
+      value: swapRequestCount.value,
+      color: "purple-darken-3",
+    },
+    {
+      label: "Escalas sem equipe",
+      description: "Próximas escalas ainda sem voluntários.",
+      value: schedulesWithoutVolunteers.value,
+      color: "red-darken-2",
+    },
+    {
+      label: "Tarefas abertas",
+      description: "Atividades do ministério ainda em andamento.",
+      value: openTaskCount.value,
+      color: "teal-darken-2",
+    },
+  ].filter((item) => item.value > 0),
+);
+
+const confirmedRate = computed(() =>
+  percent(
+    allAssignments.value.filter(
+      (assignment) => assignment.confirmationStatus === "CONFIRMED",
+    ).length,
+    allAssignments.value.length,
+  ),
+);
+
+const viewedRate = computed(() =>
+  percent(
+    allAssignments.value.filter((assignment) => Boolean(assignment.viewedAt)).length,
+    allAssignments.value.length,
+  ),
+);
+
+const attendanceRate = computed(() =>
+  percent(
+    attendanceAssignments.value.filter(
+      (assignment) => assignment.attendanceStatus === "PRESENT",
+    ).length,
+    attendanceAssignments.value.length,
+  ),
+);
+
+const reportRows = computed(() => [
+  { label: "Confirmação", value: confirmedRate.value },
+  { label: "Visualização", value: viewedRate.value },
+  { label: "Presença registrada", value: attendanceRate.value },
+]);
 
 const selectedSongToneText = computed(() => {
   if (!selectedSong.value) return "Tom não cadastrado.";
@@ -2024,6 +2362,14 @@ const attendanceStatusLabel = (status?: string) => {
   if (status === "ABSENT") return "Faltou";
   return "Presença pendente";
 };
+
+const confirmedAssignments = (schedule: DepartmentSchedule) =>
+  schedule.assignments?.filter(
+    (assignment) => assignment.confirmationStatus === "CONFIRMED",
+  ).length || 0;
+
+const notViewedAssignments = (schedule: DepartmentSchedule) =>
+  schedule.assignments?.filter((assignment) => !assignment.viewedAt).length || 0;
 
 const loadDepartment = async () => {
   departmentError.value = "";
@@ -2919,6 +3265,23 @@ const saveAssignments = async () => {
   closeAssignmentsDialog();
 };
 
+const sendReminder = async (schedule: DepartmentSchedule) => {
+  leaderError.value = "";
+  leaderMessage.value = "";
+  isSendingReminderId.value = schedule.id;
+
+  const { data, error } = await sendScheduleReminder(schedule.id);
+
+  isSendingReminderId.value = "";
+
+  if (error || !data) {
+    leaderError.value = error || "Não foi possível enviar o lembrete.";
+    return;
+  }
+
+  leaderMessage.value = `Lembrete enviado para ${data.notifiedCount} voluntário(s).`;
+};
+
 const formatScheduleDate = (value: string) =>
   new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "medium",
@@ -2994,6 +3357,118 @@ onMounted(async () => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 12px;
+}
+.leader-panel-heading,
+.leader-card-title,
+.leader-list-row,
+.leader-schedule-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.leader-panel-heading {
+  justify-content: space-between;
+}
+.leader-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.leader-metric-card {
+  border: 1px solid #eef2f7;
+  border-radius: 8px !important;
+  display: grid;
+  gap: 7px;
+  min-height: 118px;
+}
+.leader-metric-card span {
+  color: #111827;
+  font-size: 1.3rem;
+  font-weight: 900;
+  line-height: 1;
+}
+.leader-metric-card small {
+  color: #6b7280;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+.leader-metric-icon {
+  align-items: center;
+  border-radius: 8px;
+  display: inline-flex;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+.leader-metric-amber {
+  background: #fffbeb;
+  color: #b45309;
+}
+.leader-metric-red {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+.leader-metric-indigo {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+.leader-metric-teal {
+  background: #f0fdfa;
+  color: #0f766e;
+}
+.leader-panel-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: 12px;
+}
+.leader-list {
+  display: grid;
+  gap: 10px;
+}
+.leader-list-row,
+.leader-schedule-row {
+  justify-content: space-between;
+  border: 1px solid #f3f4f6;
+  border-radius: 8px;
+  padding: 11px 12px;
+}
+.leader-schedule-row {
+  align-items: flex-start;
+}
+.leader-reminder-btn {
+  flex: 0 0 auto;
+}
+.report-bars {
+  display: grid;
+  gap: 14px;
+}
+.report-row {
+  display: grid;
+  gap: 7px;
+}
+.report-row-top {
+  align-items: center;
+  color: #4b5563;
+  display: flex;
+  font-size: 0.78rem;
+  font-weight: 800;
+  justify-content: space-between;
+}
+.report-row-top strong {
+  color: #111827;
+}
+.report-track {
+  background: #f3f4f6;
+  border-radius: 999px;
+  height: 8px;
+  overflow: hidden;
+}
+.report-track span {
+  background: #4f46e5;
+  border-radius: inherit;
+  display: block;
+  height: 100%;
+  min-width: 4px;
 }
 .ministery-content-card {
   border: 1px solid #eef2f7;
@@ -3187,12 +3662,22 @@ onMounted(async () => {
   }
 
   .ministery-detail-summary,
-  .ministery-card-grid {
+  .ministery-card-grid,
+  .leader-metric-grid,
+  .leader-panel-grid {
     grid-template-columns: 1fr;
   }
 
-  .ministery-section-actions .v-btn {
+  .ministery-section-actions .v-btn,
+  .leader-panel-heading .v-btn,
+  .leader-reminder-btn {
     width: 100%;
+  }
+
+  .leader-panel-heading,
+  .leader-schedule-row {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .tabs-row {

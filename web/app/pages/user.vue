@@ -1,41 +1,38 @@
 <template>
-  <div class="pa-4 bg-grey-lighten-4 min-vh-100 pb-20">
-    <div class="mb-6">
-      <h1 class="text-h5 font-weight-bold text-grey-darken-4 mb-1">
-        Meu Perfil
-      </h1>
-      <p class="text-body-2 text-grey-darken-1 mb-0">
-        Suas informações e disponibilidade
-      </p>
-    </div>
-
-    <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
+  <div class="profile-page pa-4 min-vh-100 pb-20">
+    <section class="profile-hero mb-4">
       <div class="profile-summary">
         <v-avatar
-          size="56"
+          size="64"
           color="#EEF2FF"
-          class="profile-avatar text-purple-darken-3 font-weight-bold text-h6"
+          class="profile-avatar text-indigo-darken-3 font-weight-bold text-h6"
         >
           {{ initials }}
         </v-avatar>
         <div class="profile-summary-copy">
-          <h2 class="profile-name text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
+          <div class="profile-chip-row mb-2">
+            <v-chip size="x-small" color="indigo-darken-2" variant="flat" class="font-weight-bold rounded-sm">
+              {{ roleLabel }}
+            </v-chip>
+            <v-chip
+              v-if="user?.hasChurch"
+              size="x-small"
+              color="teal-darken-2"
+              variant="tonal"
+              class="font-weight-bold rounded-sm"
+            >
+              Vinculado
+            </v-chip>
+          </div>
+          <h1 class="profile-name text-h5 font-weight-bold text-grey-darken-4 mb-1">
             {{ profile?.name || user?.name || "Usuário" }}
-          </h2>
-          <p class="profile-email text-caption text-grey-darken-1 mb-1">
-            {{ profile?.email || user?.email }}
+          </h1>
+          <p class="profile-email text-body-2 text-grey-darken-1 mb-0">
+            {{ profile?.email || user?.email || "Email não informado" }}
           </p>
-          <v-chip
-            size="x-small"
-            color="#6366f1"
-            variant="flat"
-            class="font-weight-bold px-2 rounded-sm"
-          >
-            {{ roleLabel }}
-          </v-chip>
         </div>
       </div>
-    </v-card>
+    </section>
 
     <v-alert
       v-if="mustChangePassword"
@@ -57,16 +54,137 @@
       {{ loadError }}
     </v-alert>
 
-    <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
-      <div class="d-flex align-center mb-1">
-        <CalendarX size="18" class="mr-2" color="#A855F7" />
-        <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
-          Indisponibilidade
-        </h3>
+    <v-alert
+      v-if="departmentsError"
+      type="warning"
+      variant="tonal"
+      density="compact"
+      class="mb-4"
+    >
+      {{ departmentsError }}
+    </v-alert>
+
+    <v-skeleton-loader
+      v-if="isLoading && !profile"
+      class="profile-card mb-4"
+      type="list-item-avatar-three-line, article, actions"
+    />
+
+    <template v-else>
+      <section class="profile-overview mb-4">
+        <div class="profile-info-tile">
+          <Church size="18" color="#4F46E5" />
+          <div class="min-w-0">
+            <span>{{ churchDisplayName }}</span>
+            <small>Igreja</small>
+          </div>
+        </div>
+        <div class="profile-info-tile">
+          <BadgeCheck size="18" color="#0F766E" />
+          <div class="min-w-0">
+            <span>{{ primaryDepartmentName }}</span>
+            <small>Ministério</small>
+          </div>
+        </div>
+        <div class="profile-info-tile">
+          <CalendarDays size="18" color="#B45309" />
+          <div class="min-w-0">
+            <span>{{ nextUnavailableLabel }}</span>
+            <small>Próximo bloqueio</small>
+          </div>
+        </div>
+      </section>
+
+      <div class="profile-action-grid mb-4">
+        <v-btn to="/scale" variant="tonal" color="indigo-darken-2" class="profile-action-btn text-none">
+          <CalendarDays size="17" class="mr-2" /> Escalas
+        </v-btn>
+        <v-btn to="/ministery" variant="tonal" color="teal-darken-2" class="profile-action-btn text-none">
+          <ClipboardList size="17" class="mr-2" /> Ministérios
+        </v-btn>
+        <v-btn
+          v-if="user?.is_admin || user?.role === 'PASTOR' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN'"
+          to="/admin"
+          variant="tonal"
+          color="purple-darken-3"
+          class="profile-action-btn text-none"
+        >
+          <Shield size="17" class="mr-2" /> Admin
+        </v-btn>
       </div>
-      <p class="text-caption text-grey-darken-1 mb-4">
-        Marque as datas em que você não poderá servir.
-      </p>
+
+      <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
+        <div class="section-heading mb-4">
+          <div class="section-icon section-icon-indigo">
+            <UserRound size="18" />
+          </div>
+          <div class="min-w-0">
+            <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
+              Serviço na igreja
+            </h2>
+            <p class="text-caption text-grey-darken-1 mb-0">
+              Dados usados por líderes ao montar escalas.
+            </p>
+          </div>
+        </div>
+
+        <v-select
+          v-model="form.primaryDepartmentId"
+          :items="departmentOptions"
+          item-title="label"
+          item-value="value"
+          label="Ministério principal"
+          placeholder="Selecione seu ministério"
+          variant="outlined"
+          density="comfortable"
+          color="indigo-darken-2"
+          bg-color="white"
+          class="profile-input mb-3"
+          hide-details="auto"
+          clearable
+          :disabled="isLoading || isSaving || departmentsLoading || departmentOptions.length === 0"
+        />
+
+        <v-text-field
+          v-model="form.ministryFunction"
+          label="Função principal"
+          placeholder="Ex.: vocal, mídia, recepção, intercessão"
+          variant="outlined"
+          density="comfortable"
+          color="indigo-darken-2"
+          bg-color="white"
+          class="profile-input"
+          hide-details="auto"
+          :disabled="isLoading || isSaving"
+        />
+
+        <div class="profile-readiness mt-4">
+          <div
+            v-for="item in profileStats"
+            :key="item.label"
+            class="readiness-item"
+            :class="{ 'readiness-item-done': item.done }"
+          >
+            <component :is="item.icon" size="16" />
+            <span>{{ item.label }}</span>
+          </div>
+        </div>
+      </v-card>
+
+      <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
+        <div class="section-heading mb-2">
+          <div class="section-icon section-icon-amber">
+            <CalendarX size="18" />
+          </div>
+          <div class="min-w-0">
+            <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
+              Indisponibilidade
+            </h2>
+            <p class="text-caption text-grey-darken-1 mb-0">
+              Marque datas em que você não poderá servir.
+            </p>
+          </div>
+        </div>
 
       <div class="unavailable-date-row mb-3">
         <v-text-field
@@ -115,46 +233,66 @@
           <span>{{ formatDate(date) }}</span>
         </v-chip>
       </div>
-    </v-card>
+      </v-card>
 
-    <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
-      <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-3">
-        Sugestão
-      </h3>
-      <v-textarea
-        v-model="form.profileSuggestion"
-        placeholder="Compartilhe alguma sugestão com os líderes..."
-        variant="outlined"
-        density="comfortable"
-        color="purple-darken-3"
-        bg-color="white"
-        class="profile-input"
-        hide-details
-        rows="3"
-        auto-grow
-        :disabled="isLoading || isSaving"
-      />
-    </v-card>
+      <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
+        <div class="section-heading mb-4">
+          <div class="section-icon section-icon-teal">
+            <Phone size="18" />
+          </div>
+          <div class="min-w-0">
+            <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
+              Contato
+            </h2>
+            <p class="text-caption text-grey-darken-1 mb-0">
+              Canal para avisos de escala e alinhamentos.
+            </p>
+          </div>
+        </div>
 
-    <v-card class="profile-card pa-4 mb-6 elevation-1 bg-white">
-      <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-3">
-        Contato
-      </h3>
-      <div class="text-caption font-weight-medium text-grey-darken-2 mb-1">
-        Telefone / WhatsApp
-      </div>
-      <v-text-field
-        v-model="form.phone"
-        placeholder="(00) 00000-0000"
-        variant="outlined"
-        density="comfortable"
-        color="purple-darken-3"
-        bg-color="white"
-        class="profile-input"
-        hide-details="auto"
-        :disabled="isLoading || isSaving"
-      />
-    </v-card>
+        <v-text-field
+          v-model="form.phone"
+          label="Telefone / WhatsApp"
+          placeholder="(00) 00000-0000"
+          variant="outlined"
+          density="comfortable"
+          color="teal-darken-2"
+          bg-color="white"
+          class="profile-input"
+          hide-details="auto"
+          :disabled="isLoading || isSaving"
+        />
+      </v-card>
+
+      <v-card class="profile-card pa-4 mb-4 elevation-1 bg-white">
+        <div class="section-heading mb-4">
+          <div class="section-icon section-icon-purple">
+            <MessageSquare size="18" />
+          </div>
+          <div class="min-w-0">
+            <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
+              Sugestão pastoral
+            </h2>
+            <p class="text-caption text-grey-darken-1 mb-0">
+              Compartilhe pontos de cuidado, melhoria ou organização.
+            </p>
+          </div>
+        </div>
+
+        <v-textarea
+          v-model="form.profileSuggestion"
+          placeholder="Escreva uma sugestão para a liderança..."
+          variant="outlined"
+          density="comfortable"
+          color="purple-darken-3"
+          bg-color="white"
+          class="profile-input"
+          hide-details
+          rows="3"
+          auto-grow
+          :disabled="isLoading || isSaving"
+        />
+      </v-card>
 
     <v-card class="profile-card pa-4 mb-6 elevation-1 bg-white">
       <div class="security-row">
@@ -177,6 +315,7 @@
         </v-btn>
       </div>
     </v-card>
+    </template>
 
     <v-alert
       v-if="saveMessage"
@@ -220,7 +359,7 @@
       :disabled="loadingLogout || isSaving"
       @click="handleLogout"
     >
-      Sair
+      <LogOut size="18" class="mr-2" /> Sair
     </v-btn>
 
     <UtilsResponsiveOverlay
@@ -326,25 +465,43 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
-import { CalendarX, Plus, Save } from "lucide-vue-next";
+import {
+  BadgeCheck,
+  CalendarDays,
+  CalendarX,
+  Church,
+  ClipboardList,
+  LogOut,
+  MessageSquare,
+  Phone,
+  Plus,
+  Save,
+  Shield,
+  UserRound,
+} from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
+import { useDepartments, type ChurchDepartment } from "../../composables/useDepartments";
 import { useUser, type MyProfileDTO } from "../../composables/useUser";
 
 const router = useRouter();
 const { logout, user, fetchMe } = useAuth();
 const { getMyProfile, updateMyProfile, updateMyPassword } = useUser();
+const { getDepartments } = useDepartments();
 
 const loadingLogout = ref(false);
 const isLoading = ref(true);
+const departmentsLoading = ref(false);
 const isSaving = ref(false);
 const isSavingPassword = ref(false);
 const loadError = ref("");
+const departmentsError = ref("");
 const saveError = ref("");
 const saveMessage = ref("");
 const passwordError = ref("");
 const passwordMessage = ref("");
 const isPasswordDialogOpen = ref(false);
 const profile = ref<MyProfileDTO | null>(null);
+const departments = ref<ChurchDepartment[]>([]);
 const newUnavailableDate = ref("");
 const unavailableDates = ref<string[]>([]);
 
@@ -381,8 +538,59 @@ const initials = computed(() => {
 const roleLabel = computed(() => {
   const role = profile.value?.role || user.value?.role;
   if (role === "PASTOR") return "Pastor";
+  if (role === "ADMIN" || role === "SUPER_ADMIN") return "Admin";
   return "Membro";
 });
+
+const departmentOptions = computed(() =>
+  departments.value
+    .filter((department) => department.isActive)
+    .map((department) => ({
+      label: department.name,
+      value: department.id,
+    })),
+);
+
+const selectedDepartment = computed(() => {
+  const departmentId = form.primaryDepartmentId || profile.value?.primaryDepartmentId;
+  return departments.value.find((department) => department.id === departmentId);
+});
+
+const churchDisplayName = computed(() => {
+  if (!user.value?.hasChurch) return "Sem igreja vinculada";
+  return user.value?.church?.name || "Igreja não informada";
+});
+
+const primaryDepartmentName = computed(
+  () =>
+    selectedDepartment.value?.name ||
+    profile.value?.primaryDepartment?.name ||
+    "Sem ministério",
+);
+
+const nextUnavailableLabel = computed(() => {
+  const today = new Date().toISOString().slice(0, 10);
+  const nextDate = unavailableDates.value.find((date) => date >= today);
+  return nextDate ? formatDate(nextDate) : "Livre";
+});
+
+const profileStats = computed(() => [
+  {
+    label: form.phone.trim() ? "Contato ok" : "Contato pendente",
+    done: Boolean(form.phone.trim()),
+    icon: Phone,
+  },
+  {
+    label: form.primaryDepartmentId ? "Ministério definido" : "Sem ministério",
+    done: Boolean(form.primaryDepartmentId),
+    icon: BadgeCheck,
+  },
+  {
+    label: form.ministryFunction.trim() ? "Função definida" : "Função pendente",
+    done: Boolean(form.ministryFunction.trim()),
+    icon: UserRound,
+  },
+]);
 
 const applyProfile = (data: MyProfileDTO) => {
   profile.value = data;
@@ -409,6 +617,30 @@ const loadProfile = async () => {
     applyProfile(profileResponse.data);
   }
 
+  isLoading.value = false;
+};
+
+const loadDepartments = async () => {
+  if (!user.value?.hasChurch) return;
+
+  departmentsLoading.value = true;
+  departmentsError.value = "";
+
+  const { data, error } = await getDepartments();
+
+  departmentsLoading.value = false;
+
+  if (error) {
+    departmentsError.value = error;
+    return;
+  }
+
+  departments.value = data ?? [];
+};
+
+const loadPageData = async () => {
+  isLoading.value = true;
+  await Promise.all([loadProfile(), loadDepartments()]);
   isLoading.value = false;
 };
 
@@ -523,110 +755,263 @@ const handleLogout = async () => {
   await router.push("/login");
 };
 
-onMounted(loadProfile);
+onMounted(loadPageData);
 </script>
 
 <style scoped>
 .min-vh-100 {
   min-height: 100vh;
 }
+
 .pb-20 {
   padding-bottom: 90px !important;
 }
-.gap-2 {
+
+.profile-page {
+  background: #f8fafc;
+}
+
+.profile-hero {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 18px;
+}
+
+.profile-chip-row,
+.section-heading {
+  align-items: center;
+  display: flex;
   gap: 8px;
 }
+
 .profile-summary {
-  display: flex;
   align-items: center;
+  display: flex;
+  gap: 16px;
   min-width: 0;
-  gap: 14px;
 }
+
 .profile-avatar {
   flex: 0 0 auto;
 }
+
 .profile-summary-copy {
-  min-width: 0;
   flex: 1 1 auto;
+  min-width: 0;
 }
+
 .profile-name,
 .profile-email {
   overflow-wrap: anywhere;
 }
+
 .profile-email {
   line-height: 1.25;
 }
+
+.profile-overview {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.profile-info-tile {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+}
+
+.profile-info-tile span,
+.profile-info-tile small {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-info-tile span {
+  color: #111827;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.profile-info-tile small {
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
+.profile-action-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.profile-action-btn {
+  border-radius: 8px !important;
+  min-height: 44px;
+  min-width: 0;
+}
+
 .profile-card {
-  border: 1px solid #f3f4f6;
-  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
   overflow: hidden;
 }
-.profile-input :deep(.v-field) {
-  border-radius: 14px;
+
+.section-heading {
+  align-items: flex-start;
+  gap: 12px;
 }
+
+.section-icon {
+  align-items: center;
+  border-radius: 8px;
+  display: inline-flex;
+  flex: 0 0 36px;
+  height: 36px;
+  justify-content: center;
+  width: 36px;
+}
+
+.section-icon-indigo {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.section-icon-amber {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.section-icon-teal {
+  background: #f0fdfa;
+  color: #0f766e;
+}
+
+.section-icon-purple {
+  background: #faf5ff;
+  color: #9333ea;
+}
+
+.profile-input :deep(.v-field) {
+  border-radius: 8px;
+}
+
 .profile-input :deep(.v-field__input) {
   min-height: 48px;
-  padding-top: 10px;
   padding-bottom: 10px;
+  padding-top: 10px;
 }
+
 .profile-input :deep(textarea.v-field__input) {
   min-height: 96px;
 }
+
+.profile-readiness {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.readiness-item {
+  align-items: center;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #6b7280;
+  display: inline-flex;
+  font-size: 0.75rem;
+  font-weight: 700;
+  gap: 6px;
+  min-height: 32px;
+  padding: 6px 9px;
+}
+
+.readiness-item-done {
+  background: #f0fdfa;
+  border-color: #99f6e4;
+  color: #0f766e;
+}
+
 .profile-icon-btn {
+  border-radius: 8px !important;
   flex: 0 0 auto;
-  border-radius: 14px !important;
   height: 48px !important;
   min-width: 48px !important;
   width: 48px !important;
 }
+
 .profile-icon-btn :deep(.v-btn__content) {
   align-items: center;
   display: flex;
   justify-content: center;
 }
+
 .unavailable-date-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 48px;
   align-items: center;
+  display: grid;
   gap: 8px;
+  grid-template-columns: minmax(0, 1fr) 48px;
 }
+
 .unavailable-chip-list {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   min-width: 0;
 }
+
 .unavailable-chip {
   max-width: 100%;
 }
+
 .unavailable-chip span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .security-row {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
+  display: flex;
   gap: 16px;
+  justify-content: space-between;
 }
+
 .password-dialog-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 12px;
   flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
 }
+
 .password-dialog-actions .v-btn {
   min-width: 128px;
 }
+
 .border-subtle {
   border: 1px solid #f3f4f6;
 }
+
 .responsive-dialog-header {
-  display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  display: flex;
   gap: 12px;
+  justify-content: space-between;
+}
+
+@media (max-width: 760px) {
+  .profile-overview,
+  .profile-action-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 420px) {
@@ -638,12 +1023,8 @@ onMounted(loadProfile);
   }
 
   .profile-avatar {
-    width: 48px !important;
     height: 48px !important;
-  }
-
-  .profile-card {
-    border-radius: 14px;
+    width: 48px !important;
   }
 
   .profile-name {
@@ -657,8 +1038,8 @@ onMounted(loadProfile);
 
   .security-row {
     align-items: stretch;
-    flex-direction: column;
     gap: 14px;
+    flex-direction: column;
   }
 
   .security-row .v-btn {

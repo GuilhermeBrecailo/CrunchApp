@@ -85,6 +85,11 @@ export async function ChurchDepartmentRoutes(app: FastifyInstance) {
     controllerHandler(adapters.updateChurchScheduleAssignments.bind(adapters)),
   );
 
+  app.post(
+    "/api/church/schedules/:id/reminders",
+    controllerHandler(adapters.sendChurchScheduleReminder.bind(adapters)),
+  );
+
   app.patch(
     "/api/church/schedules/:id/my-assignment",
     controllerHandler(adapters.updateMyChurchScheduleAssignment.bind(adapters)),
