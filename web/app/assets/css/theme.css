@@ -227,12 +227,15 @@
 .app-theme-dark .scale-fullscreen-header,
 .app-theme-dark .scale-fullscreen-toolbar,
 .app-theme-dark .scale-fullscreen-key-controls,
-.app-theme-dark .song-viewer-header {
+.app-theme-dark .song-viewer-toolbar,
+.app-theme-dark .song-viewer-header,
+.app-theme-dark .personal-chords-editor {
   border-color: var(--app-color-border) !important;
 }
 
 .app-theme-dark .scale-details-title,
 .app-theme-dark .scale-fullscreen-title,
+.app-theme-dark .song-viewer-title,
 .app-theme-dark .scale-details-stat span,
 .app-theme-dark .scale-details-section-title h3,
 .app-theme-dark .scale-details-person-name,
@@ -262,7 +265,8 @@
 .app-theme-dark .scale-response-panel,
 .app-theme-dark .assignment-summary,
 .app-theme-dark .scale-song-card,
-.app-theme-dark .scale-song-reader {
+.app-theme-dark .scale-song-reader,
+.app-theme-dark .song-text-renderer {
   background: var(--app-color-surface-soft) !important;
   border-color: var(--app-color-border) !important;
 }
@@ -278,6 +282,20 @@
   background: var(--app-color-surface-soft) !important;
   border-color: var(--app-color-border-strong) !important;
   color: var(--app-color-text-soft) !important;
+}
+
+.app-theme-dark .song-autoscroll-controls {
+  color: var(--app-color-text-soft) !important;
+}
+
+.app-theme-dark .song-text-renderer,
+.app-theme-dark .song-text-renderer--lyrics,
+.app-theme-dark .song-lyric {
+  color: var(--app-color-text-soft) !important;
+}
+
+.app-theme-dark .song-section {
+  color: var(--app-color-text) !important;
 }
 
 .app-theme-dark .empty-avatar {

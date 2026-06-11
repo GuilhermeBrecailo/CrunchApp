@@ -622,19 +622,32 @@
                   </v-chip>
                 </div>
               </div>
-              <v-btn
-                v-if="song.url"
-                :href="song.url"
-                target="_blank"
-                rel="noopener noreferrer"
-                icon
-                variant="text"
-                color="grey-darken-1"
-                size="small"
-                @click.stop
-              >
-                <ExternalLink size="16" />
-              </v-btn>
+              <div class="song-card-icon-actions">
+                <v-btn
+                  v-if="song.metadata?.lyrics || song.metadata?.chords"
+                  icon
+                  variant="text"
+                  color="purple-darken-3"
+                  size="small"
+                  aria-label="Abrir letra e cifra em tela cheia"
+                  @click.stop="openSongViewer(song)"
+                >
+                  <Maximize2 size="16" />
+                </v-btn>
+                <v-btn
+                  v-if="song.url"
+                  :href="song.url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  icon
+                  variant="text"
+                  color="grey-darken-1"
+                  size="small"
+                  @click.stop
+                >
+                  <ExternalLink size="16" />
+                </v-btn>
+              </div>
             </div>
 
             <p
@@ -1290,179 +1303,170 @@
 
     <UtilsResponsiveOverlay
       v-model="isSongViewerOpen"
-      max-width="760"
-      scrollable
+      max-width="920"
+      fullscreen-desktop
       mobile-class="song-viewer-mobile-sheet"
     >
       <v-card v-if="selectedSong" class="rounded-xl bg-white song-viewer" elevation="0">
         <div class="song-viewer-header">
           <div class="min-w-0">
-            <p class="text-caption text-purple-darken-3 font-weight-bold mb-1">
-              {{ selectedSong.metadata?.songCategory || "Louvor" }}
-            </p>
-            <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
+            <h2 class="song-viewer-title mb-0">
               {{ selectedSong.title }}
             </h2>
-            <p class="text-body-2 text-grey-darken-1 mb-0 text-truncate">
-              {{ selectedSong.metadata?.artist || "Artista não informado" }}
-            </p>
           </div>
-          <v-btn icon variant="text" color="grey-darken-1" @click="closeSongViewer">
+          <v-btn
+            icon
+            variant="text"
+            color="grey-darken-1"
+            aria-label="Fechar tela cheia"
+            @click="closeSongViewer"
+          >
             <v-icon size="20">mdi-close</v-icon>
           </v-btn>
         </div>
 
         <v-divider />
 
-        <div class="song-viewer-body">
-          <div class="d-flex flex-wrap ga-2 mb-4">
-            <v-chip v-if="selectedSong.metadata?.key" size="small" variant="tonal">
-              Tom {{ selectedSong.metadata.key }}
-            </v-chip>
-            <v-chip v-if="selectedSong.metadata?.bpm" size="small" variant="tonal">
-              {{ selectedSong.metadata.bpm }} BPM
-            </v-chip>
-            <v-btn
-              v-if="selectedSong.url"
-              :href="selectedSong.url"
-              target="_blank"
-              rel="noopener noreferrer"
-              color="purple-darken-3"
-              variant="tonal"
-              size="small"
-              class="text-none"
-            >
-              Abrir link
-            </v-btn>
-            <v-btn
-              v-if="selectedSong.metadata?.pdf?.url"
-              :href="selectedSong.metadata.pdf.url"
-              target="_blank"
-              rel="noopener noreferrer"
-              color="purple-darken-3"
-              variant="tonal"
-              size="small"
-              class="text-none"
-            >
-              Abrir PDF
-            </v-btn>
-          </div>
-
-          <v-tabs v-model="songViewerTab" color="purple-darken-3" class="mb-4">
+        <div class="song-viewer-toolbar">
+          <v-tabs v-model="songViewerTab" color="purple-darken-3" density="compact">
             <v-tab value="lyrics" class="text-none">Letra</v-tab>
             <v-tab value="chords" class="text-none">Cifra</v-tab>
             <v-tab value="notes" class="text-none">Tom</v-tab>
           </v-tabs>
 
+          <div class="song-viewer-controls">
+            <div
+              v-if="songViewerTab === 'chords'"
+              class="song-viewer-key-controls"
+            >
+              <v-btn
+                variant="tonal"
+                color="grey-darken-1"
+                size="small"
+                class="text-none"
+                @click="transposePersonalChords(-1)"
+              >
+                -1 tom
+              </v-btn>
+              <v-chip size="small" color="orange-darken-3" variant="tonal">
+                {{ songViewerCurrentKey }}
+              </v-chip>
+              <v-btn
+                variant="tonal"
+                color="grey-darken-1"
+                size="small"
+                class="text-none"
+                @click="transposePersonalChords(1)"
+              >
+                +1 tom
+              </v-btn>
+            </div>
+
+            <div class="song-autoscroll-controls">
+              <v-icon size="18">mdi-speedometer</v-icon>
+              <span>{{ songViewerScrollSpeedLabel }}</span>
+              <v-slider
+                v-model="songViewerAutoScrollSpeed"
+                min="0"
+                max="80"
+                step="4"
+                density="compact"
+                color="purple-darken-3"
+                hide-details
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="song-viewer-body">
           <MusicSongTextRenderer
             v-if="songViewerTab === 'lyrics'"
+            class="song-viewer-text"
             mode="lyrics"
             :text="selectedSong.metadata?.lyrics"
             empty-text="Letra não cadastrada."
+            :auto-scroll="songViewerAutoScrollSpeed > 0"
+            :scroll-speed="songViewerAutoScrollSpeed"
           />
           <div v-else-if="songViewerTab === 'chords'" class="personal-chords-panel">
-            <div class="personal-chords-heading">
-              <div>
-                <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-1">
-                  Minha cifra
-                </h3>
-                <p class="text-caption text-grey-darken-1 mb-0">
-                  Esta versão aparece somente para você.
-                </p>
-              </div>
-              <v-chip v-if="personalSongForm.personalKey" size="small" variant="tonal">
-                Meu tom {{ personalSongForm.personalKey }}
-              </v-chip>
-            </div>
-
             <MusicSongTextRenderer
+              class="song-viewer-text"
               mode="chords"
               :text="personalSongForm.chords || selectedSong.metadata?.chords"
               empty-text="Cifra não cadastrada."
+              :auto-scroll="songViewerAutoScrollSpeed > 0"
+              :scroll-speed="songViewerAutoScrollSpeed"
             />
 
-            <v-text-field
-              v-model="personalSongForm.personalKey"
-              label="Meu tom"
-              placeholder="ex: C, Dm, F#"
-              variant="outlined"
-              density="comfortable"
-              color="purple-darken-3"
-              bg-color="white"
-              class="ministery-input mb-3"
-              hide-details="auto"
-              :disabled="isLoadingSongPreference || isSavingSongPreference"
-            />
+            <details class="personal-chords-editor">
+              <summary>Editar minha cifra</summary>
 
-            <v-textarea
-              v-model="personalSongForm.chords"
-              label="Minha cifra"
-              variant="outlined"
-              density="comfortable"
-              color="purple-darken-3"
-              bg-color="white"
-              class="ministery-input chords-input mb-3"
-              hide-details="auto"
-              rows="9"
-              auto-grow
-              :disabled="isLoadingSongPreference || isSavingSongPreference"
-            />
+              <v-text-field
+                v-model="personalSongForm.personalKey"
+                label="Meu tom"
+                placeholder="ex: C, Dm, F#"
+                variant="outlined"
+                density="comfortable"
+                color="purple-darken-3"
+                bg-color="white"
+                class="ministery-input mb-3 mt-3"
+                hide-details="auto"
+                :disabled="isLoadingSongPreference || isSavingSongPreference"
+              />
 
-            <div class="personal-chords-actions">
-              <div class="d-flex ga-2">
+              <v-textarea
+                v-model="personalSongForm.chords"
+                label="Minha cifra"
+                variant="outlined"
+                density="comfortable"
+                color="purple-darken-3"
+                bg-color="white"
+                class="ministery-input chords-input mb-3"
+                hide-details="auto"
+                rows="9"
+                auto-grow
+                :disabled="isLoadingSongPreference || isSavingSongPreference"
+              />
+
+              <div class="personal-chords-actions">
                 <v-btn
-                  variant="tonal"
+                  variant="text"
                   color="grey-darken-1"
-                  size="small"
                   class="text-none"
-                  @click="transposePersonalChords(-1)"
+                  :disabled="isLoadingSongPreference || isSavingSongPreference"
+                  @click="useOfficialChords"
                 >
-                  -1 tom
+                  Usar cifra da escala
                 </v-btn>
                 <v-btn
-                  variant="tonal"
-                  color="grey-darken-1"
-                  size="small"
+                  color="purple-darken-3"
                   class="text-none"
-                  @click="transposePersonalChords(1)"
+                  :loading="isSavingSongPreference"
+                  :disabled="isLoadingSongPreference"
+                  @click="saveSongPreference"
                 >
-                  +1 tom
+                  Salvar minha cifra
                 </v-btn>
               </div>
-              <v-btn
-                variant="text"
-                color="grey-darken-1"
-                class="text-none"
-                :disabled="isLoadingSongPreference || isSavingSongPreference"
-                @click="useOfficialChords"
-              >
-                Usar cifra da escala
-              </v-btn>
-              <v-btn
-                color="purple-darken-3"
-                class="text-none"
-                :loading="isSavingSongPreference"
-                :disabled="isLoadingSongPreference"
-                @click="saveSongPreference"
-              >
-                Salvar minha cifra
-              </v-btn>
-            </div>
 
-            <v-alert
-              v-if="songPreferenceError"
-              type="error"
-              variant="tonal"
-              density="compact"
-              class="mt-3"
-            >
-              {{ songPreferenceError }}
-            </v-alert>
+              <v-alert
+                v-if="songPreferenceError"
+                type="error"
+                variant="tonal"
+                density="compact"
+                class="mt-3"
+              >
+                {{ songPreferenceError }}
+              </v-alert>
+            </details>
           </div>
           <MusicSongTextRenderer
             v-else
+            class="song-viewer-text"
             mode="lyrics"
             :text="selectedSongToneText"
+            :auto-scroll="songViewerAutoScrollSpeed > 0"
+            :scroll-speed="songViewerAutoScrollSpeed"
           />
         </div>
       </v-card>
@@ -1870,6 +1874,7 @@ import {
   ExternalLink,
   FileText,
   Info,
+  Maximize2,
   Music,
   Pencil,
   Plus,
@@ -1965,6 +1970,7 @@ const editingResourceId = ref("");
 const editingSongId = ref("");
 const selectedSong = ref<DepartmentSong | null>(null);
 const songViewerTab = ref("lyrics");
+const songViewerAutoScrollSpeed = ref(24);
 const pendingDelete = ref<{
   kind: "task" | "schedule" | "resource" | "song";
   id: string;
@@ -2307,6 +2313,17 @@ const selectedSongToneText = computed(() => {
   return items.join("\n") || "Tom não cadastrado.";
 });
 
+const songViewerCurrentKey = computed(() => {
+  const key = personalSongForm.personalKey || selectedSong.value?.metadata?.key || "";
+  return key ? `Tom ${key}` : "Tom não cadastrado";
+});
+
+const songViewerScrollSpeedLabel = computed(() =>
+  songViewerAutoScrollSpeed.value > 0
+    ? `Velocidade ${Math.round(songViewerAutoScrollSpeed.value)}`
+    : "Rolagem pausada",
+);
+
 const detailSummary = computed(() => [
   { label: "escalas", value: schedules.value.length },
   { label: "tarefas", value: tasks.value.length },
@@ -2607,17 +2624,19 @@ const loadSongPreference = async (song: DepartmentSong) => {
   personalSongForm.personalKey = "";
   personalSongForm.chords = song.metadata?.chords || "";
 
-  const { data, error } = await getSongPreference(song.id);
+  try {
+    const { data, error } = await getSongPreference(song.id);
 
-  isLoadingSongPreference.value = false;
+    if (error) {
+      songPreferenceError.value = error;
+      return;
+    }
 
-  if (error) {
-    songPreferenceError.value = error;
-    return;
+    personalSongForm.personalKey = data?.personalKey || "";
+    personalSongForm.chords = data?.chords || song.metadata?.chords || "";
+  } finally {
+    isLoadingSongPreference.value = false;
   }
-
-  personalSongForm.personalKey = data?.personalKey || "";
-  personalSongForm.chords = data?.chords || song.metadata?.chords || "";
 };
 
 const useOfficialChords = () => {
@@ -2631,20 +2650,22 @@ const saveSongPreference = async () => {
   songPreferenceError.value = "";
   isSavingSongPreference.value = true;
 
-  const { data, error } = await updateSongPreference(selectedSong.value.id, {
-    personalKey: personalSongForm.personalKey,
-    chords: personalSongForm.chords,
-  });
+  try {
+    const { data, error } = await updateSongPreference(selectedSong.value.id, {
+      personalKey: personalSongForm.personalKey,
+      chords: personalSongForm.chords,
+    });
 
-  isSavingSongPreference.value = false;
+    if (error || !data) {
+      songPreferenceError.value = error || "Não foi possível salvar sua cifra.";
+      return;
+    }
 
-  if (error || !data) {
-    songPreferenceError.value = error || "Não foi possível salvar sua cifra.";
-    return;
+    personalSongForm.personalKey = data.personalKey || "";
+    personalSongForm.chords = data.chords || "";
+  } finally {
+    isSavingSongPreference.value = false;
   }
-
-  personalSongForm.personalKey = data.personalKey || "";
-  personalSongForm.chords = data.chords || "";
 };
 
 const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -2703,31 +2724,33 @@ const handleSaveTask = async () => {
 
   isCreatingTask.value = true;
 
-  const { data, error } = editingTaskId.value
-    ? await updateDepartmentTask(departmentId, editingTaskId.value, {
-        title,
-        description: taskForm.description,
-        priority: taskForm.priority,
-        assigneeId: taskForm.assigneeId || null,
-      })
-    : await createDepartmentTask(departmentId, {
-        title,
-        description: taskForm.description,
-        priority: taskForm.priority,
-        assigneeId: taskForm.assigneeId || undefined,
-      });
+  try {
+    const { data, error } = editingTaskId.value
+      ? await updateDepartmentTask(departmentId, editingTaskId.value, {
+          title,
+          description: taskForm.description,
+          priority: taskForm.priority,
+          assigneeId: taskForm.assigneeId || null,
+        })
+      : await createDepartmentTask(departmentId, {
+          title,
+          description: taskForm.description,
+          priority: taskForm.priority,
+          assigneeId: taskForm.assigneeId || undefined,
+        });
 
-  isCreatingTask.value = false;
+    if (error || !data) {
+      createTaskError.value = error || "Não foi possível criar a tarefa.";
+      return;
+    }
 
-  if (error || !data) {
-    createTaskError.value = error || "Não foi possível criar a tarefa.";
-    return;
+    tasks.value = editingTaskId.value
+      ? tasks.value.map((task) => (task.id === data.id ? data : task))
+      : [data, ...tasks.value];
+    closeTaskDialog();
+  } finally {
+    isCreatingTask.value = false;
   }
-
-  tasks.value = editingTaskId.value
-    ? tasks.value.map((task) => (task.id === data.id ? data : task))
-    : [data, ...tasks.value];
-  closeTaskDialog();
 };
 
 const toDateInputValue = (value: string) => {
@@ -2780,44 +2803,46 @@ const handleSaveSchedule = async () => {
 
   isCreatingSchedule.value = true;
 
-  const { data, error } = editingScheduleId.value
-    ? await updateChurchSchedule(editingScheduleId.value, {
-        title,
-        date: scheduleForm.date,
-        time: scheduleForm.time || undefined,
-        rehearsalDate: scheduleForm.rehearsalDate || null,
-        rehearsalTime: scheduleForm.rehearsalTime || null,
-        rehearsalNotes: scheduleForm.rehearsalNotes || null,
-        songIds: scheduleForm.songIds,
-        resourceIds: scheduleForm.resourceIds,
-      })
-    : await createDepartmentSchedule(departmentId, {
-        title,
-        date: scheduleForm.date,
-        time: scheduleForm.time || undefined,
-        rehearsalDate: scheduleForm.rehearsalDate || null,
-        rehearsalTime: scheduleForm.rehearsalTime || null,
-        rehearsalNotes: scheduleForm.rehearsalNotes || null,
-        songIds: scheduleForm.songIds,
-        resourceIds: scheduleForm.resourceIds,
-      });
+  try {
+    const { data, error } = editingScheduleId.value
+      ? await updateChurchSchedule(editingScheduleId.value, {
+          title,
+          date: scheduleForm.date,
+          time: scheduleForm.time || undefined,
+          rehearsalDate: scheduleForm.rehearsalDate || null,
+          rehearsalTime: scheduleForm.rehearsalTime || null,
+          rehearsalNotes: scheduleForm.rehearsalNotes || null,
+          songIds: scheduleForm.songIds,
+          resourceIds: scheduleForm.resourceIds,
+        })
+      : await createDepartmentSchedule(departmentId, {
+          title,
+          date: scheduleForm.date,
+          time: scheduleForm.time || undefined,
+          rehearsalDate: scheduleForm.rehearsalDate || null,
+          rehearsalTime: scheduleForm.rehearsalTime || null,
+          rehearsalNotes: scheduleForm.rehearsalNotes || null,
+          songIds: scheduleForm.songIds,
+          resourceIds: scheduleForm.resourceIds,
+        });
 
-  isCreatingSchedule.value = false;
+    if (error || !data) {
+      createScheduleError.value = error || "Não foi possível criar a escala.";
+      return;
+    }
 
-  if (error || !data) {
-    createScheduleError.value = error || "Não foi possível criar a escala.";
-    return;
+    const nextSchedules = editingScheduleId.value
+      ? schedules.value.map((schedule) => (schedule.id === data.id ? data : schedule))
+      : [...schedules.value, data];
+
+    schedules.value = nextSchedules.sort(
+      (current, next) =>
+        new Date(current.date).getTime() - new Date(next.date).getTime(),
+    );
+    closeScheduleDialog();
+  } finally {
+    isCreatingSchedule.value = false;
   }
-
-  const nextSchedules = editingScheduleId.value
-    ? schedules.value.map((schedule) => (schedule.id === data.id ? data : schedule))
-    : [...schedules.value, data];
-
-  schedules.value = nextSchedules.sort(
-    (current, next) =>
-      new Date(current.date).getTime() - new Date(next.date).getTime(),
-  );
-  closeScheduleDialog();
 };
 
 const openResourceEditDialog = (resource: DepartmentResource) => {
@@ -2847,35 +2872,37 @@ const handleSaveResource = async () => {
 
   isCreatingResource.value = true;
 
-  const { data, error } = editingResourceId.value
-    ? await updateDepartmentResource(departmentId, editingResourceId.value, {
-        title,
-        url,
-        category: resourceForm.category,
-        notes: resourceForm.notes,
-      })
-    : await createDepartmentResource(departmentId, {
-        title,
-        url,
-        category: resourceForm.category,
-        notes: resourceForm.notes,
-      });
+  try {
+    const { data, error } = editingResourceId.value
+      ? await updateDepartmentResource(departmentId, editingResourceId.value, {
+          title,
+          url,
+          category: resourceForm.category,
+          notes: resourceForm.notes,
+        })
+      : await createDepartmentResource(departmentId, {
+          title,
+          url,
+          category: resourceForm.category,
+          notes: resourceForm.notes,
+        });
 
-  isCreatingResource.value = false;
+    if (error || !data) {
+      createResourceError.value = error || "Não foi possível criar o recurso.";
+      return;
+    }
 
-  if (error || !data) {
-    createResourceError.value = error || "Não foi possível criar o recurso.";
-    return;
+    const nextResources = editingResourceId.value
+      ? resources.value.map((resource) => (resource.id === data.id ? data : resource))
+      : [...resources.value, data];
+
+    resources.value = nextResources.sort((current, next) =>
+      current.title.localeCompare(next.title),
+    );
+    closeResourceDialog();
+  } finally {
+    isCreatingResource.value = false;
   }
-
-  const nextResources = editingResourceId.value
-    ? resources.value.map((resource) => (resource.id === data.id ? data : resource))
-    : [...resources.value, data];
-
-  resources.value = nextResources.sort((current, next) =>
-    current.title.localeCompare(next.title),
-  );
-  closeResourceDialog();
 };
 
 const openSongEditDialog = (song: DepartmentSong) => {
@@ -2925,53 +2952,51 @@ const handleSaveSong = async () => {
       songForm.pdfSize = uploadedPdf.size;
       songForm.removePdf = false;
     }
+
+    const payload = {
+      title,
+      artist: songForm.artist,
+      key: songForm.key,
+      bpm: songForm.bpm,
+      songCategory: songForm.songCategory,
+      url: songForm.url,
+      notes: songForm.notes,
+      lyrics: songForm.lyrics,
+      chords: songForm.chords,
+      ...(songForm.pdfUrl
+        ? {
+            pdfUrl: songForm.pdfUrl,
+            pdfKey: songForm.pdfKey,
+            pdfFileName: songForm.pdfFileName,
+            pdfMimeType: songForm.pdfMimeType,
+            pdfSize: songForm.pdfSize,
+          }
+        : {}),
+      ...(songForm.removePdf ? { removePdf: true } : {}),
+    };
+
+    const { data, error } = editingSongId.value
+      ? await updateDepartmentSong(departmentId, editingSongId.value, payload)
+      : await createDepartmentSong(departmentId, payload);
+
+    if (error || !data) {
+      createSongError.value = error || "Não foi possível salvar a música.";
+      return;
+    }
+
+    const nextSongs = editingSongId.value
+      ? songs.value.map((song) => (song.id === data.id ? data : song))
+      : [...songs.value, data];
+
+    songs.value = nextSongs.sort((current, next) =>
+      current.title.localeCompare(next.title),
+    );
+    closeSongDialog();
   } catch (error: any) {
+    createSongError.value = error?.message || "Não foi possível salvar a música.";
+  } finally {
     isCreatingSong.value = false;
-    createSongError.value = error?.message || "Não foi possível enviar o PDF.";
-    return;
   }
-
-  const payload = {
-    title,
-    artist: songForm.artist,
-    key: songForm.key,
-    bpm: songForm.bpm,
-    songCategory: songForm.songCategory,
-    url: songForm.url,
-    notes: songForm.notes,
-    lyrics: songForm.lyrics,
-    chords: songForm.chords,
-    ...(songForm.pdfUrl
-      ? {
-          pdfUrl: songForm.pdfUrl,
-          pdfKey: songForm.pdfKey,
-          pdfFileName: songForm.pdfFileName,
-          pdfMimeType: songForm.pdfMimeType,
-          pdfSize: songForm.pdfSize,
-        }
-      : {}),
-    ...(songForm.removePdf ? { removePdf: true } : {}),
-  };
-
-  const { data, error } = editingSongId.value
-    ? await updateDepartmentSong(departmentId, editingSongId.value, payload)
-    : await createDepartmentSong(departmentId, payload);
-
-  isCreatingSong.value = false;
-
-  if (error || !data) {
-    createSongError.value = error || "Não foi possível salvar a música.";
-    return;
-  }
-
-  const nextSongs = editingSongId.value
-    ? songs.value.map((song) => (song.id === data.id ? data : song))
-    : [...songs.value, data];
-
-  songs.value = nextSongs.sort((current, next) =>
-    current.title.localeCompare(next.title),
-  );
-  closeSongDialog();
 };
 
 const handleSaveActivity = async () => {
@@ -2990,47 +3015,43 @@ const handleSaveActivity = async () => {
 
   isCreatingActivity.value = true;
 
-  let uploadedPdf;
   try {
-    uploadedPdf = await uploadPdfFile(
+    const uploadedPdf = await uploadPdfFile(
       activityPdfFile.value,
       "Não foi possível enviar o PDF da atividade.",
     );
+
+    if (!uploadedPdf) {
+      createActivityError.value = "Selecione o PDF da atividade.";
+      return;
+    }
+
+    const { data, error } = await createDepartmentResource(departmentId, {
+      title,
+      url: uploadedPdf.url,
+      category: "ACTIVITY",
+      notes: activityForm.notes,
+      pdfUrl: uploadedPdf.url,
+      pdfKey: uploadedPdf.key,
+      pdfFileName: uploadedPdf.fileName,
+      pdfMimeType: uploadedPdf.mimeType,
+      pdfSize: uploadedPdf.size,
+    });
+
+    if (error || !data) {
+      createActivityError.value = error || "Não foi possível salvar a atividade.";
+      return;
+    }
+
+    resources.value = [...resources.value, data].sort((current, next) =>
+      current.title.localeCompare(next.title),
+    );
+    closeActivityDialog();
   } catch (error: any) {
+    createActivityError.value = error?.message || "Não foi possível salvar a atividade.";
+  } finally {
     isCreatingActivity.value = false;
-    createActivityError.value = error?.message || "Não foi possível enviar o PDF.";
-    return;
   }
-
-  if (!uploadedPdf) {
-    isCreatingActivity.value = false;
-    createActivityError.value = "Selecione o PDF da atividade.";
-    return;
-  }
-
-  const { data, error } = await createDepartmentResource(departmentId, {
-    title,
-    url: uploadedPdf.url,
-    category: "ACTIVITY",
-    notes: activityForm.notes,
-    pdfUrl: uploadedPdf.url,
-    pdfKey: uploadedPdf.key,
-    pdfFileName: uploadedPdf.fileName,
-    pdfMimeType: uploadedPdf.mimeType,
-    pdfSize: uploadedPdf.size,
-  });
-
-  isCreatingActivity.value = false;
-
-  if (error || !data) {
-    createActivityError.value = error || "Não foi possível salvar a atividade.";
-    return;
-  }
-
-  resources.value = [...resources.value, data].sort((current, next) =>
-    current.title.localeCompare(next.title),
-  );
-  closeActivityDialog();
 };
 
 const handleDeleteTask = (task: DepartmentTask) => {
@@ -3257,27 +3278,29 @@ const saveAssignments = async () => {
 
   isSavingAssignments.value = true;
 
-  const { data, error } = await updateScheduleAssignments(
-    selectedScheduleId.value,
-    {
-      assignments: draftAssignments.value.map((assignment) => ({
-        userId: assignment.userId,
-        role: assignment.role,
-      })),
-    },
-  );
+  try {
+    const { data, error } = await updateScheduleAssignments(
+      selectedScheduleId.value,
+      {
+        assignments: draftAssignments.value.map((assignment) => ({
+          userId: assignment.userId,
+          role: assignment.role,
+        })),
+      },
+    );
 
-  isSavingAssignments.value = false;
+    if (error || !data) {
+      assignmentsError.value = error || "Não foi possível salvar os voluntários.";
+      return;
+    }
 
-  if (error || !data) {
-    assignmentsError.value = error || "Não foi possível salvar os voluntários.";
-    return;
+    schedules.value = schedules.value.map((schedule) =>
+      schedule.id === data.id ? data : schedule,
+    );
+    closeAssignmentsDialog();
+  } finally {
+    isSavingAssignments.value = false;
   }
-
-  schedules.value = schedules.value.map((schedule) =>
-    schedule.id === data.id ? data : schedule,
-  );
-  closeAssignmentsDialog();
 };
 
 const sendReminder = async (schedule: DepartmentSchedule) => {
@@ -3285,16 +3308,18 @@ const sendReminder = async (schedule: DepartmentSchedule) => {
   leaderMessage.value = "";
   isSendingReminderId.value = schedule.id;
 
-  const { data, error } = await sendScheduleReminder(schedule.id);
+  try {
+    const { data, error } = await sendScheduleReminder(schedule.id);
 
-  isSendingReminderId.value = "";
+    if (error || !data) {
+      leaderError.value = error || "Não foi possível enviar o lembrete.";
+      return;
+    }
 
-  if (error || !data) {
-    leaderError.value = error || "Não foi possível enviar o lembrete.";
-    return;
+    leaderMessage.value = `Lembrete enviado para ${data.notifiedCount} voluntário(s).`;
+  } finally {
+    isSendingReminderId.value = "";
   }
-
-  leaderMessage.value = `Lembrete enviado para ${data.notifiedCount} voluntário(s).`;
 };
 
 const formatScheduleDate = (value: string) =>
@@ -3528,6 +3553,12 @@ onMounted(async () => {
 .song-chip-row {
   margin-top: 6px;
 }
+.song-card-icon-actions {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 2px;
+}
 .song-click-card:focus-visible {
   outline: 3px solid rgba(168, 85, 247, 0.28);
   outline-offset: 2px;
@@ -3568,6 +3599,10 @@ onMounted(async () => {
   font-family: "Courier New", monospace;
 }
 .song-viewer {
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  max-height: 100vh;
+  min-height: 100vh;
   overflow: hidden;
 }
 .song-viewer-header {
@@ -3577,14 +3612,70 @@ onMounted(async () => {
   gap: 12px;
   padding: 20px;
 }
+.song-viewer-title {
+  color: #1f2937;
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.song-viewer-toolbar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  padding: 10px 20px;
+  border-bottom: 1px solid #f3f4f6;
+}
+.song-viewer-controls,
+.song-viewer-key-controls,
+.song-autoscroll-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.song-viewer-controls {
+  justify-content: flex-end;
+  min-width: 0;
+}
+.song-autoscroll-controls {
+  min-height: 34px;
+  color: #4b5563;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+.song-autoscroll-controls :deep(.v-slider) {
+  flex: 1 1 160px;
+  min-width: 140px;
+  max-width: 260px;
+}
 .song-viewer-body {
-  max-height: min(680px, 75vh);
+  min-height: 0;
   overflow-y: auto;
   padding: 20px;
+}
+.song-viewer-text {
+  min-height: 0;
+  max-height: calc(100vh - 190px);
+  font-size: 1.12rem;
+  line-height: 1.9;
 }
 .personal-chords-panel {
   display: grid;
   gap: 12px;
+}
+.personal-chords-editor {
+  border-top: 1px solid #f3f4f6;
+  padding-top: 12px;
+}
+.personal-chords-editor summary {
+  color: #6d28d9;
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 800;
 }
 .personal-chords-heading,
 .personal-chords-actions {
@@ -3666,7 +3757,19 @@ onMounted(async () => {
   }
 
   .song-viewer-mobile-sheet .song-viewer-body {
-    max-height: calc(100vh - 112px);
+    max-height: none;
+  }
+
+  .song-viewer-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .song-viewer-controls {
+    justify-content: flex-start;
+  }
+
+  .song-viewer-text {
+    max-height: calc(100vh - 220px);
   }
 
   .ministery-detail-header {

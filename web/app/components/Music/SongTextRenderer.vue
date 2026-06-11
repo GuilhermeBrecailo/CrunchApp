@@ -1,5 +1,14 @@
 <template>
-  <div class="song-text-renderer" :class="rendererClasses">
+  <div
+    ref="scrollContainer"
+    class="song-text-renderer"
+    :class="rendererClasses"
+    @pointerdown="pauseAutoScroll"
+    @pointerup="resumeAutoScroll"
+    @pointercancel="resumeAutoScroll"
+    @touchstart.passive="pauseAutoScroll"
+    @touchend.passive="resumeAutoScroll"
+  >
     <span
       v-for="(line, lineIndex) in renderedLines"
       :key="lineIndex"
@@ -19,12 +28,16 @@ const props = withDefaults(
     mode?: "lyrics" | "chords";
     emptyText?: string;
     dense?: boolean;
+    autoScroll?: boolean;
+    scrollSpeed?: number;
   }>(),
   {
     text: "",
     mode: "lyrics",
     emptyText: "",
     dense: false,
+    autoScroll: false,
+    scrollSpeed: 0,
   },
 );
 
@@ -40,7 +53,13 @@ const rendererClasses = computed(() => ({
   "song-text-renderer--chords": props.mode === "chords",
   "song-text-renderer--lyrics": props.mode !== "chords",
   "song-text-renderer--dense": props.dense,
+  "song-text-renderer--auto": props.autoScroll && props.scrollSpeed > 0,
 }));
+
+const scrollContainer = ref<HTMLElement | null>(null);
+const isAutoScrollPaused = ref(false);
+const animationFrameId = ref<number | null>(null);
+const lastFrameAt = ref(0);
 
 const isChordToken = (token: string) => {
   const cleanToken = token.replace(/[()[\],.;:]+$/g, "").replace(/^[()[\],.;:]+/g, "");
@@ -74,6 +93,85 @@ const renderedLines = computed(() => {
       : [{ text: line || "\u00a0", type: "lyric" }],
   );
 });
+
+const stopAutoScroll = () => {
+  if (animationFrameId.value !== null) {
+    window.cancelAnimationFrame(animationFrameId.value);
+    animationFrameId.value = null;
+  }
+  lastFrameAt.value = 0;
+};
+
+const runAutoScroll = (timestamp: number) => {
+  const container = scrollContainer.value;
+
+  if (!container || !props.autoScroll || props.scrollSpeed <= 0) {
+    stopAutoScroll();
+    return;
+  }
+
+  if (!isAutoScrollPaused.value) {
+    if (lastFrameAt.value) {
+      const elapsedSeconds = (timestamp - lastFrameAt.value) / 1000;
+      const maxScrollTop = container.scrollHeight - container.clientHeight;
+
+      if (container.scrollTop < maxScrollTop) {
+        container.scrollTop = Math.min(
+          maxScrollTop,
+          container.scrollTop + props.scrollSpeed * elapsedSeconds,
+        );
+      }
+    }
+
+    lastFrameAt.value = timestamp;
+  } else {
+    lastFrameAt.value = 0;
+  }
+
+  animationFrameId.value = window.requestAnimationFrame(runAutoScroll);
+};
+
+const startAutoScroll = () => {
+  if (!import.meta.client || animationFrameId.value !== null) return;
+  if (!props.autoScroll || props.scrollSpeed <= 0) return;
+
+  animationFrameId.value = window.requestAnimationFrame(runAutoScroll);
+};
+
+const pauseAutoScroll = () => {
+  isAutoScrollPaused.value = true;
+};
+
+const resumeAutoScroll = () => {
+  isAutoScrollPaused.value = false;
+  startAutoScroll();
+};
+
+watch(
+  () => [props.autoScroll, props.scrollSpeed],
+  () => {
+    if (props.autoScroll && props.scrollSpeed > 0) {
+      startAutoScroll();
+      return;
+    }
+
+    stopAutoScroll();
+  },
+);
+
+watch(
+  () => [props.text, props.mode],
+  async () => {
+    await nextTick();
+    if (scrollContainer.value) {
+      scrollContainer.value.scrollTop = 0;
+    }
+    startAutoScroll();
+  },
+);
+
+onMounted(startAutoScroll);
+onBeforeUnmount(stopAutoScroll);
 </script>
 
 <style scoped>
@@ -108,6 +206,10 @@ const renderedLines = computed(() => {
   line-height: 1.6;
   min-height: 120px;
   padding: 12px;
+}
+
+.song-text-renderer--auto {
+  scroll-behavior: auto;
 }
 
 .song-line {
