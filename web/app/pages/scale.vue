@@ -366,7 +366,7 @@
               </v-tabs>
 
               <div
-                v-if="songTabs[activeDetailSong.id] === 'lyrics'"
+                v-if="songTabs[activeDetailSong.id] === 'chords'"
                 class="scale-song-key-controls"
               >
                 <v-btn
@@ -392,21 +392,11 @@
                 </v-btn>
               </div>
 
-              <div class="scale-song-text song-text-renderer">
-                <span
-                  v-for="(line, lineIndex) in getSongTabLines(activeDetailSong, songTabs[activeDetailSong.id])"
-                  :key="lineIndex"
-                  class="song-line"
-                >
-                  <span
-                    v-for="(segment, segmentIndex) in line"
-                    :key="segmentIndex"
-                    :class="segment.type === 'chord' ? 'song-chord' : 'song-lyric'"
-                  >
-                    {{ segment.text }}
-                  </span>
-                </span>
-              </div>
+              <MusicSongTextRenderer
+                class="scale-song-text"
+                :mode="songTabs[activeDetailSong.id] === 'chords' ? 'chords' : 'lyrics'"
+                :text="getSongTabText(activeDetailSong, songTabs[activeDetailSong.id])"
+              />
             </div>
           </section>
 
@@ -465,7 +455,7 @@
         </div>
 
         <div
-          v-if="fullscreenSongTab === 'lyrics'"
+          v-if="fullscreenSongTab === 'chords'"
           class="scale-fullscreen-key-controls"
         >
           <v-btn
@@ -491,21 +481,11 @@
           </v-btn>
         </div>
 
-        <div class="scale-fullscreen-text song-text-renderer">
-          <span
-            v-for="(line, lineIndex) in getSongTabLines(fullscreenSong, fullscreenSongTab)"
-            :key="lineIndex"
-            class="song-line"
-          >
-            <span
-              v-for="(segment, segmentIndex) in line"
-              :key="segmentIndex"
-              :class="segment.type === 'chord' ? 'song-chord' : 'song-lyric'"
-            >
-              {{ segment.text }}
-            </span>
-          </span>
-        </div>
+        <MusicSongTextRenderer
+          class="scale-fullscreen-text"
+          :mode="fullscreenSongTab === 'chords' ? 'chords' : 'lyrics'"
+          :text="getSongTabText(fullscreenSong, fullscreenSongTab)"
+        />
       </v-card>
     </UtilsResponsiveOverlay>
 
@@ -1377,11 +1357,6 @@ const getSongTabText = (
   return song.metadata?.lyrics || "Letra não cadastrada.";
 };
 
-type SongTextSegment = {
-  text: string;
-  type: "lyric" | "chord";
-};
-
 const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const flatToSharp: Record<string, string> = {
   Db: "C#",
@@ -1390,8 +1365,6 @@ const flatToSharp: Record<string, string> = {
   Ab: "G#",
   Bb: "A#",
 };
-const chordTokenRegex = /^[A-G](?:#|b)?(?:m|maj|min|dim|aug|sus|add)?[0-9]*(?:\/[A-G](?:#|b)?)?$/;
-
 const transposeKey = (key: string, steps: number) => {
   const match = key.trim().match(/^([A-G](?:#|b)?)(.*)$/);
   if (!match || !steps) return key;
@@ -1427,37 +1400,6 @@ const songCurrentKey = (song: ScheduleEvent["mediaItems"][number]) => {
   );
   return currentKey ? `Tom ${currentKey}` : "Tom não cadastrado";
 };
-
-const isChordToken = (token: string) =>
-  chordTokenRegex.test(token.replace(/[()[\],.;:]/g, ""));
-
-const isChordLine = (line: string) => {
-  const tokens = line.trim().split(/\s+/).filter(Boolean);
-  if (!tokens.length) return false;
-
-  const chordTokens = tokens.filter((token) => token === "|" || isChordToken(token)).length;
-  return chordTokens > 0 && chordTokens / tokens.length >= 0.65;
-};
-
-const tokenizeSongLine = (line: string, tab: string): SongTextSegment[] => {
-  if (!line) return [{ text: "\u00a0", type: "lyric" }];
-  if (tab !== "chords") return [{ text: line, type: "lyric" }];
-
-  const inlineParts = line.split(/(\[[^\]]+\])/g).filter((part) => part.length);
-  if (inlineParts.length > 1) {
-    return inlineParts.map((part) => ({
-      text: part,
-      type: part.startsWith("[") && part.endsWith("]") ? "chord" : "lyric",
-    }));
-  }
-
-  return [{ text: line, type: isChordLine(line) ? "chord" : "lyric" }];
-};
-
-const getSongTabLines = (
-  song: ScheduleEvent["mediaItems"][number],
-  tab = "lyrics",
-) => getSongTabText(song, tab).split("\n").map((line) => tokenizeSongLine(line, tab));
 
 const openSongFullscreen = (song: ScheduleEvent["mediaItems"][number]) => {
   fullscreenSong.value = song;
@@ -2356,41 +2298,6 @@ watch(schedules, async () => {
   align-items: start;
 }
 
-.scale-song-text,
-.scale-fullscreen-text {
-  margin: 0;
-  overflow-x: auto;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  border: 1px solid #f3f4f6;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #111111;
-  font-family: "Courier New", monospace;
-  font-size: 1.04rem;
-  line-height: 1.82;
-  padding: 14px;
-}
-
-.song-text-renderer {
-  display: block;
-}
-
-.song-line {
-  display: block;
-  min-height: 1.82em;
-}
-
-.song-lyric {
-  color: #111111;
-  font-weight: 650;
-}
-
-.song-chord {
-  color: #ea580c;
-  font-weight: 900;
-}
-
 .scale-song-key-controls,
 .scale-fullscreen-key-controls {
   display: flex;
@@ -2401,7 +2308,12 @@ watch(schedules, async () => {
 
 .scale-song-text {
   max-height: 260px;
-  overflow-y: auto;
+}
+
+.scale-fullscreen-text {
+  font-size: 1.04rem;
+  line-height: 1.82;
+  min-height: 360px;
 }
 
 .scale-fullscreen-song {

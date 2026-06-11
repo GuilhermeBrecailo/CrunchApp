@@ -1354,7 +1354,12 @@
             <v-tab value="notes" class="text-none">Tom</v-tab>
           </v-tabs>
 
-          <pre v-if="songViewerTab === 'lyrics'" class="song-text-block">{{ selectedSong.metadata?.lyrics || "Letra não cadastrada." }}</pre>
+          <MusicSongTextRenderer
+            v-if="songViewerTab === 'lyrics'"
+            mode="lyrics"
+            :text="selectedSong.metadata?.lyrics"
+            empty-text="Letra não cadastrada."
+          />
           <div v-else-if="songViewerTab === 'chords'" class="personal-chords-panel">
             <div class="personal-chords-heading">
               <div>
@@ -1369,6 +1374,12 @@
                 Meu tom {{ personalSongForm.personalKey }}
               </v-chip>
             </div>
+
+            <MusicSongTextRenderer
+              mode="chords"
+              :text="personalSongForm.chords || selectedSong.metadata?.chords"
+              empty-text="Cifra não cadastrada."
+            />
 
             <v-text-field
               v-model="personalSongForm.personalKey"
@@ -1448,7 +1459,11 @@
               {{ songPreferenceError }}
             </v-alert>
           </div>
-          <pre v-else class="song-text-block">{{ selectedSongToneText }}</pre>
+          <MusicSongTextRenderer
+            v-else
+            mode="lyrics"
+            :text="selectedSongToneText"
+          />
         </div>
       </v-card>
     </UtilsResponsiveOverlay>
@@ -3566,20 +3581,6 @@ onMounted(async () => {
   max-height: min(680px, 75vh);
   overflow-y: auto;
   padding: 20px;
-}
-.song-text-block {
-  border: 1px solid #f3f4f6;
-  border-radius: 8px;
-  background: #fafafa;
-  color: #1f2937;
-  font-family: inherit;
-  font-size: 0.92rem;
-  line-height: 1.65;
-  margin: 0;
-  min-height: 180px;
-  overflow-x: auto;
-  padding: 16px;
-  white-space: pre-wrap;
 }
 .personal-chords-panel {
   display: grid;
