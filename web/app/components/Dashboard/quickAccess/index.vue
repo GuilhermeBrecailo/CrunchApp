@@ -6,11 +6,11 @@
         :key="index"
         color="white"
         min-width="100"
-        class="rounded-xl pa-3 d-flex flex-column align-center justify-center flex-grow-1 elevation-1 cursor-pointer"
+        class="quick-access-card rounded-xl pa-3 d-flex flex-column align-center justify-center flex-grow-1 elevation-1 cursor-pointer"
         @click="goToRoute(item.route)"
       >
-        <v-avatar size="40" class="mb-2" :color="item.bgColor">
-          <component :is="item.icon" size="20" :color="item.iconColor" />
+        <v-avatar size="40" class="mb-2" :color="isDark ? item.bgColorDark : item.bgColor">
+          <component :is="item.icon" size="20" :color="isDark ? item.iconColorDark : item.iconColor" />
         </v-avatar>
         <span class="quick-access-label">{{ item.title }}</span>
       </v-card>
@@ -23,6 +23,7 @@ import { useRouter } from "vue-router";
 import { CalendarDays, Church, Settings, Users } from "lucide-vue-next";
 
 const router = useRouter();
+const { isDark } = useThemeMode();
 
 const menuItems = [
   {
@@ -30,6 +31,8 @@ const menuItems = [
     icon: CalendarDays,
     iconColor: "#6366F1",
     bgColor: "#EEF2FF",
+    iconColorDark: "#818cf8",
+    bgColorDark: "rgba(129,140,248,0.14)",
     route: "/scale",
   },
   {
@@ -37,6 +40,8 @@ const menuItems = [
     icon: Church,
     iconColor: "#A855F7",
     bgColor: "#FAF5FF",
+    iconColorDark: "#c084fc",
+    bgColorDark: "rgba(192,132,252,0.13)",
     route: "/ministery",
   },
   {
@@ -44,6 +49,8 @@ const menuItems = [
     icon: Users,
     iconColor: "#14B8A6",
     bgColor: "#F0FDFA",
+    iconColorDark: "#2dd4bf",
+    bgColorDark: "rgba(45,212,191,0.12)",
     route: "/user",
   },
   {
@@ -51,6 +58,8 @@ const menuItems = [
     icon: Settings,
     iconColor: "#EAB308",
     bgColor: "#FEFCE8",
+    iconColorDark: "#fbbf24",
+    bgColorDark: "rgba(251,191,36,0.12)",
     route: "/settings",
   },
 ];

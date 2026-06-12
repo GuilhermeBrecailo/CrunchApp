@@ -43,20 +43,36 @@ body,
 
 html {
   scroll-behavior: smooth;
+  touch-action: manipulation;
 }
 
+html,
+body {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* ============================================================
+   DARK THEME TOKENS
+   ============================================================ */
 .app-theme-dark {
   color-scheme: dark;
-  --app-color-accent: #a7c7ff;
+  --app-color-accent: #818cf8;
+  --app-color-accent-soft: #a5b4fc;
+  --app-color-accent-muted: #c7d2fe;
   --app-color-background: #0d1117;
-  --app-color-surface: #151b23;
-  --app-color-surface-soft: #1b2330;
-  --app-color-surface-muted: #202b3a;
-  --app-color-border: #2d3746;
-  --app-color-border-strong: #3b4658;
-  --app-color-text: #f3f6fb;
-  --app-color-text-soft: #d8e0ea;
-  --app-color-text-muted: #9aa7b7;
+  --app-color-surface: #161b22;
+  --app-color-surface-soft: #1c2433;
+  --app-color-surface-muted: #21293b;
+  --app-color-border: #30363d;
+  --app-color-border-strong: #484f58;
+  --app-color-text: #e6edf3;
+  --app-color-text-soft: #b1bac4;
+  --app-color-text-muted: #8b949e;
+  --app-shadow-sm: 0 1px 3px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.22);
+  --app-shadow-md: 0 4px 16px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.28);
+  --app-shadow-lg: 0 12px 32px rgba(0,0,0,0.55), 0 4px 12px rgba(0,0,0,0.35);
+  --app-shadow-accent: 0 8px 24px rgba(99,102,241,0.28);
 }
 
 .app-theme-light,
@@ -64,6 +80,9 @@ html {
   min-height: 100%;
 }
 
+/* ============================================================
+   DARK — BASE LAYOUT
+   ============================================================ */
 .app-theme-dark,
 .app-theme-dark body,
 .app-theme-dark #__nuxt,
@@ -88,21 +107,41 @@ html {
   color: var(--app-color-text);
 }
 
+/* ============================================================
+   DARK — AUTH PAGES
+   ============================================================ */
+.app-theme-dark .auth-page {
+  background: var(--app-color-background) !important;
+  background-image: none !important;
+}
+
+.app-theme-dark .auth-card {
+  background: var(--app-color-surface) !important;
+  border-color: var(--app-color-border) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+}
+
+.app-theme-dark .auth-icon-circle {
+  background: rgba(129, 140, 248, 0.14) !important;
+}
+
+/* ============================================================
+   DARK — GENERIC BACKGROUNDS
+   ============================================================ */
 .app-theme-dark .bg-grey-lighten-4,
 .app-theme-dark .bg-grey-lighten-3,
 .app-theme-dark .bg-gray-50,
-.app-theme-dark .bg-slate-50,
-.app-theme-dark .auth-page {
-  background-color: var(--app-color-background) !important;
+.app-theme-dark .bg-slate-50 {
+  background: var(--app-color-background) !important;
 }
 
 .app-theme-dark .bg-grey-lighten-5 {
-  background-color: var(--app-color-surface-soft) !important;
+  background: var(--app-color-surface-soft) !important;
 }
 
 .app-theme-dark .bg-white,
 .app-theme-dark .v-card.bg-white,
-.app-theme-dark .v-card:not(.next-schedule-card),
+.app-theme-dark .v-card:not(.next-schedule-card):not(.scale-card),
 .app-theme-dark .v-sheet,
 .app-theme-dark .v-list,
 .app-theme-dark .v-table,
@@ -116,15 +155,21 @@ html {
   color: var(--app-color-text) !important;
 }
 
+/* ============================================================
+   DARK — APP BAR & BOTTOM NAV
+   ============================================================ */
 .app-theme-dark .v-app-bar,
 .app-theme-dark .v-toolbar,
 .app-theme-dark .appbar,
 .app-theme-dark .bottom-nav {
-  background-color: rgba(21, 27, 35, 0.96) !important;
+  background-color: rgba(22, 27, 34, 0.95) !important;
   color: var(--app-color-text) !important;
   border-color: var(--app-color-border) !important;
 }
 
+/* ============================================================
+   DARK — TYPOGRAPHY
+   ============================================================ */
 .app-theme-dark .text-grey-darken-4,
 .app-theme-dark .text-grey-darken-3,
 .app-theme-dark .text-gray-900,
@@ -147,7 +192,7 @@ html {
 }
 
 .app-theme-dark .text-purple-400 {
-  color: #bdd4ff !important;
+  color: var(--app-color-accent-soft) !important;
 }
 
 .app-theme-dark .text-purple-darken-3,
@@ -155,16 +200,43 @@ html {
   color: var(--app-color-accent) !important;
 }
 
+/* ============================================================
+   DARK — BUTTONS
+   ============================================================ */
 .app-theme-dark .bg-purple-darken-3,
 .app-theme-dark .bg-purple-darken-4 {
-  background-color: #6287c7 !important;
+  background-color: #6366f1 !important;
   color: #ffffff !important;
 }
 
-.app-theme-dark .bg-purple-100 {
-  background-color: rgba(167, 199, 255, 0.13) !important;
+.app-theme-dark .v-btn--variant-tonal {
+  background-color: rgba(129, 140, 248, 0.14) !important;
+  color: var(--app-color-accent) !important;
 }
 
+.app-theme-dark .v-btn[color="grey-darken-1"],
+.app-theme-dark .v-btn[color="grey-darken-3"] {
+  color: var(--app-color-text-soft) !important;
+}
+
+/* ============================================================
+   DARK — CHIPS
+   ============================================================ */
+.app-theme-dark .v-chip.v-chip--variant-tonal {
+  background-color: rgba(129, 140, 248, 0.14) !important;
+  color: var(--app-color-accent) !important;
+}
+
+/* ============================================================
+   DARK — ICON BACKGROUNDS (bg-purple-100, EEF2FF, etc.)
+   ============================================================ */
+.app-theme-dark .bg-purple-100 {
+  background-color: rgba(129, 140, 248, 0.14) !important;
+}
+
+/* ============================================================
+   DARK — BORDERS
+   ============================================================ */
 .app-theme-dark .border-subtle,
 .app-theme-dark .v-card.border-subtle,
 .app-theme-dark .v-sheet,
@@ -175,6 +247,9 @@ html {
   border-color: var(--app-color-border) !important;
 }
 
+/* ============================================================
+   DARK — FORM FIELDS
+   ============================================================ */
 .app-theme-dark .v-field,
 .app-theme-dark .v-field--variant-outlined,
 .app-theme-dark .v-field--variant-filled,
@@ -203,16 +278,18 @@ html {
   color: var(--app-color-accent) !important;
 }
 
-.app-theme-dark .v-btn--variant-tonal {
-  background-color: rgba(167, 199, 255, 0.12) !important;
-  color: var(--app-color-accent) !important;
+.app-theme-dark input:-webkit-autofill,
+.app-theme-dark input:-webkit-autofill:hover,
+.app-theme-dark input:-webkit-autofill:focus,
+.app-theme-dark input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--app-color-surface-soft) inset !important;
+  -webkit-text-fill-color: var(--app-color-text) !important;
+  caret-color: var(--app-color-text);
 }
 
-.app-theme-dark .v-chip.v-chip--variant-tonal {
-  background-color: rgba(167, 199, 255, 0.13) !important;
-  color: var(--app-color-accent) !important;
-}
-
+/* ============================================================
+   DARK — CARDS (componentes nomeados)
+   ============================================================ */
 .app-theme-dark .ministery-card,
 .app-theme-dark .music-card,
 .app-theme-dark .schedule-card,
@@ -228,9 +305,25 @@ html {
   border-color: var(--app-color-border) !important;
 }
 
+/* ============================================================
+   DARK — DASHBOARD / QUICK ACCESS
+   ============================================================ */
+.app-theme-dark .quick-access-label,
+.app-theme-dark .church-card-title {
+  color: var(--app-color-text) !important;
+}
+
+.app-theme-dark .quick-access-card .v-avatar {
+  background: rgba(129, 140, 248, 0.14) !important;
+  box-shadow: none !important;
+}
+
+/* ============================================================
+   DARK — SCALE / SCHEDULE
+   ============================================================ */
 .app-theme-dark .music-icon-wrapper,
 .app-theme-dark .date-badge {
-  background-color: rgba(167, 199, 255, 0.14) !important;
+  background-color: rgba(129, 140, 248, 0.15) !important;
   color: var(--app-color-accent) !important;
 }
 
@@ -317,6 +410,9 @@ html {
   color: var(--app-color-text-soft) !important;
 }
 
+/* ============================================================
+   DARK — SONG VIEWER
+   ============================================================ */
 .app-theme-dark .song-autoscroll-controls {
   color: var(--app-color-text-soft) !important;
 }
@@ -331,6 +427,9 @@ html {
   color: var(--app-color-text) !important;
 }
 
+/* ============================================================
+   DARK — AVATARS
+   ============================================================ */
 .app-theme-dark .empty-avatar {
   background: var(--app-color-surface) !important;
   border-color: var(--app-color-border-strong) !important;
@@ -341,25 +440,9 @@ html {
   border-color: var(--app-color-surface) !important;
 }
 
-.app-theme-dark .quick-access-label,
-.app-theme-dark .church-card-title {
-  color: var(--app-color-text) !important;
-}
-
-.app-theme-dark .v-btn[color="grey-darken-1"],
-.app-theme-dark .v-btn[color="grey-darken-3"] {
-  color: var(--app-color-text-soft) !important;
-}
-
-.app-theme-dark input:-webkit-autofill,
-.app-theme-dark input:-webkit-autofill:hover,
-.app-theme-dark input:-webkit-autofill:focus,
-.app-theme-dark input:-webkit-autofill:active {
-  -webkit-box-shadow: 0 0 0 1000px var(--app-color-surface-soft) inset !important;
-  -webkit-text-fill-color: var(--app-color-text) !important;
-  caret-color: var(--app-color-text);
-}
-
+/* ============================================================
+   DARK — THEME TOGGLE BUTTON
+   ============================================================ */
 .theme-toggle-btn {
   border: 1px solid rgba(99, 102, 241, 0.18);
   background: #f5f7ff;
@@ -367,11 +450,49 @@ html {
 }
 
 .app-theme-dark .theme-toggle-btn {
-  border-color: rgba(167, 199, 255, 0.28);
-  background: rgba(167, 199, 255, 0.12);
+  border-color: rgba(129, 140, 248, 0.28);
+  background: rgba(129, 140, 248, 0.1);
   color: var(--app-color-accent) !important;
 }
 
+/* ============================================================
+   DARK — OVERLAYS & DIALOGS
+   ============================================================ */
+.app-theme-dark .v-overlay__scrim {
+  opacity: 0.65 !important;
+}
+
+.app-theme-dark .v-overlay__content .v-card,
+.app-theme-dark .responsive-bottom-sheet .v-bottom-sheet__content {
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* ============================================================
+   DARK — PROFILE
+   ============================================================ */
+.app-theme-dark .profile-hero {
+  background: var(--app-color-surface) !important;
+  border-color: var(--app-color-border) !important;
+}
+
+.app-theme-dark .profile-hero-body {
+  background: transparent;
+}
+
+/* ============================================================
+   DARK — CARD SHADOWS
+   ============================================================ */
+.app-theme-dark .v-card.elevation-1 {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2) !important;
+}
+
+.app-theme-dark .v-card.elevation-4 {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.28) !important;
+}
+
+/* ============================================================
+   LAYOUT HELPERS
+   ============================================================ */
 .responsive-dialog-header,
 .song-viewer-header,
 .scale-details-header,
@@ -385,33 +506,4 @@ html {
 .scale-fullscreen-header > .v-btn[icon] {
   align-self: flex-start;
   margin-left: auto;
-}
-
-.app-theme-dark .v-overlay__scrim {
-  opacity: 0.62 !important;
-}
-
-.app-theme-dark .v-overlay__content .v-card,
-.app-theme-dark .responsive-bottom-sheet .v-bottom-sheet__content {
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.38) !important;
-}
-
-/* Profile hero dark mode */
-.app-theme-dark .profile-hero {
-  background: var(--app-color-surface) !important;
-  border-color: var(--app-color-border) !important;
-}
-
-.app-theme-dark .profile-hero-body {
-  background: transparent;
-}
-
-/* Cards globais com sombra refinada */
-.app-theme-dark .v-card.elevation-1 {
-  box-shadow: 0 1px 3px rgba(0,0,0,0.24), 0 1px 2px rgba(0,0,0,0.16) !important;
-}
-
-/* Auth pages dark mode */
-.app-theme-dark .auth-card {
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.32) !important;
 }

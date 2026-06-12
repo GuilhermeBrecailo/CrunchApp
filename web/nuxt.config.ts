@@ -49,6 +49,7 @@ export default defineNuxtConfig({
     head: {
       title: "App Quadrangular",
       meta: [
+        { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" },
         { name: "theme-color", content: "#4f46e5" },
         { name: "apple-mobile-web-app-capable", content: "yes" },
         { name: "apple-mobile-web-app-title", content: "Quadrangular" },

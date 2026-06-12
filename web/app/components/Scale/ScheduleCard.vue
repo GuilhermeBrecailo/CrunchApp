@@ -149,14 +149,26 @@ const props = defineProps({
   },
 });
 
-const avatarColors = [
-  { bg: "#EEF2FF", text: "#4F46E5" },
-  { bg: "#F0FDFA", text: "#0F766E" },
-  { bg: "#FAF5FF", text: "#9333EA" },
-  { bg: "#FEFCE8", text: "#A16207" },
-];
+const { isDark } = useThemeMode();
+
+const avatarColors = computed(() =>
+  isDark.value
+    ? [
+        { bg: "rgba(129,140,248,0.18)", text: "#818cf8" },
+        { bg: "rgba(45,212,191,0.16)", text: "#2dd4bf" },
+        { bg: "rgba(192,132,252,0.16)", text: "#c084fc" },
+        { bg: "rgba(251,191,36,0.14)", text: "#fbbf24" },
+      ]
+    : [
+        { bg: "#EEF2FF", text: "#4F46E5" },
+        { bg: "#F0FDFA", text: "#0F766E" },
+        { bg: "#FAF5FF", text: "#9333EA" },
+        { bg: "#FEFCE8", text: "#A16207" },
+      ],
+);
 
 const visibleVolunteers = computed(() => props.event.volunteers?.slice(0, 4) || []);
+
 const extraVolunteerCount = computed(() =>
   Math.max((props.event.volunteerCount || 0) - visibleVolunteers.value.length, 0),
 );

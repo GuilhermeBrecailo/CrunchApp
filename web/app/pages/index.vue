@@ -19,10 +19,10 @@
     </template>
 
     <template v-else-if="isPastorWithoutChurch">
-      <v-card class="rounded-xl pa-6 elevation-1 bg-white border-subtle">
+      <v-card class="rounded-xl pa-6 elevation-1 border-subtle">
         <div class="d-flex align-center mb-4">
-          <v-avatar color="#EEF2FF" size="48" class="mr-3">
-            <Church size="24" color="#6366F1" />
+          <v-avatar :color="isDark ? 'rgba(129,140,248,0.14)' : '#EEF2FF'" size="48" class="mr-3">
+            <Church size="24" :color="isDark ? '#818cf8' : '#6366F1'" />
           </v-avatar>
           <div>
             <h1 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
@@ -116,10 +116,10 @@
     </template>
 
     <template v-else-if="isMemberWithoutChurch">
-      <v-card class="rounded-xl pa-6 elevation-1 bg-white border-subtle">
+      <v-card class="rounded-xl pa-6 elevation-1 border-subtle">
         <div class="d-flex align-center mb-4">
-          <v-avatar color="#EEF2FF" size="48" class="mr-3">
-            <Church size="24" color="#6366F1" />
+          <v-avatar :color="isDark ? 'rgba(129,140,248,0.14)' : '#EEF2FF'" size="48" class="mr-3">
+            <Church size="24" :color="isDark ? '#818cf8' : '#6366F1'" />
           </v-avatar>
           <div>
             <h1 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
@@ -150,6 +150,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import { Church } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
+import { useThemeMode } from "../../../composables/useThemeMode";
 import { useChurch } from "../../composables/useChurch";
 import {
   useDepartments,
@@ -158,6 +159,7 @@ import {
 
 const router = useRouter();
 const { user } = useAuth();
+const { isDark } = useThemeMode();
 const { createOwnChurch } = useChurch();
 const { getChurchSchedules } = useDepartments();
 

@@ -9,7 +9,7 @@
       </div>
       <v-btn
         v-if="canCreateChurchSchedule"
-        color="#A855F7"
+        :color="accentColor"
         class="rounded-lg text-none px-4"
         elevation="2"
         @click="isScheduleDialogOpen = true"
@@ -24,7 +24,7 @@
           v-for="filter in filters"
           :key="filter"
           :variant="activeFilter === filter ? 'flat' : 'outlined'"
-          :color="activeFilter === filter ? '#A855F7' : 'grey-darken-1'"
+          :color="activeFilter === filter ? accentColor : 'grey-darken-1'"
           class="filter-chip cursor-pointer"
           @click="activeFilter = filter"
         >
@@ -34,22 +34,22 @@
     </div>
 
     <div v-if="canCreateChurchSchedule" class="leader-summary-grid mb-5">
-      <v-card class="leader-summary-card pa-3 elevation-1 bg-white">
-        <Clock class="stat-icon" size="18" color="#A855F7" />
+      <v-card class="leader-summary-card pa-3 elevation-1">
+        <Clock class="stat-icon" size="18" :color="accentColor" />
         <p class="text-caption text-grey-darken-1 mb-1 mt-1">Pendentes</p>
         <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
           {{ leaderSummary.pending }}
         </h2>
       </v-card>
-      <v-card class="leader-summary-card pa-3 elevation-1 bg-white">
-        <EyeOff class="stat-icon" size="18" color="#A855F7" />
+      <v-card class="leader-summary-card pa-3 elevation-1">
+        <EyeOff class="stat-icon" size="18" :color="accentColor" />
         <p class="text-caption text-grey-darken-1 mb-1 mt-1">Não viram</p>
         <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
           {{ leaderSummary.notViewed }}
         </h2>
       </v-card>
-      <v-card class="leader-summary-card pa-3 elevation-1 bg-white">
-        <Repeat2 class="stat-icon" size="18" color="#A855F7" />
+      <v-card class="leader-summary-card pa-3 elevation-1">
+        <Repeat2 class="stat-icon" size="18" :color="accentColor" />
         <p class="text-caption text-grey-darken-1 mb-1 mt-1">Trocas</p>
         <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
           {{ leaderSummary.swapRequests }}
@@ -76,9 +76,9 @@
 
       <v-card
         v-if="filteredSchedules.length === 0 && !schedulesError"
-        class="rounded-xl pa-8 elevation-1 bg-white d-flex flex-column align-center justify-center"
+        class="rounded-xl pa-8 elevation-1 d-flex flex-column align-center justify-center"
       >
-        <Calendar size="32" color="#9CA3AF" class="mb-3" />
+        <Calendar size="32" :color="isDark ? '#484f58' : '#9CA3AF'" class="mb-3" />
         <p class="text-caption text-grey-darken-1 font-weight-medium mb-0">
           Nenhuma escala encontrada
         </p>
@@ -529,11 +529,11 @@
     </UtilsResponsiveOverlay>
 
     <UtilsResponsiveOverlay v-model="isScheduleDialogOpen" max-width="520">
-      <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+      <v-card class="rounded-xl pa-6" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <div class="d-flex align-center min-w-0">
-            <v-avatar color="#FAF5FF" size="44" class="mr-3">
-              <Calendar size="20" color="#A855F7" />
+            <v-avatar :color="avatarBgColor" size="44" class="mr-3">
+              <Calendar size="20" :color="accentColor" />
             </v-avatar>
             <div class="min-w-0">
               <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
@@ -564,7 +564,7 @@
             variant="outlined"
             density="comfortable"
             color="purple-darken-3"
-            bg-color="white"
+            :bg-color="isDark ? 'transparent' : 'white'"
             class="scale-input mb-4"
             hide-details="auto"
             :disabled="isCreatingSchedule"
@@ -578,7 +578,7 @@
               variant="outlined"
               density="comfortable"
               color="purple-darken-3"
-              bg-color="white"
+              :bg-color="isDark ? 'transparent' : 'white'"
               class="scale-input"
               hide-details="auto"
               :disabled="isCreatingSchedule"
@@ -590,7 +590,7 @@
               variant="outlined"
               density="comfortable"
               color="purple-darken-3"
-              bg-color="white"
+              :bg-color="isDark ? 'transparent' : 'white'"
               class="scale-input"
               hide-details="auto"
               :disabled="isCreatingSchedule"
@@ -607,7 +607,7 @@
             variant="outlined"
             density="comfortable"
             color="purple-darken-3"
-            bg-color="white"
+            :bg-color="isDark ? 'transparent' : 'white'"
             class="scale-input mb-4"
             hide-details="auto"
             :disabled="isCreatingSchedule"
@@ -621,7 +621,7 @@
               variant="outlined"
               density="comfortable"
               color="purple-darken-3"
-              bg-color="white"
+              :bg-color="isDark ? 'transparent' : 'white'"
               class="scale-input"
               hide-details="auto"
               :disabled="isCreatingSchedule"
@@ -633,7 +633,7 @@
               variant="outlined"
               density="comfortable"
               color="purple-darken-3"
-              bg-color="white"
+              :bg-color="isDark ? 'transparent' : 'white'"
               class="scale-input"
               hide-details="auto"
               :disabled="isCreatingSchedule"
@@ -647,7 +647,7 @@
             variant="outlined"
             density="comfortable"
             color="purple-darken-3"
-            bg-color="white"
+            :bg-color="isDark ? 'transparent' : 'white'"
             class="scale-input mb-4"
             hide-details="auto"
             :disabled="isCreatingSchedule"
@@ -664,7 +664,7 @@
             variant="outlined"
             density="comfortable"
             color="purple-darken-3"
-            bg-color="white"
+            :bg-color="isDark ? 'transparent' : 'white'"
             class="scale-input mb-4"
             hide-details="auto"
             multiple
@@ -684,7 +684,7 @@
             variant="outlined"
             density="comfortable"
             color="purple-darken-3"
-            bg-color="white"
+            :bg-color="isDark ? 'transparent' : 'white'"
             class="scale-input mb-4"
             hide-details="auto"
             multiple
@@ -728,11 +728,11 @@
     </UtilsResponsiveOverlay>
 
     <UtilsResponsiveOverlay v-model="isAssignmentsDialogOpen" max-width="560">
-      <v-card class="rounded-xl pa-6 bg-white" elevation="0">
+      <v-card class="rounded-xl pa-6" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <div class="d-flex align-center min-w-0">
-            <v-avatar color="#FAF5FF" size="44" class="mr-3">
-              <UserPlus size="20" color="#A855F7" />
+            <v-avatar :color="avatarBgColor" size="44" class="mr-3">
+              <UserPlus size="20" :color="accentColor" />
             </v-avatar>
             <div class="min-w-0">
               <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
@@ -766,7 +766,7 @@
             variant="outlined"
             density="comfortable"
             color="purple-darken-3"
-            bg-color="white"
+            :bg-color="isDark ? 'transparent' : 'white'"
             class="scale-input"
             hide-details="auto"
             :disabled="isSavingAssignments"
@@ -778,7 +778,7 @@
             variant="outlined"
             density="comfortable"
             color="purple-darken-3"
-            bg-color="white"
+            :bg-color="isDark ? 'transparent' : 'white'"
             class="scale-input"
             hide-details="auto"
             :disabled="isSavingAssignments"
@@ -786,7 +786,7 @@
         </div>
 
         <v-btn
-          color="#A855F7"
+          :color="accentColor"
           variant="tonal"
           class="text-none mb-4"
           :disabled="isSavingAssignments"
@@ -951,6 +951,7 @@ import {
   Users,
 } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
+import { useThemeMode } from "../../../composables/useThemeMode";
 import {
   useDepartments,
   type ChurchDepartment,
@@ -974,6 +975,9 @@ const {
 } = useDepartments();
 const { getMembers } = useMembers();
 const { user } = useAuth();
+const { isDark } = useThemeMode();
+const accentColor = computed(() => isDark.value ? "#818cf8" : "#A855F7");
+const avatarBgColor = computed(() => isDark.value ? "rgba(129,140,248,0.14)" : "#FAF5FF");
 const route = useRoute();
 
 const activeFilter = ref("Todos");

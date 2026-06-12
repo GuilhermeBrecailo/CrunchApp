@@ -1,138 +1,128 @@
 <template>
   <div class="auth-page flex items-center justify-center min-h-screen p-4">
-    <v-card
-      class="auth-card w-full max-w-md p-8 rounded-3xl bg-white my-8"
-      elevation="0"
-    >
-      <div class="flex flex-col items-center mb-8">
-        <div class="p-4 bg-purple-100 rounded-full mb-4">
-          <v-icon size="48" color="purple-darken-3">
-            mdi-account-plus-outline
-          </v-icon>
+    <v-card class="auth-card w-full max-w-md my-8" elevation="0">
+      <div class="auth-card-inner">
+        <div class="flex flex-col items-center mb-8">
+          <div class="auth-icon-circle mb-4">
+            <v-icon size="40" :color="isDark ? 'accent-soft' : 'purple-darken-3'">
+              mdi-account-plus-outline
+            </v-icon>
+          </div>
+          <h1 class="auth-title">Cadastrar igreja</h1>
+          <p class="auth-subtitle text-center">
+            Crie sua conta de pastor titular para iniciar sua igreja.
+          </p>
         </div>
-        <h1 class="text-3xl font-extrabold text-purple-900 tracking-tight">
-          Cadastrar igreja
-        </h1>
-        <p class="text-purple-400 text-sm mt-1 font-medium text-center">
-          Crie sua conta de pastor titular para iniciar sua igreja.
-        </p>
-      </div>
 
-      <v-form autocomplete="off" @submit.prevent="handleRegister">
-        <v-text-field
-          v-model="form.name"
-          label="Nome completo"
-          autocomplete="off"
-          prepend-inner-icon="mdi-account-outline"
-          variant="outlined"
-          density="comfortable"
-          bg-color="white"
-          color="purple-darken-3"
-          class="auth-input mb-4"
-          hide-details="auto"
-          :disabled="loading"
-        />
+        <v-form autocomplete="off" @submit.prevent="handleRegister">
+          <v-text-field
+            v-model="form.name"
+            label="Nome completo"
+            autocomplete="off"
+            prepend-inner-icon="mdi-account-outline"
+            variant="outlined"
+            density="comfortable"
+            :bg-color="isDark ? 'transparent' : 'white'"
+            color="purple-darken-3"
+            class="auth-input mb-4"
+            hide-details="auto"
+            :disabled="loading"
+          />
 
-        <v-text-field
-          v-model="form.email"
-          label="E-mail"
-          type="email"
-          autocomplete="off"
-          prepend-inner-icon="mdi-email-outline"
-          variant="outlined"
-          density="comfortable"
-          bg-color="white"
-          color="purple-darken-3"
-          class="auth-input mb-4"
-          hide-details="auto"
-          :disabled="loading"
-        />
+          <v-text-field
+            v-model="form.email"
+            label="E-mail"
+            type="email"
+            autocomplete="off"
+            prepend-inner-icon="mdi-email-outline"
+            variant="outlined"
+            density="comfortable"
+            :bg-color="isDark ? 'transparent' : 'white'"
+            color="purple-darken-3"
+            class="auth-input mb-4"
+            hide-details="auto"
+            :disabled="loading"
+          />
 
-        <v-text-field
-          v-model="form.phone"
-          label="Telefone"
-          type="tel"
-          autocomplete="off"
-          prepend-inner-icon="mdi-phone-outline"
-          variant="outlined"
-          density="comfortable"
-          bg-color="white"
-          color="purple-darken-3"
-          class="auth-input mb-4"
-          hide-details="auto"
-          :disabled="loading"
-        />
+          <v-text-field
+            v-model="form.phone"
+            label="Telefone"
+            type="tel"
+            autocomplete="off"
+            prepend-inner-icon="mdi-phone-outline"
+            variant="outlined"
+            density="comfortable"
+            :bg-color="isDark ? 'transparent' : 'white'"
+            color="purple-darken-3"
+            class="auth-input mb-4"
+            hide-details="auto"
+            :disabled="loading"
+          />
 
-        <v-text-field
-          v-model="form.password"
-          label="Senha"
-          :type="showPassword ? 'text' : 'password'"
-          autocomplete="off"
-          prepend-inner-icon="mdi-lock-outline"
-          :append-inner-icon="
-            showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'
-          "
-          variant="outlined"
-          density="comfortable"
-          bg-color="white"
-          color="purple-darken-3"
-          class="auth-input mb-4"
-          hide-details="auto"
-          :disabled="loading"
-          @click:append-inner="showPassword = !showPassword"
-        />
+          <v-text-field
+            v-model="form.password"
+            label="Senha"
+            :type="showPassword ? 'text' : 'password'"
+            autocomplete="off"
+            prepend-inner-icon="mdi-lock-outline"
+            :append-inner-icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
+            variant="outlined"
+            density="comfortable"
+            :bg-color="isDark ? 'transparent' : 'white'"
+            color="purple-darken-3"
+            class="auth-input mb-4"
+            hide-details="auto"
+            :disabled="loading"
+            @click:append-inner="showPassword = !showPassword"
+          />
 
-        <v-text-field
-          v-model="form.confirmPassword"
-          label="Confirmar senha"
-          :type="showPassword ? 'text' : 'password'"
-          autocomplete="off"
-          prepend-inner-icon="mdi-lock-check-outline"
-          variant="outlined"
-          density="comfortable"
-          bg-color="white"
-          color="purple-darken-3"
-          class="auth-input mb-8"
-          hide-details="auto"
-          :disabled="loading"
-        />
+          <v-text-field
+            v-model="form.confirmPassword"
+            label="Confirmar senha"
+            :type="showPassword ? 'text' : 'password'"
+            autocomplete="off"
+            prepend-inner-icon="mdi-lock-check-outline"
+            variant="outlined"
+            density="comfortable"
+            :bg-color="isDark ? 'transparent' : 'white'"
+            color="purple-darken-3"
+            class="auth-input mb-8"
+            hide-details="auto"
+            :disabled="loading"
+          />
 
-        <v-alert
-          v-if="errorMessage"
-          type="error"
-          variant="tonal"
-          density="compact"
-          class="mb-4"
-        >
-          {{ errorMessage }}
-        </v-alert>
+          <v-alert
+            v-if="errorMessage"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mb-4"
+          >
+            {{ errorMessage }}
+          </v-alert>
 
-        <v-btn
-          type="submit"
-          block
-          color="purple-darken-3"
-          size="x-large"
-          class="text-none font-bold tracking-wide"
-          rounded="xl"
-          elevation="2"
-          :loading="loading"
-          :disabled="loading"
-        >
-          Cadastrar
-        </v-btn>
-      </v-form>
+          <v-btn
+            type="submit"
+            block
+            color="purple-darken-3"
+            size="x-large"
+            class="auth-btn text-none font-bold"
+            rounded="xl"
+            elevation="2"
+            :loading="loading"
+            :disabled="loading"
+          >
+            Cadastrar
+          </v-btn>
+        </v-form>
 
-      <div class="mt-6 text-center">
-        <p class="text-xs text-gray-500 mb-3">
-          Se você é membro, peça para sua igreja criar seu acesso.
-        </p>
-        <span class="text-sm text-gray-500">Já tem uma conta? </span>
-        <NuxtLink
-          to="/login"
-          class="text-sm text-purple-700 hover:text-purple-900 font-bold transition-colors duration-200"
-        >
-          Faça login
-        </NuxtLink>
+        <div class="mt-6 text-center">
+          <p class="auth-hint mb-3">
+            Se você é membro, peça para sua igreja criar seu acesso.
+          </p>
+          <span class="auth-meta">Já tem uma conta? </span>
+          <NuxtLink to="/login" class="auth-link font-bold">Faça login</NuxtLink>
+        </div>
       </div>
     </v-card>
   </div>
@@ -149,6 +139,7 @@ definePageMeta({
 
 const router = useRouter();
 const { registerPastor } = useAuth();
+const { isDark } = useThemeMode();
 
 const form = reactive({
   name: "",
@@ -207,15 +198,70 @@ const handleRegister = async () => {
 
 <style scoped>
 .auth-page {
-  background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%);
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: linear-gradient(150deg, #eef2ff 0%, #f5f3ff 60%, #fdf4ff 100%);
 }
 
 :global(.app-theme-dark) .auth-page {
-  background: var(--app-color-background);
+  background: var(--app-color-background) !important;
+  background-image: none !important;
 }
 
 .auth-card {
-  box-shadow: 0 18px 45px rgba(88, 28, 135, 0.12);
+  border-radius: 28px !important;
+  border: 1px solid rgba(229, 231, 235, 0.9) !important;
+  box-shadow: 0 8px 40px rgba(88, 28, 135, 0.1), 0 2px 8px rgba(17, 24, 39, 0.06) !important;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+:global(.app-theme-dark) .auth-card {
+  background: var(--app-color-surface) !important;
+  border-color: var(--app-color-border) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+}
+
+.auth-card-inner {
+  padding: 36px 32px 32px;
+}
+
+.auth-icon-circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #eef2ff 0%, #ede9fe 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:global(.app-theme-dark) .auth-icon-circle {
+  background: rgba(129, 140, 248, 0.15) !important;
+}
+
+.auth-title {
+  font-size: 1.875rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #3730a3;
+  margin: 0 0 4px;
+}
+
+:global(.app-theme-dark) .auth-title {
+  color: var(--app-color-text);
+}
+
+.auth-subtitle {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #7c3aed;
+  margin: 0;
+}
+
+:global(.app-theme-dark) .auth-subtitle {
+  color: var(--app-color-accent-soft);
 }
 
 .auth-input :deep(.v-field) {
@@ -228,13 +274,61 @@ const handleRegister = async () => {
   padding-bottom: 10px;
 }
 
-.auth-input :deep(input:-webkit-autofill),
-.auth-input :deep(input:-webkit-autofill:hover),
-.auth-input :deep(input:-webkit-autofill:focus),
-.auth-input :deep(input:-webkit-autofill:active) {
-  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
-  -webkit-text-fill-color: #1f2937 !important;
-  caret-color: #1f2937;
-  transition: background-color 9999s ease-in-out 0s;
+:global(.app-theme-dark) .auth-input :deep(input:-webkit-autofill),
+:global(.app-theme-dark) .auth-input :deep(input:-webkit-autofill:hover),
+:global(.app-theme-dark) .auth-input :deep(input:-webkit-autofill:focus) {
+  -webkit-box-shadow: 0 0 0 1000px var(--app-color-surface-soft) inset !important;
+  -webkit-text-fill-color: var(--app-color-text) !important;
+  caret-color: var(--app-color-text);
+}
+
+.auth-btn {
+  height: 52px !important;
+  font-size: 1rem !important;
+  letter-spacing: 0.01em !important;
+}
+
+:global(.app-theme-dark) .auth-btn.bg-purple-darken-3 {
+  background: #6366f1 !important;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35) !important;
+}
+
+.auth-link {
+  font-size: 0.875rem;
+  color: #6d28d9;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.auth-link:hover {
+  color: #4c1d95;
+}
+
+:global(.app-theme-dark) .auth-link {
+  color: var(--app-color-accent);
+}
+
+:global(.app-theme-dark) .auth-link:hover {
+  color: var(--app-color-accent-soft);
+}
+
+.auth-meta {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+:global(.app-theme-dark) .auth-meta {
+  color: var(--app-color-text-muted);
+}
+
+.auth-hint {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  text-align: center;
+  line-height: 1.5;
+}
+
+:global(.app-theme-dark) .auth-hint {
+  color: var(--app-color-text-muted);
 }
 </style>

@@ -153,4 +153,26 @@ const goToSchedule = (id: string) => {
 .event-card:active {
   transform: scale(0.99);
 }
+
+:global(.app-theme-dark) .upcoming-link {
+  color: var(--app-color-accent);
+}
+
+:global(.app-theme-dark) .upcoming-link:hover {
+  color: var(--app-color-accent-soft);
+}
+
+:global(.app-theme-dark) .date-badge {
+  background: rgba(129, 140, 248, 0.16);
+  color: var(--app-color-accent);
+}
+
+:global(.app-theme-dark) .event-card {
+  border-color: var(--app-color-border) !important;
+}
+
+:global(.app-theme-dark) .event-card:hover {
+  border-color: var(--app-color-accent) !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3) !important;
+}
 </style>

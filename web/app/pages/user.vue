@@ -225,7 +225,7 @@
           v-for="date in unavailableDates"
           :key="date"
           closable
-          color="#A855F7"
+          :color="accentColor"
           variant="tonal"
           size="small"
           class="unavailable-chip font-weight-medium"
@@ -307,7 +307,7 @@
           </p>
         </div>
         <v-btn
-          color="#A855F7"
+          :color="accentColor"
           variant="tonal"
           class="text-none rounded-lg font-weight-medium"
           :disabled="isLoading || isSavingPassword"
@@ -340,7 +340,7 @@
     </v-alert>
 
     <v-btn
-      color="#A855F7"
+      :color="accentColor"
       block
       class="text-none rounded-lg font-weight-medium elevation-2"
       size="large"
@@ -451,7 +451,7 @@
             Cancelar
           </v-btn>
           <v-btn
-            color="#A855F7"
+            :color="accentColor"
             class="text-none rounded-lg font-weight-medium"
             :loading="isSavingPassword"
             :disabled="isSavingPassword"
@@ -484,9 +484,12 @@ import {
 import { useAuth } from "../../composables/useAuth";
 import { useDepartments, type ChurchDepartment } from "../../composables/useDepartments";
 import { useUser, type MyProfileDTO } from "../../composables/useUser";
+import { useThemeMode } from "../../../composables/useThemeMode";
 
 const router = useRouter();
 const { logout, user, fetchMe } = useAuth();
+const { isDark } = useThemeMode();
+const accentColor = computed(() => isDark.value ? "#818cf8" : "#A855F7");
 const { getMyProfile, updateMyProfile, updateMyPassword } = useUser();
 const { getDepartments } = useDepartments();
 
@@ -1104,5 +1107,62 @@ onMounted(loadPageData);
   .profile-icon-btn {
     width: 100% !important;
   }
+}
+
+/* Dark mode overrides */
+:global(.app-theme-dark) .section-icon-indigo {
+  background: rgba(79, 70, 229, 0.16);
+  color: #818cf8;
+}
+
+:global(.app-theme-dark) .section-icon-amber {
+  background: rgba(180, 83, 9, 0.16);
+  color: #fbbf24;
+}
+
+:global(.app-theme-dark) .section-icon-teal {
+  background: rgba(15, 118, 110, 0.18);
+  color: #2dd4bf;
+}
+
+:global(.app-theme-dark) .section-icon-purple {
+  background: rgba(147, 51, 234, 0.16);
+  color: #c084fc;
+}
+
+:global(.app-theme-dark) .readiness-item {
+  background: var(--app-color-surface-soft);
+  border-color: var(--app-color-border);
+  color: var(--app-color-text-muted);
+}
+
+:global(.app-theme-dark) .readiness-item-done {
+  background: rgba(15, 118, 110, 0.14);
+  border-color: rgba(45, 212, 191, 0.25);
+  color: #2dd4bf;
+}
+
+:global(.app-theme-dark) .profile-icon-btn {
+  background: var(--app-color-surface-soft) !important;
+  border-color: var(--app-color-border) !important;
+  color: var(--app-color-text-soft) !important;
+}
+
+:global(.app-theme-dark) .profile-hero-banner {
+  background: linear-gradient(135deg, #312e81 0%, #3b0764 60%, #4a044e 100%);
+}
+
+:global(.app-theme-dark) .profile-avatar {
+  border-color: var(--app-color-surface) !important;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.25) !important;
+}
+
+:global(.app-theme-dark) .profile-info-tile {
+  background: var(--app-color-surface-soft);
+  border-color: var(--app-color-border);
+}
+
+:global(.app-theme-dark) .border-subtle {
+  border-color: var(--app-color-border) !important;
 }
 </style>

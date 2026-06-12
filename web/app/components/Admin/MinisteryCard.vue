@@ -95,4 +95,9 @@ defineProps({
     justify-content: flex-start;
   }
 }
+
+:global(.app-theme-dark) .ministry-avatar {
+  background: rgba(129, 140, 248, 0.14) !important;
+  color: #818cf8 !important;
+}
 </style>

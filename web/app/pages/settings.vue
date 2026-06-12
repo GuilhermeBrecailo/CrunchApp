@@ -19,11 +19,11 @@
       Apenas pastores ou admins podem editar os dados da igreja.
     </v-alert>
 
-    <v-card class="settings-card pa-4 elevation-1 bg-white">
+    <v-card class="settings-card pa-4 elevation-1">
       <v-form @submit.prevent="handleSaveChurch">
         <div class="d-flex align-center mb-5">
-          <v-avatar color="#EEF2FF" size="48" class="mr-3">
-            <Church size="23" color="#6366F1" />
+          <v-avatar :color="isDark ? 'rgba(129,140,248,0.14)' : '#EEF2FF'" size="48" class="mr-3">
+            <Church size="23" :color="isDark ? '#818cf8' : '#6366F1'" />
           </v-avatar>
           <div class="min-w-0">
             <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
@@ -135,9 +135,11 @@ import { Church } from "lucide-vue-next";
 import { computed, reactive, ref, watch } from "vue";
 import { useAuth } from "../../composables/useAuth";
 import { useChurch } from "../../composables/useChurch";
+import { useThemeMode } from "../../../composables/useThemeMode";
 
 const { user } = useAuth();
 const { updateOwnChurch } = useChurch();
+const { isDark } = useThemeMode();
 
 const loading = ref(false);
 const message = ref("");

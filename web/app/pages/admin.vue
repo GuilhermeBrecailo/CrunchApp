@@ -1474,6 +1474,7 @@ import {
   BarChart3,
 } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
+import { useThemeMode } from "../../../composables/useThemeMode";
 import { useMembers, type ChurchMember } from "../../composables/useMembers";
 import {
   useDepartments,
@@ -1490,6 +1491,11 @@ import {
 } from "../../composables/useAdmin";
 
 const { user } = useAuth();
+const { isDark } = useThemeMode();
+const accentColor = computed(() => isDark.value ? "#818cf8" : "#6366F1");
+const purpleAccent = computed(() => isDark.value ? "#c084fc" : "#A855F7");
+const avatarBgIndigo = computed(() => isDark.value ? "rgba(129,140,248,0.14)" : "#EEF2FF");
+const avatarBgPurple = computed(() => isDark.value ? "rgba(192,132,252,0.13)" : "#FAF5FF");
 const {
   getMembers,
   createMember,
@@ -3053,5 +3059,61 @@ onMounted(async () => {
   .stats-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Dark mode ── */
+:global(.app-theme-dark) .platform-admin-page {
+  background: var(--app-color-background);
+}
+
+:global(.app-theme-dark) .platform-kicker {
+  color: var(--app-color-accent);
+}
+
+:global(.app-theme-dark) .platform-hero-mark {
+  background: var(--app-color-surface-soft);
+  border-color: var(--app-color-border);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
+}
+
+:global(.app-theme-dark) .church-directory-card {
+  background: var(--app-color-surface);
+  border-color: var(--app-color-border);
+  color: var(--app-color-text);
+}
+
+:global(.app-theme-dark) .church-directory-card:hover {
+  border-color: var(--app-color-accent);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.3);
+}
+
+:global(.app-theme-dark) .church-directory-card-active {
+  border-color: var(--app-color-accent);
+  box-shadow: 0 14px 32px rgba(99, 102, 241, 0.2);
+}
+
+:global(.app-theme-dark) .church-avatar {
+  background: rgba(129, 140, 248, 0.14);
+  color: var(--app-color-accent);
+}
+
+:global(.app-theme-dark) .church-metrics span {
+  background: var(--app-color-surface-soft);
+  border-color: var(--app-color-border);
+  color: var(--app-color-text-muted);
+}
+
+:global(.app-theme-dark) .church-details-surface,
+:global(.app-theme-dark) .church-details-sheet {
+  background: var(--app-color-surface) !important;
+}
+
+:global(.app-theme-dark) .leadership-summary {
+  background: var(--app-color-surface-soft);
+  border-color: var(--app-color-border);
+}
+
+:global(.app-theme-dark) .leadership-row {
+  border-color: var(--app-color-border);
 }
 </style>

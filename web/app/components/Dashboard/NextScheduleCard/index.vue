@@ -40,11 +40,11 @@
     </div>
   </v-card>
 
-  <v-card v-else class="rounded-xl pa-5 mb-8 elevation-1 bg-white border-subtle">
+  <v-card v-else class="rounded-xl pa-5 mb-8 elevation-1 border-subtle">
     <div class="d-flex align-center flex-wrap gap-3">
       <div class="d-flex align-center flex-grow-1" style="min-width: 0">
-        <v-avatar color="#EEF2FF" size="44" class="mr-3 flex-shrink-0">
-          <Calendar size="20" color="#6366F1" />
+        <v-avatar :color="isDark ? 'rgba(129,140,248,0.14)' : '#EEF2FF'" size="44" class="mr-3 flex-shrink-0">
+          <Calendar size="20" :color="isDark ? '#818cf8' : '#6366F1'" />
         </v-avatar>
         <div style="min-width: 0">
           <p class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
@@ -72,6 +72,8 @@
 import { computed } from "vue";
 import { Calendar, Clock, Users } from "lucide-vue-next";
 import type { DepartmentSchedule } from "../../../../composables/useDepartments";
+
+const { isDark } = useThemeMode();
 
 const props = defineProps<{
   schedule?: DepartmentSchedule | null;

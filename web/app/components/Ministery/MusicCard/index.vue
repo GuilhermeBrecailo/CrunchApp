@@ -3,10 +3,8 @@
     color="white"
     class="music-card rounded-xl pa-4 mb-3 elevation-1 d-flex align-center"
   >
-    <div
-      class="music-icon-wrapper rounded-lg d-flex align-center justify-center mr-4 flex-shrink-0"
-    >
-      <Music size="20" color="#6366F1" />
+    <div class="music-icon-wrapper rounded-lg d-flex align-center justify-center mr-4 flex-shrink-0">
+      <Music size="20" :color="isDark ? '#818cf8' : '#6366F1'" />
     </div>
 
     <div class="flex-grow-1">
@@ -17,9 +15,7 @@
         <span>{{ musica.artista }}</span>
 
         <div v-if="musica.tom" class="mx-2 d-flex align-center">
-          <span class="font-weight-bold text-grey-darken-4 mx-1">{{
-            musica.tom
-          }}</span>
+          <span class="font-weight-bold text-grey-darken-4 mx-1">{{ musica.tom }}</span>
         </div>
 
         <span v-if="musica.bpm">{{ musica.bpm }} BPM</span>
@@ -49,13 +45,23 @@ defineProps({
   musica: { type: Object, required: true },
 });
 
+const { isDark } = useThemeMode();
+
 const getBadgeColor = (categoria) => {
-  const colors = {
-    Adoração: "#EEF2FF", // Fundo roxinho
-    Louvor: "#FAF5FF", // Fundo rosinha
-    Hino: "#F0FDFA", // Fundo verdinho
+  if (isDark.value) {
+    const dark = {
+      Adoração: "rgba(129,140,248,0.16)",
+      Louvor: "rgba(192,132,252,0.14)",
+      Hino: "rgba(45,212,191,0.13)",
+    };
+    return dark[categoria] || "rgba(129,140,248,0.1)";
+  }
+  const light = {
+    Adoração: "#EEF2FF",
+    Louvor: "#FAF5FF",
+    Hino: "#F0FDFA",
   };
-  return colors[categoria] || "#F3F4F6";
+  return light[categoria] || "#F3F4F6";
 };
 </script>
 
@@ -65,8 +71,13 @@ const getBadgeColor = (categoria) => {
   height: 48px;
   background-color: #eef2ff;
 }
+
 .music-card {
   background-color: #ffffff !important;
   color: #111827;
+}
+
+:global(.app-theme-dark) .music-icon-wrapper {
+  background-color: rgba(129, 140, 248, 0.14) !important;
 }
 </style>
