@@ -729,10 +729,100 @@ export class ChurchDepartmentAdapters {
 
     await this.getDepartmentFromCurrentChurch(id, user.crunchId!);
 
-    await $prismaClient.department.delete({
-      where: {
-        id,
-      },
+    await $prismaClient.$transaction(async (tx) => {
+      const schedules = await tx.schedule.findMany({
+        where: {
+          departmentId: id,
+        },
+        select: {
+          id: true,
+        },
+      });
+      const scheduleIds = schedules.map((schedule) => schedule.id);
+
+      if (scheduleIds.length) {
+        await tx.appNotification.updateMany({
+          where: {
+            scheduleId: {
+              in: scheduleIds,
+            },
+          },
+          data: {
+            scheduleId: null,
+          },
+        });
+        await tx.scheduleAssignment.deleteMany({
+          where: {
+            scheduleId: {
+              in: scheduleIds,
+            },
+          },
+        });
+        await tx.scheduleMediaItem.deleteMany({
+          where: {
+            scheduleId: {
+              in: scheduleIds,
+            },
+          },
+        });
+        await tx.schedule.deleteMany({
+          where: {
+            id: {
+              in: scheduleIds,
+            },
+          },
+        });
+      }
+
+      const mediaItems = await tx.mediaItem.findMany({
+        where: {
+          departmentId: id,
+        },
+        select: {
+          id: true,
+        },
+      });
+      const mediaItemIds = mediaItems.map((mediaItem) => mediaItem.id);
+
+      if (mediaItemIds.length) {
+        await tx.userSongPreference.deleteMany({
+          where: {
+            mediaItemId: {
+              in: mediaItemIds,
+            },
+          },
+        });
+        await tx.scheduleMediaItem.deleteMany({
+          where: {
+            mediaItemId: {
+              in: mediaItemIds,
+            },
+          },
+        });
+        await tx.mediaItem.deleteMany({
+          where: {
+            id: {
+              in: mediaItemIds,
+            },
+          },
+        });
+      }
+
+      await tx.departmentTask.deleteMany({
+        where: {
+          departmentId: id,
+        },
+      });
+      await tx.userDepartmentMembership.deleteMany({
+        where: {
+          departmentId: id,
+        },
+      });
+      await tx.department.delete({
+        where: {
+          id,
+        },
+      });
     });
 
     return { success: true };
@@ -1226,11 +1316,31 @@ export class ChurchDepartmentAdapters {
     const schedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
     await this.assertCanManageScheduleDepartment(user, schedule.departmentId);
 
-    await $prismaClient.schedule.delete({
-      where: {
-        id,
-      },
-    });
+    await $prismaClient.$transaction([
+      $prismaClient.appNotification.updateMany({
+        where: {
+          scheduleId: id,
+        },
+        data: {
+          scheduleId: null,
+        },
+      }),
+      $prismaClient.scheduleAssignment.deleteMany({
+        where: {
+          scheduleId: id,
+        },
+      }),
+      $prismaClient.scheduleMediaItem.deleteMany({
+        where: {
+          scheduleId: id,
+        },
+      }),
+      $prismaClient.schedule.delete({
+        where: {
+          id,
+        },
+      }),
+    ]);
 
     return { success: true };
   }

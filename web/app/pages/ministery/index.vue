@@ -330,23 +330,25 @@ const handleCreateDepartment = async () => {
 
   isCreatingDepartment.value = true;
 
-  const { data, error } = await createDepartment({
-    name,
-    type: departmentForm.type,
-    leaderId: departmentForm.leaderId,
-  });
+  try {
+    const { data, error } = await createDepartment({
+      name,
+      type: departmentForm.type,
+      leaderId: departmentForm.leaderId,
+    });
 
-  isCreatingDepartment.value = false;
+    if (error || !data) {
+      createDepartmentError.value = error || "Não foi possível criar o ministério.";
+      return;
+    }
 
-  if (error || !data) {
-    createDepartmentError.value = error || "Não foi possível criar o ministério.";
-    return;
+    departments.value = [...departments.value, data].sort((first, second) =>
+      first.name.localeCompare(second.name),
+    );
+    closeDepartmentDialog();
+  } finally {
+    isCreatingDepartment.value = false;
   }
-
-  departments.value = [...departments.value, data].sort((first, second) =>
-    first.name.localeCompare(second.name),
-  );
-  closeDepartmentDialog();
 };
 
 const handleDeleteDepartment = (department: ChurchDepartment) => {
@@ -365,18 +367,22 @@ const confirmDeleteDepartment = async () => {
   departmentsError.value = "";
   isDeletingDepartment.value = true;
   const departmentId = pendingDeleteDepartment.value.id;
-  const { error } = await deleteDepartment(departmentId);
-  isDeletingDepartment.value = false;
 
-  if (error) {
-    departmentsError.value = error;
-    return;
+  try {
+    const { error } = await deleteDepartment(departmentId);
+
+    if (error) {
+      departmentsError.value = error;
+      return;
+    }
+
+    departments.value = departments.value.filter(
+      (department) => department.id !== departmentId,
+    );
+    pendingDeleteDepartment.value = null;
+  } finally {
+    isDeletingDepartment.value = false;
   }
-
-  departments.value = departments.value.filter(
-    (department) => department.id !== departmentId,
-  );
-  pendingDeleteDepartment.value = null;
 };
 
 onMounted(async () => {

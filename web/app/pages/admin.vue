@@ -1858,17 +1858,19 @@ const loadPlatformChurches = async () => {
   platformError.value = "";
   isLoadingPlatform.value = true;
 
-  const { data, error } = await getChurches();
+  try {
+    const { data, error } = await getChurches();
 
-  isLoadingPlatform.value = false;
+    if (error) {
+      platformError.value = error;
+      adminChurches.value = [];
+      return;
+    }
 
-  if (error) {
-    platformError.value = error;
-    adminChurches.value = [];
-    return;
+    adminChurches.value = data ?? [];
+  } finally {
+    isLoadingPlatform.value = false;
   }
-
-  adminChurches.value = data ?? [];
 };
 
 const selectChurch = async (id: string) => {
@@ -1882,18 +1884,20 @@ const selectChurch = async (id: string) => {
   isChurchDetailsOpen.value = false;
   isChurchDetailsSheetOpen.value = true;
 
-  const { data, error } = await getChurchById(id);
+  try {
+    const { data, error } = await getChurchById(id);
 
-  isLoadingChurch.value = false;
+    if (error || !data) {
+      platformError.value = error || "Não foi possível carregar a igreja.";
+      isChurchDetailsOpen.value = false;
+      isChurchDetailsSheetOpen.value = false;
+      return;
+    }
 
-  if (error || !data) {
-    platformError.value = error || "Não foi possível carregar a igreja.";
-    isChurchDetailsOpen.value = false;
-    isChurchDetailsSheetOpen.value = false;
-    return;
+    selectedChurch.value = data;
+  } finally {
+    isLoadingChurch.value = false;
   }
-
-  selectedChurch.value = data;
 };
 
 const closeChurchDetails = () => {
@@ -2008,17 +2012,19 @@ const handleCreateMember = async () => {
 
   isCreatingMember.value = true;
 
-  const { data, error } = await createMember(form);
+  try {
+    const { data, error } = await createMember(form);
 
-  isCreatingMember.value = false;
+    if (error || !data) {
+      createMemberError.value = error || "Não foi possível criar o membro.";
+      return;
+    }
 
-  if (error || !data) {
-    createMemberError.value = error || "Não foi possível criar o membro.";
-    return;
+    members.value = [data, ...members.value];
+    closeMemberDialog();
+  } finally {
+    isCreatingMember.value = false;
   }
-
-  members.value = [data, ...members.value];
-  closeMemberDialog();
 };
 
 const handleCreateDepartment = async () => {
@@ -2032,35 +2038,37 @@ const handleCreateDepartment = async () => {
 
   isCreatingDepartment.value = true;
 
-  const { data, error } = editingDepartmentId.value
-    ? await updateDepartment(editingDepartmentId.value, {
-        name,
-        type: departmentForm.type,
-        leaderId: departmentForm.leaderId,
-      })
-    : await createDepartment({
-        name,
-        type: departmentForm.type,
-        leaderId: departmentForm.leaderId,
-      });
+  try {
+    const { data, error } = editingDepartmentId.value
+      ? await updateDepartment(editingDepartmentId.value, {
+          name,
+          type: departmentForm.type,
+          leaderId: departmentForm.leaderId,
+        })
+      : await createDepartment({
+          name,
+          type: departmentForm.type,
+          leaderId: departmentForm.leaderId,
+        });
 
-  isCreatingDepartment.value = false;
+    if (error || !data) {
+      createDepartmentError.value = error || "Não foi possível criar o ministério.";
+      return;
+    }
 
-  if (error || !data) {
-    createDepartmentError.value = error || "Não foi possível criar o ministério.";
-    return;
+    const nextDepartments = editingDepartmentId.value
+      ? departments.value.map((department) =>
+          department.id === data.id ? data : department,
+        )
+      : [...departments.value, data];
+
+    departments.value = nextDepartments.sort((first, second) =>
+      first.name.localeCompare(second.name),
+    );
+    closeDepartmentDialog();
+  } finally {
+    isCreatingDepartment.value = false;
   }
-
-  const nextDepartments = editingDepartmentId.value
-    ? departments.value.map((department) =>
-        department.id === data.id ? data : department,
-      )
-    : [...departments.value, data];
-
-  departments.value = nextDepartments.sort((first, second) =>
-    first.name.localeCompare(second.name),
-  );
-  closeDepartmentDialog();
 };
 
 const openDepartmentEditDialog = (department: ChurchDepartment) => {
@@ -2100,16 +2108,23 @@ const confirmDeleteDepartment = async () => {
   departmentsError.value = "";
   isConfirmingDelete.value = true;
   const departmentId = pendingDeleteDepartment.value.id;
-  const { error } = await deleteDepartment(departmentId);
-  isConfirmingDelete.value = false;
 
-  if (error) {
-    departmentsError.value = error;
-    return;
+  try {
+    const { error } = await deleteDepartment(departmentId);
+
+    if (error) {
+      departmentsError.value = error;
+      return;
+    }
+
+    departments.value = departments.value.filter((item) => item.id !== departmentId);
+    churchSchedules.value = churchSchedules.value.filter(
+      (schedule) => schedule.departmentId !== departmentId,
+    );
+    pendingDeleteDepartment.value = null;
+  } finally {
+    isConfirmingDelete.value = false;
   }
-
-  departments.value = departments.value.filter((item) => item.id !== departmentId);
-  pendingDeleteDepartment.value = null;
 };
 
 const handleUpdateMember = async () => {
@@ -2126,25 +2141,27 @@ const handleUpdateMember = async () => {
 
   isUpdatingMember.value = true;
 
-  const { data, error } = await updateMember(selectedMember.value.id, {
-    name,
-    email,
-    phone: selectedMemberForm.phone.trim(),
-    ...(canEditMemberPermissions.value ? { role: selectedMemberForm.role } : {}),
-  });
+  try {
+    const { data, error } = await updateMember(selectedMember.value.id, {
+      name,
+      email,
+      phone: selectedMemberForm.phone.trim(),
+      ...(canEditMemberPermissions.value ? { role: selectedMemberForm.role } : {}),
+    });
 
-  isUpdatingMember.value = false;
+    if (error || !data) {
+      permissionError.value = error || "Não foi possível salvar o membro.";
+      return;
+    }
 
-  if (error || !data) {
-    permissionError.value = error || "Não foi possível salvar o membro.";
-    return;
+    selectedMember.value = data;
+    selectedMemberCanManageMembers.value = data.canManageMembers;
+    members.value = members.value.map((member) =>
+      member.id === data.id ? data : member,
+    );
+  } finally {
+    isUpdatingMember.value = false;
   }
-
-  selectedMember.value = data;
-  selectedMemberCanManageMembers.value = data.canManageMembers;
-  members.value = members.value.map((member) =>
-    member.id === data.id ? data : member,
-  );
 };
 
 const handleDeleteMember = () => {
@@ -2160,20 +2177,23 @@ const confirmDeleteMember = async () => {
   isConfirmingDelete.value = true;
 
   const memberId = pendingDeleteMember.value.id;
-  const { error } = await deleteMember(memberId);
 
-  isConfirmingDelete.value = false;
+  try {
+    const { error } = await deleteMember(memberId);
 
-  if (error) {
-    permissionError.value = error;
-    return;
+    if (error) {
+      permissionError.value = error;
+      return;
+    }
+
+    members.value = members.value.filter(
+      (member) => member.id !== memberId,
+    );
+    pendingDeleteMember.value = null;
+    closeMemberDetails();
+  } finally {
+    isConfirmingDelete.value = false;
   }
-
-  members.value = members.value.filter(
-    (member) => member.id !== memberId,
-  );
-  pendingDeleteMember.value = null;
-  closeMemberDetails();
 };
 
 const handleUpdateMemberPermissions = async (value: boolean | null) => {
@@ -2187,23 +2207,25 @@ const handleUpdateMemberPermissions = async (value: boolean | null) => {
   permissionError.value = "";
   isUpdatingPermissions.value = true;
 
-  const { data, error } = await updateMemberPermissions(selectedMember.value.id, {
-    canManageMembers: value === true,
-  });
+  try {
+    const { data, error } = await updateMemberPermissions(selectedMember.value.id, {
+      canManageMembers: value === true,
+    });
 
-  isUpdatingPermissions.value = false;
+    if (error || !data) {
+      permissionError.value = error || "Não foi possível atualizar as permissões.";
+      selectedMemberCanManageMembers.value = selectedMember.value.canManageMembers;
+      return;
+    }
 
-  if (error || !data) {
-    permissionError.value = error || "Não foi possível atualizar as permissões.";
-    selectedMemberCanManageMembers.value = selectedMember.value.canManageMembers;
-    return;
+    selectedMember.value = data;
+    selectedMemberCanManageMembers.value = data.canManageMembers;
+    members.value = members.value.map((member) =>
+      member.id === data.id ? data : member,
+    );
+  } finally {
+    isUpdatingPermissions.value = false;
   }
-
-  selectedMember.value = data;
-  selectedMemberCanManageMembers.value = data.canManageMembers;
-  members.value = members.value.map((member) =>
-    member.id === data.id ? data : member,
-  );
 };
 
 onMounted(async () => {

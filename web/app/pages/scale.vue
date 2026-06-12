@@ -348,6 +348,7 @@
                       icon
                       variant="tonal"
                       color="purple-darken-3"
+                      aria-label="Abrir letra e cifra em tela cheia"
                       @click="openSongFullscreen(activeDetailSong)"
                     >
                       <Maximize2 size="18" />
@@ -366,7 +367,7 @@
               </v-tabs>
 
               <div
-                v-if="songTabs[activeDetailSong.id] === 'lyrics'"
+                v-if="songTabs[activeDetailSong.id] === 'chords'"
                 class="scale-song-key-controls"
               >
                 <v-btn
@@ -392,21 +393,27 @@
                 </v-btn>
               </div>
 
-              <div class="scale-song-text song-text-renderer">
-                <span
-                  v-for="(line, lineIndex) in getSongTabLines(activeDetailSong, songTabs[activeDetailSong.id])"
-                  :key="lineIndex"
-                  class="song-line"
-                >
-                  <span
-                    v-for="(segment, segmentIndex) in line"
-                    :key="segmentIndex"
-                    :class="segment.type === 'chord' ? 'song-chord' : 'song-lyric'"
-                  >
-                    {{ segment.text }}
-                  </span>
-                </span>
+              <div class="song-autoscroll-controls">
+                <v-icon size="18">mdi-speedometer</v-icon>
+                <span>{{ songScrollSpeedLabel }}</span>
+                <v-slider
+                  v-model="songAutoScrollSpeed"
+                  min="0"
+                  max="80"
+                  step="4"
+                  density="compact"
+                  color="purple-darken-3"
+                  hide-details
+                />
               </div>
+
+              <MusicSongTextRenderer
+                class="scale-song-text"
+                :mode="songTabs[activeDetailSong.id] === 'chords' ? 'chords' : 'lyrics'"
+                :text="getSongTabText(activeDetailSong, songTabs[activeDetailSong.id])"
+                :auto-scroll="songAutoScrollSpeed > 0"
+                :scroll-speed="songAutoScrollSpeed"
+              />
             </div>
           </section>
 
@@ -438,74 +445,83 @@
     <UtilsResponsiveOverlay
       v-model="isSongFullscreenOpen"
       max-width="920"
+      fullscreen-desktop
       mobile-class="scale-song-mobile-sheet"
     >
       <v-card v-if="fullscreenSong" class="scale-fullscreen-song" elevation="0">
         <div class="scale-details-handle" />
         <div class="scale-fullscreen-header">
           <div class="min-w-0">
-            <p class="scale-song-category mb-1">
-              {{ fullscreenSong.metadata?.songCategory || "Louvor" }}
-            </p>
-            <h2 class="scale-fullscreen-title mb-1">{{ fullscreenSong.title }}</h2>
-            <p class="scale-song-artist mb-0">
-              {{ fullscreenSong.metadata?.artist || "Artista não informado" }}
-            </p>
+            <h2 class="scale-fullscreen-title mb-0">{{ fullscreenSong.title }}</h2>
           </div>
-          <v-btn icon variant="text" color="grey-darken-1" @click="closeSongFullscreen">
+          <v-btn
+            icon
+            variant="text"
+            color="grey-darken-1"
+            aria-label="Fechar tela cheia"
+            @click="closeSongFullscreen"
+          >
             <v-icon size="24">mdi-close</v-icon>
           </v-btn>
         </div>
 
         <div class="scale-fullscreen-toolbar">
-          <v-tabs v-model="fullscreenSongTab" color="purple-darken-3">
+          <v-tabs v-model="fullscreenSongTab" color="purple-darken-3" density="compact">
             <v-tab value="lyrics" class="text-none">Letra</v-tab>
             <v-tab value="chords" class="text-none">Cifra</v-tab>
           </v-tabs>
-        </div>
 
-        <div
-          v-if="fullscreenSongTab === 'lyrics'"
-          class="scale-fullscreen-key-controls"
-        >
-          <v-btn
-            variant="tonal"
-            color="grey-darken-1"
-            size="small"
-            class="text-none"
-            @click="transposeSong(fullscreenSong.id, -1)"
-          >
-            -1 tom
-          </v-btn>
-          <v-chip size="small" color="orange-darken-3" variant="tonal">
-            {{ songCurrentKey(fullscreenSong) }}
-          </v-chip>
-          <v-btn
-            variant="tonal"
-            color="grey-darken-1"
-            size="small"
-            class="text-none"
-            @click="transposeSong(fullscreenSong.id, 1)"
-          >
-            +1 tom
-          </v-btn>
-        </div>
-
-        <div class="scale-fullscreen-text song-text-renderer">
-          <span
-            v-for="(line, lineIndex) in getSongTabLines(fullscreenSong, fullscreenSongTab)"
-            :key="lineIndex"
-            class="song-line"
-          >
-            <span
-              v-for="(segment, segmentIndex) in line"
-              :key="segmentIndex"
-              :class="segment.type === 'chord' ? 'song-chord' : 'song-lyric'"
+          <div class="scale-fullscreen-controls">
+            <div
+              v-if="fullscreenSongTab === 'chords'"
+              class="scale-fullscreen-key-controls"
             >
-              {{ segment.text }}
-            </span>
-          </span>
+              <v-btn
+                variant="tonal"
+                color="grey-darken-1"
+                size="small"
+                class="text-none"
+                @click="transposeSong(fullscreenSong.id, -1)"
+              >
+                -1 tom
+              </v-btn>
+              <v-chip size="small" color="orange-darken-3" variant="tonal">
+                {{ songCurrentKey(fullscreenSong) }}
+              </v-chip>
+              <v-btn
+                variant="tonal"
+                color="grey-darken-1"
+                size="small"
+                class="text-none"
+                @click="transposeSong(fullscreenSong.id, 1)"
+              >
+                +1 tom
+              </v-btn>
+            </div>
+
+            <div class="song-autoscroll-controls">
+              <v-icon size="18">mdi-speedometer</v-icon>
+              <span>{{ songScrollSpeedLabel }}</span>
+              <v-slider
+                v-model="songAutoScrollSpeed"
+                min="0"
+                max="80"
+                step="4"
+                density="compact"
+                color="purple-darken-3"
+                hide-details
+              />
+            </div>
+          </div>
         </div>
+
+        <MusicSongTextRenderer
+          class="scale-fullscreen-text"
+          :mode="fullscreenSongTab === 'chords' ? 'chords' : 'lyrics'"
+          :text="getSongTabText(fullscreenSong, fullscreenSongTab)"
+          :auto-scroll="songAutoScrollSpeed > 0"
+          :scroll-speed="songAutoScrollSpeed"
+        />
       </v-card>
     </UtilsResponsiveOverlay>
 
@@ -979,6 +995,7 @@ const activeDetailSongId = ref("");
 const isSongFullscreenOpen = ref(false);
 const fullscreenSong = ref<ScheduleEvent["mediaItems"][number] | null>(null);
 const fullscreenSongTab = ref("lyrics");
+const songAutoScrollSpeed = ref(24);
 const songTabs = reactive<Record<string, string>>({});
 const songTransposeSteps = reactive<Record<string, number>>({});
 
@@ -1201,6 +1218,12 @@ const activeDetailSong = computed(
     null,
 );
 
+const songScrollSpeedLabel = computed(() =>
+  songAutoScrollSpeed.value > 0
+    ? `Velocidade ${Math.round(songAutoScrollSpeed.value)}`
+    : "Rolagem pausada",
+);
+
 const canCreateChurchSchedule = computed(
   () => manageableDepartments.value.length > 0,
 );
@@ -1377,11 +1400,6 @@ const getSongTabText = (
   return song.metadata?.lyrics || "Letra não cadastrada.";
 };
 
-type SongTextSegment = {
-  text: string;
-  type: "lyric" | "chord";
-};
-
 const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 const flatToSharp: Record<string, string> = {
   Db: "C#",
@@ -1390,8 +1408,6 @@ const flatToSharp: Record<string, string> = {
   Ab: "G#",
   Bb: "A#",
 };
-const chordTokenRegex = /^[A-G](?:#|b)?(?:m|maj|min|dim|aug|sus|add)?[0-9]*(?:\/[A-G](?:#|b)?)?$/;
-
 const transposeKey = (key: string, steps: number) => {
   const match = key.trim().match(/^([A-G](?:#|b)?)(.*)$/);
   if (!match || !steps) return key;
@@ -1428,38 +1444,8 @@ const songCurrentKey = (song: ScheduleEvent["mediaItems"][number]) => {
   return currentKey ? `Tom ${currentKey}` : "Tom não cadastrado";
 };
 
-const isChordToken = (token: string) =>
-  chordTokenRegex.test(token.replace(/[()[\],.;:]/g, ""));
-
-const isChordLine = (line: string) => {
-  const tokens = line.trim().split(/\s+/).filter(Boolean);
-  if (!tokens.length) return false;
-
-  const chordTokens = tokens.filter((token) => token === "|" || isChordToken(token)).length;
-  return chordTokens > 0 && chordTokens / tokens.length >= 0.65;
-};
-
-const tokenizeSongLine = (line: string, tab: string): SongTextSegment[] => {
-  if (!line) return [{ text: "\u00a0", type: "lyric" }];
-  if (tab !== "chords") return [{ text: line, type: "lyric" }];
-
-  const inlineParts = line.split(/(\[[^\]]+\])/g).filter((part) => part.length);
-  if (inlineParts.length > 1) {
-    return inlineParts.map((part) => ({
-      text: part,
-      type: part.startsWith("[") && part.endsWith("]") ? "chord" : "lyric",
-    }));
-  }
-
-  return [{ text: line, type: isChordLine(line) ? "chord" : "lyric" }];
-};
-
-const getSongTabLines = (
-  song: ScheduleEvent["mediaItems"][number],
-  tab = "lyrics",
-) => getSongTabText(song, tab).split("\n").map((line) => tokenizeSongLine(line, tab));
-
 const openSongFullscreen = (song: ScheduleEvent["mediaItems"][number]) => {
+  activeDetailSongId.value = song.id;
   fullscreenSong.value = song;
   fullscreenSongTab.value = ["lyrics", "chords"].includes(songTabs[song.id])
     ? songTabs[song.id]
@@ -1698,46 +1684,48 @@ const handleSaveSchedule = async () => {
 
   isCreatingSchedule.value = true;
 
-  const { data, error } = editingScheduleId.value
-    ? await updateChurchSchedule(editingScheduleId.value, {
-        title,
-        date: scheduleForm.date,
-        time: scheduleForm.time || undefined,
-        departmentId: scheduleForm.departmentId,
-        rehearsalDate: scheduleForm.rehearsalDate || null,
-        rehearsalTime: scheduleForm.rehearsalTime || null,
-        rehearsalNotes: scheduleForm.rehearsalNotes || null,
-        songIds: scheduleForm.songIds,
-        resourceIds: scheduleForm.resourceIds,
-      })
-    : await createChurchSchedule({
-        title,
-        date: scheduleForm.date,
-        time: scheduleForm.time || undefined,
-        departmentId: scheduleForm.departmentId,
-        rehearsalDate: scheduleForm.rehearsalDate || null,
-        rehearsalTime: scheduleForm.rehearsalTime || null,
-        rehearsalNotes: scheduleForm.rehearsalNotes || null,
-        songIds: scheduleForm.songIds,
-        resourceIds: scheduleForm.resourceIds,
-      });
+  try {
+    const { data, error } = editingScheduleId.value
+      ? await updateChurchSchedule(editingScheduleId.value, {
+          title,
+          date: scheduleForm.date,
+          time: scheduleForm.time || undefined,
+          departmentId: scheduleForm.departmentId,
+          rehearsalDate: scheduleForm.rehearsalDate || null,
+          rehearsalTime: scheduleForm.rehearsalTime || null,
+          rehearsalNotes: scheduleForm.rehearsalNotes || null,
+          songIds: scheduleForm.songIds,
+          resourceIds: scheduleForm.resourceIds,
+        })
+      : await createChurchSchedule({
+          title,
+          date: scheduleForm.date,
+          time: scheduleForm.time || undefined,
+          departmentId: scheduleForm.departmentId,
+          rehearsalDate: scheduleForm.rehearsalDate || null,
+          rehearsalTime: scheduleForm.rehearsalTime || null,
+          rehearsalNotes: scheduleForm.rehearsalNotes || null,
+          songIds: scheduleForm.songIds,
+          resourceIds: scheduleForm.resourceIds,
+        });
 
-  isCreatingSchedule.value = false;
+    if (error || !data) {
+      createScheduleError.value = error || "Não foi possível criar a escala.";
+      return;
+    }
 
-  if (error || !data) {
-    createScheduleError.value = error || "Não foi possível criar a escala.";
-    return;
+    const nextSchedules = editingScheduleId.value
+      ? schedules.value.map((schedule) => (schedule.id === data.id ? data : schedule))
+      : [...schedules.value, data];
+
+    schedules.value = nextSchedules.sort(
+      (current, next) =>
+        new Date(current.date).getTime() - new Date(next.date).getTime(),
+    );
+    closeScheduleDialog();
+  } finally {
+    isCreatingSchedule.value = false;
   }
-
-  const nextSchedules = editingScheduleId.value
-    ? schedules.value.map((schedule) => (schedule.id === data.id ? data : schedule))
-    : [...schedules.value, data];
-
-  schedules.value = nextSchedules.sort(
-    (current, next) =>
-      new Date(current.date).getTime() - new Date(next.date).getTime(),
-  );
-  closeScheduleDialog();
 };
 
 const handleDeleteSchedule = (event: ScheduleEvent) => {
@@ -1756,16 +1744,20 @@ const confirmDeleteSchedule = async () => {
   schedulesError.value = "";
   isDeletingSchedule.value = true;
   const scheduleId = pendingDeleteSchedule.value.id;
-  const { error } = await deleteChurchSchedule(scheduleId);
-  isDeletingSchedule.value = false;
 
-  if (error) {
-    schedulesError.value = error;
-    return;
+  try {
+    const { error } = await deleteChurchSchedule(scheduleId);
+
+    if (error) {
+      schedulesError.value = error;
+      return;
+    }
+
+    schedules.value = schedules.value.filter((schedule) => schedule.id !== scheduleId);
+    pendingDeleteSchedule.value = null;
+  } finally {
+    isDeletingSchedule.value = false;
   }
-
-  schedules.value = schedules.value.filter((schedule) => schedule.id !== scheduleId);
-  pendingDeleteSchedule.value = null;
 };
 
 const getSelectedScheduleDate = () => {
@@ -1909,27 +1901,29 @@ const saveAssignments = async () => {
 
   isSavingAssignments.value = true;
 
-  const { data, error } = await updateScheduleAssignments(
-    selectedScheduleId.value,
-    {
-      assignments: draftAssignments.value.map((assignment) => ({
-        userId: assignment.userId,
-        role: assignment.role,
-      })),
-    },
-  );
+  try {
+    const { data, error } = await updateScheduleAssignments(
+      selectedScheduleId.value,
+      {
+        assignments: draftAssignments.value.map((assignment) => ({
+          userId: assignment.userId,
+          role: assignment.role,
+        })),
+      },
+    );
 
-  isSavingAssignments.value = false;
+    if (error || !data) {
+      assignmentsError.value = error || "Não foi possível salvar os voluntários.";
+      return;
+    }
 
-  if (error || !data) {
-    assignmentsError.value = error || "Não foi possível salvar os voluntários.";
-    return;
+    schedules.value = schedules.value.map((schedule) =>
+      schedule.id === data.id ? data : schedule,
+    );
+    closeAssignmentsDialog();
+  } finally {
+    isSavingAssignments.value = false;
   }
-
-  schedules.value = schedules.value.map((schedule) =>
-    schedule.id === data.id ? data : schedule,
-  );
-  closeAssignmentsDialog();
 };
 
 onMounted(async () => {
@@ -2356,59 +2350,43 @@ watch(schedules, async () => {
   align-items: start;
 }
 
-.scale-song-text,
-.scale-fullscreen-text {
-  margin: 0;
-  overflow-x: auto;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  border: 1px solid #f3f4f6;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #111111;
-  font-family: "Courier New", monospace;
-  font-size: 1.04rem;
-  line-height: 1.82;
-  padding: 14px;
-}
-
-.song-text-renderer {
-  display: block;
-}
-
-.song-line {
-  display: block;
-  min-height: 1.82em;
-}
-
-.song-lyric {
-  color: #111111;
-  font-weight: 650;
-}
-
-.song-chord {
-  color: #ea580c;
-  font-weight: 900;
-}
-
 .scale-song-key-controls,
-.scale-fullscreen-key-controls {
+.scale-fullscreen-key-controls,
+.song-autoscroll-controls {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
 }
 
+.song-autoscroll-controls {
+  min-height: 34px;
+  color: #4b5563;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.song-autoscroll-controls :deep(.v-slider) {
+  flex: 1 1 160px;
+  min-width: 140px;
+  max-width: 260px;
+}
+
 .scale-song-text {
   max-height: 260px;
-  overflow-y: auto;
+}
+
+.scale-fullscreen-text {
+  font-size: 1.04rem;
+  line-height: 1.82;
+  min-height: 360px;
 }
 
 .scale-fullscreen-song {
   display: grid;
-  grid-template-rows: auto auto auto auto minmax(0, 1fr);
-  max-height: min(92vh, 920px);
-  min-height: min(78vh, 760px);
+  grid-template-rows: auto auto minmax(0, 1fr);
+  max-height: 100vh;
+  min-height: 100vh;
   background: #fff;
   overflow: hidden;
 }
@@ -2423,18 +2401,22 @@ watch(schedules, async () => {
 }
 
 .scale-fullscreen-toolbar {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
   justify-content: space-between;
   gap: 12px;
-  flex-wrap: wrap;
   padding: 10px 22px;
   border-bottom: 1px solid #f3f4f6;
 }
 
-.scale-fullscreen-key-controls {
-  padding: 10px 22px;
-  border-bottom: 1px solid #f3f4f6;
+.scale-fullscreen-controls {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  min-width: 0;
 }
 
 .scale-fullscreen-text {
@@ -2460,9 +2442,17 @@ watch(schedules, async () => {
 
 @media (max-width: 420px) {
   .scale-song-mobile-sheet .scale-fullscreen-song {
-    max-height: min(92vh, 920px);
-    min-height: min(78vh, 760px);
+    max-height: 100vh;
+    min-height: 100vh;
     border-radius: 22px 22px 0 0 !important;
+  }
+
+  .scale-fullscreen-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .scale-fullscreen-controls {
+    justify-content: flex-start;
   }
 
   .scale-page-header {
