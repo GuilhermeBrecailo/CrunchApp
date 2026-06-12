@@ -1,5 +1,5 @@
 <template>
-  <div class="pa-4 pb-8 bg-grey-lighten-4">
+  <div class="pa-4 pb-8 page-wrapper">
     <template v-if="hasChurch">
       <DashboardNextScheduleCard :schedule="nextSchedule" />
 
@@ -261,6 +261,11 @@ onMounted(loadSchedules);
 </script>
 
 <style scoped>
+.page-wrapper {
+  background: var(--app-color-background);
+  min-height: 100%;
+}
+
 .border-subtle {
   border: 1px solid #f3f4f6;
 }

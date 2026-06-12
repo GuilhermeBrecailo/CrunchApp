@@ -2,8 +2,8 @@
   <v-app-bar app class="appbar" elevation="1">
     <div class="d-flex align-center">
       <v-btn icon variant="text">
-        <v-avatar color="#E6E6FA" size="44">
-          <span class="avatar-text">GB</span>
+        <v-avatar class="user-avatar" size="40">
+          <span class="avatar-text">{{ userInitials }}</span>
         </v-avatar>
       </v-btn>
 
@@ -188,6 +188,16 @@ const firstName = computed(() => {
   return name ? name.split(" ")[0] : "usuário";
 });
 
+const userInitials = computed(() => {
+  const name = user.value?.name?.trim();
+  if (!name) return "U";
+
+  const parts = name.split(" ").filter(Boolean);
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+});
+
 const churchName = computed(() => user.value?.church?.name || "Sem igreja");
 const hasUnreadNotifications = computed(() => hasUnread.value);
 const themeToggleLabel = computed(() =>
@@ -251,24 +261,36 @@ onMounted(async () => {
 
 <style scoped>
 .appbar {
-  background-color: white;
+  background: rgba(255, 255, 255, 0.88) !important;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
   padding: 5px 20px;
-  border-bottom: 1px solid #eef2ff;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.7) !important;
+  box-shadow: 0 1px 0 rgba(17, 24, 39, 0.04) !important;
 }
 
 :global(.app-theme-dark) .appbar {
-  background-color: rgba(27, 29, 34, 0.96) !important;
-  border-bottom-color: var(--app-color-border);
+  background: rgba(21, 27, 35, 0.88) !important;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-bottom-color: rgba(45, 55, 70, 0.6) !important;
+}
+
+.user-avatar {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
 }
 
 .avatar-text {
-  color: #6366f1; /* Tom de roxo/índigo */
-  font-weight: 700;
-  font-size: 1.1rem;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.03em;
 }
 
-:global(.app-theme-dark) .avatar-text {
-  color: var(--app-color-accent);
+:global(.app-theme-dark) .user-avatar {
+  background: linear-gradient(135deg, #818cf8, #a78bfa);
+  box-shadow: 0 2px 8px rgba(129, 140, 248, 0.35);
 }
 
 .greeting-text {

@@ -175,11 +175,16 @@ const handleLogin = async () => {
   width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
-  background: #f8fafc;
+  background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%);
+}
+
+:global(.app-theme-dark) .auth-page {
+  background: var(--app-color-background);
 }
 
 .auth-card {
-  box-shadow: 0 18px 45px rgba(88, 28, 135, 0.12);
+  box-shadow: 0 8px 40px rgba(79, 70, 229, 0.1), 0 2px 8px rgba(17, 24, 39, 0.06) !important;
+  border: 1px solid rgba(229, 231, 235, 0.8) !important;
 }
 
 .auth-input :deep(.v-field) {

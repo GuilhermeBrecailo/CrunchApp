@@ -89,7 +89,17 @@ const goToRoute = (route: string) => {
 
 .cursor-pointer {
   cursor: pointer;
-  transition: transform 0.2s ease;
+  border: 1px solid #f3f4f6 !important;
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s ease,
+    border-color 0.2s ease !important;
+}
+
+.cursor-pointer:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(17, 24, 39, 0.09) !important;
+  border-color: #e0e7ff !important;
 }
 
 .cursor-pointer:active {

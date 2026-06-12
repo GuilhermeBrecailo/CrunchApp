@@ -41,18 +41,29 @@
   </v-card>
 
   <v-card v-else class="rounded-xl pa-5 mb-8 elevation-1 bg-white border-subtle">
-    <div class="d-flex align-center">
-      <v-avatar color="#EEF2FF" size="44" class="mr-3">
-        <Calendar size="20" color="#6366F1" />
-      </v-avatar>
-      <div>
-        <p class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
-          Nenhuma escala cadastrada
-        </p>
-        <p class="text-caption text-grey-darken-1 mb-0">
-          Crie uma escala para começar a montar as equipes.
-        </p>
+    <div class="d-flex align-center flex-wrap gap-3">
+      <div class="d-flex align-center flex-grow-1" style="min-width: 0">
+        <v-avatar color="#EEF2FF" size="44" class="mr-3 flex-shrink-0">
+          <Calendar size="20" color="#6366F1" />
+        </v-avatar>
+        <div style="min-width: 0">
+          <p class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
+            Nenhuma escala cadastrada
+          </p>
+          <p class="text-caption text-grey-darken-1 mb-0">
+            Crie uma escala para começar a montar as equipes.
+          </p>
+        </div>
       </div>
+      <v-btn
+        to="/scale"
+        color="purple-darken-3"
+        variant="tonal"
+        size="small"
+        class="text-none"
+      >
+        Ver escalas
+      </v-btn>
     </div>
   </v-card>
 </template>

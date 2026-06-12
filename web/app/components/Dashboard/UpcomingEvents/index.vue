@@ -4,12 +4,9 @@
       <h3 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
         Próximos Cultos
       </h3>
-      <a
-        href="/scale"
-        class="text-caption text-#A855F7 text-decoration-none d-flex align-center font-weight-medium"
-      >
+      <NuxtLink to="/scale" class="upcoming-link">
         Ver todos <ChevronRight size="14" class="ml-1" />
-      </a>
+      </NuxtLink>
     </div>
 
     <div class="d-flex flex-column gap-3 pb-4">
@@ -98,29 +95,59 @@ const goToSchedule = (id: string) => {
   gap: 12px;
 }
 
+.upcoming-link {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #6366f1;
+  text-decoration: none;
+  gap: 2px;
+  letter-spacing: 0.01em;
+  transition: color 0.15s ease;
+}
+
+.upcoming-link:hover {
+  color: #4f46e5;
+}
+
 .date-badge {
-  width: 48px;
-  height: 48px;
-  background-color: #f3e8ff;
+  width: 52px;
+  height: 52px;
+  background: linear-gradient(135deg, #ede9fe, #f3e8ff);
   color: #7c3aed;
+  border-radius: 12px !important;
+  flex: 0 0 auto;
 }
 
 .date-day {
-  font-size: 1rem;
+  font-size: 1.1rem;
+  font-weight: 800;
   line-height: 1;
 }
 
 .date-month {
-  font-size: 0.55rem;
+  font-size: 0.58rem;
+  font-weight: 700;
   line-height: 1;
   margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .event-card {
   cursor: pointer;
+  border: 1px solid #f3f4f6 !important;
   transition:
-    transform 0.16s ease,
-    box-shadow 0.16s ease;
+    transform 0.16s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.event-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(17, 24, 39, 0.08) !important;
+  border-color: #e0e7ff !important;
 }
 
 .event-card:active {

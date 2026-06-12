@@ -1,5 +1,5 @@
 <template>
-  <div class="pa-4 bg-grey-lighten-4 min-vh-100">
+  <div class="pa-4 page-wrapper min-vh-100">
     <div class="scale-page-header mb-5">
       <div>
         <h1 class="text-h5 font-weight-bold text-grey-darken-4">Escalas</h1>
@@ -35,19 +35,22 @@
 
     <div v-if="canCreateChurchSchedule" class="leader-summary-grid mb-5">
       <v-card class="leader-summary-card pa-3 elevation-1 bg-white">
-        <p class="text-caption text-grey-darken-1 mb-1">Pendentes</p>
+        <Clock class="stat-icon" size="18" color="#A855F7" />
+        <p class="text-caption text-grey-darken-1 mb-1 mt-1">Pendentes</p>
         <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
           {{ leaderSummary.pending }}
         </h2>
       </v-card>
       <v-card class="leader-summary-card pa-3 elevation-1 bg-white">
-        <p class="text-caption text-grey-darken-1 mb-1">Não viram</p>
+        <EyeOff class="stat-icon" size="18" color="#A855F7" />
+        <p class="text-caption text-grey-darken-1 mb-1 mt-1">Não viram</p>
         <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
           {{ leaderSummary.notViewed }}
         </h2>
       </v-card>
       <v-card class="leader-summary-card pa-3 elevation-1 bg-white">
-        <p class="text-caption text-grey-darken-1 mb-1">Trocas</p>
+        <Repeat2 class="stat-icon" size="18" color="#A855F7" />
+        <p class="text-caption text-grey-darken-1 mb-1 mt-1">Trocas</p>
         <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
           {{ leaderSummary.swapRequests }}
         </h2>
@@ -936,11 +939,13 @@ import {
   CheckCircle2,
   Clock,
   Eye,
+  EyeOff,
   FileText,
   Maximize2,
   Music,
   Pencil,
   Plus,
+  Repeat2,
   Trash2,
   UserPlus,
   Users,
@@ -1965,6 +1970,10 @@ watch(schedules, async () => {
   min-height: 100vh;
 }
 
+.page-wrapper {
+  background: var(--app-color-background);
+}
+
 .gap-2 {
   gap: 8px;
 }
@@ -2051,6 +2060,10 @@ watch(schedules, async () => {
 .leader-summary-card {
   border: 1px solid #f3f4f6;
   border-radius: 8px !important;
+}
+
+.stat-icon {
+  display: block;
 }
 
 .scale-input :deep(.v-field) {

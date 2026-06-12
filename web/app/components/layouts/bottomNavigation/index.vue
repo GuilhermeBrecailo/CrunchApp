@@ -1,8 +1,8 @@
 <template>
   <v-bottom-navigation
-    class="bottom-nav elevation-10"
-    height="64"
-    :bg-color="isDark ? '#1b1d22' : 'white'"
+    class="bottom-nav"
+    height="68"
+    :bg-color="isDark ? 'transparent' : 'transparent'"
     app
   >
     <v-btn to="/" class="flex-col custom-btn" exact>
@@ -63,28 +63,39 @@ const adminLabel = computed(() => "Admin");
 .bottom-nav {
   width: 100%;
   max-width: 100vw;
-  border-top: 1px solid #e5e7eb;
-  border-radius: 14px 14px 0 0 !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid rgba(229, 231, 235, 0.6) !important;
+  border-radius: 20px 20px 0 0 !important;
   padding: 4px max(4px, env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom))
     max(4px, env(safe-area-inset-left));
   overflow: hidden;
+  box-shadow: 0 -4px 24px rgba(17, 24, 39, 0.06) !important;
 }
 
 :global(.app-theme-dark) .bottom-nav {
-  border-top-color: var(--app-color-border);
+  background: rgba(21, 27, 35, 0.92) !important;
+  border-top-color: rgba(45, 55, 70, 0.5) !important;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.2) !important;
 }
 
 .nav-label {
   display: block;
   width: 100%;
-  margin-top: 3px;
   overflow: hidden;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 600;
   line-height: 1.05;
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
+  letter-spacing: 0.01em;
+  transition: font-weight 0.15s ease !important;
+}
+
+.custom-btn.v-btn--active .nav-label {
+  font-weight: 800;
 }
 
 .nav-icon {
@@ -97,14 +108,14 @@ const adminLabel = computed(() => "Admin");
   flex: 1 1 0;
   min-width: 0 !important;
   max-width: none;
-  color: #757575 !important;
-  border-radius: 10px !important;
-  margin: 0 1px;
-  height: 54px !important;
+  color: #9ca3af !important;
+  border-radius: 14px !important;
+  margin: 0 2px;
+  height: 58px !important;
   padding: 4px 2px !important;
   transition:
-    background-color 0.2s ease,
-    color 0.2s ease;
+    color 0.2s ease !important;
+  background-color: transparent !important;
 }
 
 :global(.app-theme-dark) .custom-btn {
@@ -122,21 +133,30 @@ const adminLabel = computed(() => "Admin");
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 2px;
+}
+
+.custom-btn .nav-icon {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
 
 .custom-btn.v-btn--active {
   color: #4f46e5 !important;
-  background-color: #eef2ff !important;
+  background-color: transparent !important;
+}
+
+.custom-btn.v-btn--active .nav-icon {
+  transform: scale(1.18) !important;
 }
 
 :global(.app-theme-dark) .custom-btn.v-btn--active {
   color: var(--app-color-accent) !important;
-  background-color: rgba(184, 165, 255, 0.13) !important;
+  background-color: transparent !important;
 }
 
 :global(html.app-theme-dark) :deep(.custom-btn.v-btn--active) {
   color: var(--app-color-accent) !important;
-  background-color: rgba(184, 165, 255, 0.13) !important;
+  background-color: transparent !important;
 }
 
 .custom-btn:hover > .v-btn__overlay {

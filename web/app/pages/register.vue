@@ -207,7 +207,11 @@ const handleRegister = async () => {
 
 <style scoped>
 .auth-page {
-  background: #f8fafc;
+  background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%);
+}
+
+:global(.app-theme-dark) .auth-page {
+  background: var(--app-color-background);
 }
 
 .auth-card {

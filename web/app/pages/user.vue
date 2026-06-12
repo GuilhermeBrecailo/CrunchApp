@@ -1,13 +1,15 @@
 <template>
   <div class="profile-page pa-4 min-vh-100 pb-20">
     <section class="profile-hero mb-4">
-      <div class="profile-summary">
-        <v-avatar
-          size="64"
-          color="#EEF2FF"
-          class="profile-avatar text-indigo-darken-3 font-weight-bold text-h6"
-        >
-          {{ initials }}
+      <div class="profile-hero-banner">
+        <div class="profile-hero-circles">
+          <div class="hero-circle hero-circle-1"></div>
+          <div class="hero-circle hero-circle-2"></div>
+        </div>
+      </div>
+      <div class="profile-hero-body">
+        <v-avatar class="profile-avatar" size="72">
+          <span class="profile-initials">{{ initials }}</span>
         </v-avatar>
         <div class="profile-summary-copy">
           <div class="profile-chip-row mb-2">
@@ -768,14 +770,70 @@ onMounted(loadPageData);
 }
 
 .profile-page {
-  background: #f8fafc;
+  background: var(--app-color-background);
 }
 
 .profile-hero {
+  border-radius: 16px;
+  overflow: hidden;
   background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 18px;
+  border: 1px solid var(--app-color-border);
+  box-shadow: var(--app-shadow-md);
+}
+
+.profile-hero-banner {
+  position: relative;
+  height: 80px;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 60%, #a855f7 100%);
+  overflow: hidden;
+}
+
+.profile-hero-circles {
+  position: absolute;
+  inset: 0;
+}
+
+.hero-circle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.hero-circle-1 {
+  width: 160px;
+  height: 160px;
+  top: -60px;
+  right: -40px;
+}
+
+.hero-circle-2 {
+  width: 100px;
+  height: 100px;
+  bottom: -50px;
+  left: 20px;
+}
+
+.profile-hero-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 0 18px 18px;
+  margin-top: -36px;
+  position: relative;
+}
+
+.profile-avatar {
+  flex: 0 0 auto;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed) !important;
+  border: 3px solid #ffffff !important;
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.35) !important;
+}
+
+.profile-initials {
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 1.35rem;
+  letter-spacing: -0.01em;
 }
 
 .profile-chip-row,
@@ -785,20 +843,10 @@ onMounted(loadPageData);
   gap: 8px;
 }
 
-.profile-summary {
-  align-items: center;
-  display: flex;
-  gap: 16px;
-  min-width: 0;
-}
-
-.profile-avatar {
-  flex: 0 0 auto;
-}
-
 .profile-summary-copy {
   flex: 1 1 auto;
   min-width: 0;
+  padding-top: 40px;
 }
 
 .profile-name,
@@ -1015,16 +1063,13 @@ onMounted(loadPageData);
 }
 
 @media (max-width: 420px) {
-  .profile-summary {
-    align-items: flex-start;
-    display: grid;
-    grid-template-columns: 48px minmax(0, 1fr);
+  .profile-hero-body {
     gap: 12px;
   }
 
   .profile-avatar {
-    height: 48px !important;
-    width: 48px !important;
+    height: 60px !important;
+    width: 60px !important;
   }
 
   .profile-name {
