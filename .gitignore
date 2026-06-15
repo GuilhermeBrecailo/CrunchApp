@@ -38,3 +38,4 @@ pnpm-debug.log*
 
 # Local Docker overrides
 docker-compose.override.yml
+node_modules/
