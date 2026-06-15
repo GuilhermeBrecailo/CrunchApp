@@ -2729,6 +2729,19 @@ watch(schedules, async () => {
   padding: 14px;
 }
 
+:global(.app-theme-dark) .scale-song-reader {
+  background: #1e1b2e;
+  border-color: #3d3752;
+}
+
+:global(.app-theme-dark) .scale-song-title {
+  color: #f1f5f9 !important;
+}
+
+:global(.app-theme-dark) .scale-song-category {
+  color: #a78bfa !important;
+}
+
 .scale-song-reader-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -2744,7 +2757,11 @@ watch(schedules, async () => {
 }
 
 .scale-song-text {
-  max-height: 260px;
+  min-height: 220px;
+  max-height: 62vh;
+  font-size: 1.1rem;
+  line-height: 1.88;
+  padding: 18px;
 }
 
 .scale-fullscreen-text {
@@ -2762,6 +2779,10 @@ watch(schedules, async () => {
   overflow: hidden;
 }
 
+:global(.app-theme-dark) .scale-fullscreen-song {
+  background: #0f0d1a;
+}
+
 .scale-fullscreen-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -2771,6 +2792,15 @@ watch(schedules, async () => {
   border-bottom: 1px solid #f3f4f6;
 }
 
+:global(.app-theme-dark) .scale-fullscreen-header {
+  border-color: #2d2640;
+}
+
+:global(.app-theme-dark) .scale-fullscreen-header h4,
+:global(.app-theme-dark) .scale-fullscreen-header p {
+  color: #e2e8f0 !important;
+}
+
 .scale-fullscreen-toolbar {
   display: flex;
   align-items: center;
@@ -2778,6 +2808,10 @@ watch(schedules, async () => {
   gap: 12px;
   padding: 10px 22px;
   border-bottom: 1px solid #f3f4f6;
+}
+
+:global(.app-theme-dark) .scale-fullscreen-toolbar {
+  border-color: #2d2640;
 }
 
 .scale-fullscreen-controls {
