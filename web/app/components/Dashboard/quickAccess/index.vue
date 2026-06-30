@@ -20,7 +20,7 @@
 
 <script setup lang="ts">
 import { useRouter } from "vue-router";
-import { CalendarDays, Church, Settings, Users } from "lucide-vue-next";
+import { CalendarDays, Church, Heart, Settings, Users } from "lucide-vue-next";
 
 const router = useRouter();
 const { isDark } = useThemeMode();
@@ -52,6 +52,15 @@ const menuItems = [
     iconColorDark: "#2dd4bf",
     bgColorDark: "rgba(45,212,191,0.12)",
     route: "/user",
+  },
+  {
+    title: "Oração",
+    icon: Heart,
+    iconColor: "#EF4444",
+    bgColor: "#FEF2F2",
+    iconColorDark: "#f87171",
+    bgColorDark: "rgba(248,113,113,0.13)",
+    route: "/prayer",
   },
   {
     title: "Config.",

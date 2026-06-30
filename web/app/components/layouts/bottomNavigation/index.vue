@@ -5,35 +5,50 @@
     :bg-color="isDark ? 'transparent' : 'transparent'"
     app
   >
-    <v-btn to="/" class="flex-col custom-btn" exact>
+    <v-btn
+      class="flex-col custom-btn"
+      :active="route.path === '/'"
+      @click="router.push('/')"
+    >
       <House class="nav-icon" />
       <span class="nav-label">Início</span>
     </v-btn>
 
-    <v-btn v-if="hasChurch" to="/content" class="flex-col custom-btn">
+    <v-btn
+      v-if="hasChurch"
+      class="flex-col custom-btn"
+      :active="route.path.startsWith('/content')"
+      @click="router.push('/content')"
+    >
       <BookOpen class="nav-icon" />
       <span class="nav-label">Conteúdo</span>
     </v-btn>
 
     <v-btn
       v-if="hasChurch"
-      to="/ministery"
       class="flex-col custom-btn"
-      :active="$route.path.startsWith('/ministery')"
+      :active="route.path.startsWith('/ministery')"
+      @click="router.push('/ministery')"
     >
       <Users class="nav-icon" />
       <span class="nav-label">Ministérios</span>
     </v-btn>
+
     <v-btn
-      to="/user"
       class="flex-col custom-btn"
-      :active="$route.path.startsWith('/user')"
+      :active="route.path.startsWith('/user')"
+      @click="router.push('/user')"
     >
       <User class="nav-icon" />
       <span class="nav-label">Usuário</span>
     </v-btn>
 
-    <v-btn v-if="showAdmin" to="/admin" class="flex-col custom-btn">
+    <v-btn
+      v-if="showAdmin"
+      class="flex-col custom-btn"
+      :active="route.path.startsWith('/admin')"
+      @click="router.push('/admin')"
+    >
       <Cog class="nav-icon" />
       <span class="nav-label mt-1">{{ adminLabel }}</span>
     </v-btn>
@@ -43,10 +58,13 @@
 <script setup lang="ts">
 import { House, BookOpen, User, Users, Cog } from "lucide-vue-next";
 import { computed } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import { useAuth } from "../../../../composables/useAuth";
 
 const { user } = useAuth();
 const { isDark } = useThemeMode();
+const router = useRouter();
+const route = useRoute();
 
 const hasChurch = computed(() => user.value?.hasChurch === true);
 const isPlatformAdmin = computed(

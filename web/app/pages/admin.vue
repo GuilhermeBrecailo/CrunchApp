@@ -836,7 +836,23 @@
       </div>
     </div>
 
-    <div class="stats-grid church-stats-grid mb-8">
+    <div class="admin-tabs-bar mb-6">
+      <v-tabs
+        v-model="activeAdminTab"
+        density="compact"
+        color="indigo-darken-2"
+        slider-color="indigo-darken-2"
+        class="admin-tabs"
+      >
+        <v-tab value="geral" class="text-none font-weight-medium admin-tab">Geral</v-tab>
+        <v-tab value="membros" class="text-none font-weight-medium admin-tab">Membros</v-tab>
+        <v-tab value="ministerios" class="text-none font-weight-medium admin-tab">Ministérios</v-tab>
+        <v-tab v-if="isChurchWideManager" value="conteudo" class="text-none font-weight-medium admin-tab">Conteúdo</v-tab>
+        <v-tab v-if="isChurchWideManager" value="cargos" class="text-none font-weight-medium admin-tab">Cargos</v-tab>
+      </v-tabs>
+    </div>
+
+    <div class="stats-grid church-stats-grid mb-6">
       <AdminStatCard
         title="Membros"
         :value="members.length"
@@ -867,7 +883,7 @@
       />
     </div>
 
-    <section v-if="isChurchWideManager" class="church-admin-section mb-8">
+    <section v-show="isChurchWideManager && activeAdminTab === 'conteudo'" class="church-admin-section mb-8">
       <div class="section-heading mb-4">
         <div>
           <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
@@ -1081,12 +1097,79 @@
       </v-card>
     </section>
 
+    <!-- Invite code card -->
+    <section v-show="isChurchWideManager && activeAdminTab === 'geral'" class="church-admin-section mb-6">
+      <div class="section-heading mb-4">
+        <div>
+          <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">Código de Convite</h2>
+          <p class="text-caption text-grey-darken-1 mb-0">Compartilhe o link para novos membros entrarem na igreja</p>
+        </div>
+      </div>
+
+      <v-card class="invite-code-card rounded-xl pa-5 elevation-1 border-subtle">
+        <div class="d-flex align-center gap-3 mb-4">
+          <v-avatar size="40" :color="avatarBgIndigo">
+            <QrCode size="20" :color="accentColor" />
+          </v-avatar>
+          <div>
+            <p class="font-weight-bold mb-0" style="font-size:0.9rem;">Link de convite</p>
+            <p class="text-caption text-grey-darken-1 mb-0">Qualquer pessoa com este código pode entrar</p>
+          </div>
+        </div>
+
+        <div v-if="inviteCodeLoading" class="d-flex justify-center pa-4">
+          <v-progress-circular indeterminate size="28" color="indigo-darken-2" />
+        </div>
+
+        <template v-else>
+          <v-alert
+            v-if="inviteCodeError"
+            type="error"
+            variant="tonal"
+            density="compact"
+            class="mb-4"
+          >
+            {{ inviteCodeError }}
+          </v-alert>
+
+          <div class="invite-code-display mb-4">
+            <span class="invite-code-text">{{ inviteCodeValue || "—" }}</span>
+          </div>
+
+          <div class="d-flex gap-2 flex-wrap">
+            <v-btn
+              color="indigo-darken-2"
+              variant="flat"
+              size="small"
+              class="text-none font-weight-bold"
+              :prepend-icon="inviteCodeCopied ? undefined : undefined"
+              :disabled="!inviteCodeValue"
+              @click="handleCopyInviteLink"
+            >
+              <Link size="15" class="mr-1" />
+              {{ inviteCodeCopied ? "Copiado!" : "Copiar link" }}
+            </v-btn>
+            <v-btn
+              color="grey-darken-1"
+              variant="tonal"
+              size="small"
+              class="text-none"
+              :loading="inviteCodeRegenerating"
+              @click="handleRegenerateCode"
+            >
+              <RefreshCw size="14" class="mr-1" /> Regenerar
+            </v-btn>
+          </div>
+        </template>
+      </v-card>
+    </section>
+
     <AdminReports
-      v-if="isChurchWideManager"
+      v-if="isChurchWideManager && activeAdminTab === 'geral'"
       :departments="departments"
     />
 
-    <section v-if="isChurchWideManager" class="church-admin-section mb-8">
+    <section v-show="isChurchWideManager && activeAdminTab === 'geral'" class="church-admin-section mb-8">
       <div class="section-heading mb-4">
         <div>
           <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
@@ -1182,7 +1265,7 @@
       </div>
     </section>
 
-    <section class="church-admin-section mb-8">
+    <section v-show="activeAdminTab === 'membros'" class="church-admin-section mb-8">
       <div class="section-heading mb-4">
         <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
           Membros
@@ -1313,7 +1396,7 @@
       </v-alert>
     </section>
 
-    <section class="church-admin-section">
+    <section v-show="activeAdminTab === 'ministerios'" class="church-admin-section">
       <div class="section-heading mb-4">
         <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
           Ministérios
@@ -1429,7 +1512,7 @@
         {{ departmentsError }}
       </v-alert>
     </section>
-    <section v-if="isChurchWideManager" class="church-admin-section mb-8">
+    <section v-show="isChurchWideManager && activeAdminTab === 'cargos'" class="church-admin-section mb-8">
       <div class="section-heading mb-4">
         <div>
           <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
@@ -2147,7 +2230,10 @@ import {
   BookMarked,
   Megaphone,
   Heart,
+  Link,
   Plus,
+  QrCode,
+  RefreshCw,
 } from "lucide-vue-next";
 import { useAuth } from "../../composables/useAuth";
 import { useThemeMode } from "../../../composables/useThemeMode";
@@ -2182,6 +2268,7 @@ import {
   useDevotionals,
   type Devotional,
 } from "../../composables/useDevotionals";
+import { useChurchInvite } from "../../composables/useChurchInvite";
 
 const { user } = useAuth();
 const { isDark } = useThemeMode();
@@ -2207,6 +2294,41 @@ const {
   getChurchById,
 } = useAdmin();
 const { publishVerse } = useDailyVerse();
+const { getInviteCode, regenerateInviteCode } = useChurchInvite();
+
+const inviteCodeValue = ref("");
+const inviteCodeLoading = ref(false);
+const inviteCodeRegenerating = ref(false);
+const inviteCodeCopied = ref(false);
+const inviteCodeError = ref("");
+
+const loadInviteCode = async () => {
+  if (!isChurchWideManager.value) return;
+  inviteCodeLoading.value = true;
+  inviteCodeError.value = "";
+  const { data, error } = await getInviteCode();
+  if (error) inviteCodeError.value = error;
+  inviteCodeValue.value = data?.inviteCode ?? "";
+  inviteCodeLoading.value = false;
+};
+
+const handleRegenerateCode = async () => {
+  inviteCodeRegenerating.value = true;
+  inviteCodeError.value = "";
+  const { data, error } = await regenerateInviteCode();
+  if (error) inviteCodeError.value = error;
+  inviteCodeValue.value = data?.inviteCode ?? inviteCodeValue.value;
+  inviteCodeRegenerating.value = false;
+};
+
+const handleCopyInviteLink = () => {
+  if (!inviteCodeValue.value) return;
+  const url = `${window.location.origin}/join?code=${inviteCodeValue.value}`;
+  navigator.clipboard.writeText(url).then(() => {
+    inviteCodeCopied.value = true;
+    setTimeout(() => { inviteCodeCopied.value = false; }, 2000);
+  });
+};
 const {
   getAnnouncements,
   createAnnouncement,
@@ -2224,6 +2346,7 @@ const churchSchedules = ref<DepartmentSchedule[]>([]);
 const announcements = ref<Announcement[]>([]);
 const devotionals = ref<Devotional[]>([]);
 const adminChurches = ref<AdminChurch[]>([]);
+const activeAdminTab = ref("geral");
 const selectedChurch = ref<AdminChurchDetails | null>(null);
 const membersError = ref("");
 const departmentsError = ref("");
@@ -3475,6 +3598,7 @@ onMounted(async () => {
   await Promise.all([
     isPlatformAdmin.value ? loadPlatformChurches() : Promise.resolve(),
     canAccessChurchAdmin.value ? loadChurchAdminData() : Promise.resolve(),
+    loadInviteCode(),
   ]);
 });
 </script>
@@ -3950,6 +4074,28 @@ onMounted(async () => {
   margin: 0 auto;
 }
 
+.invite-code-card {
+  background: var(--app-color-surface) !important;
+  border: 1px solid var(--app-color-border);
+}
+
+.invite-code-display {
+  background: var(--app-color-background);
+  border: 2px dashed var(--app-color-border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  text-align: center;
+}
+
+.invite-code-text {
+  font-size: 1.9rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  color: var(--app-color-text);
+  font-variant-numeric: tabular-nums;
+  font-family: monospace;
+}
+
 .church-admin-hero {
   display: flex;
   align-items: flex-start;
@@ -3959,6 +4105,27 @@ onMounted(async () => {
 
 .church-admin-section {
   min-width: 0;
+}
+
+.admin-tabs-bar {
+  background: var(--app-color-surface, #fff);
+  border-radius: 14px;
+  border: 1px solid var(--app-color-border, #e5e7eb);
+  padding: 4px;
+  overflow: hidden;
+}
+
+.admin-tabs {
+  min-height: 40px !important;
+}
+
+.admin-tab {
+  font-size: 0.82rem !important;
+  min-height: 36px !important;
+  min-width: 0 !important;
+  padding: 0 14px !important;
+  border-radius: 10px;
+  letter-spacing: 0;
 }
 
 .pastoral-report-grid {
@@ -4505,6 +4672,11 @@ onMounted(async () => {
 /* ── Dark mode ── */
 :global(.app-theme-dark) .platform-admin-page {
   background: var(--app-color-background);
+}
+
+:global(.app-theme-dark) .admin-tabs-bar {
+  background: var(--app-color-surface);
+  border-color: var(--app-color-border);
 }
 
 :global(.app-theme-dark) .platform-kicker {

@@ -1,6 +1,10 @@
 <template>
   <div class="pa-4 pb-8 page-wrapper">
     <template v-if="hasChurch">
+      <DashboardTodayCard />
+
+      <DashboardMyNextAssignmentCard />
+
       <DashboardNextScheduleCard :schedule="nextSchedule" />
 
       <DashboardDailyVerseCard />
@@ -8,6 +12,8 @@
       <DashboardAnnouncementsSection />
 
       <DashboardQuickAccess />
+
+      <DashboardPrayerPreviewCard />
 
       <v-alert
         v-if="schedulesError"

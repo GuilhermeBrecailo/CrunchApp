@@ -40,6 +40,7 @@ services:
   web:
     build: ./web
     container_name: web-igreja
+    command: ["node", ".output/server/index.mjs"]
     ports:
       - "${WEB_PORT:-3000}:3000"
     environment:

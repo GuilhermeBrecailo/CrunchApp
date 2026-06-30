@@ -10,15 +10,53 @@
         </h1>
       </div>
 
-      <v-alert
-        v-if="user?.role !== 'PASTOR'"
-        type="info"
-        variant="tonal"
-        class="rounded-lg"
-      >
-        Sua conta foi criada como membro. Para acessar escalas e ministérios,
-        um pastor ou administrador precisa vincular você a uma igreja.
-      </v-alert>
+      <template v-if="user?.role !== 'PASTOR'">
+        <v-alert type="info" variant="tonal" class="rounded-lg mb-4">
+          Sua conta foi criada como membro. Peça o código de convite ao pastor
+          para entrar na sua igreja, ou aguarde ser vinculado manualmente.
+        </v-alert>
+
+        <v-card class="rounded-xl pa-5 mb-4 elevation-1 invite-join-card">
+          <div class="d-flex align-center gap-3 mb-4">
+            <v-avatar size="40" color="#eef2ff">
+              <QrCode size="20" color="#4f46e5" />
+            </v-avatar>
+            <div>
+              <p class="font-weight-bold mb-0" style="font-size:0.95rem;color:#111827;">Tenho um código de convite</p>
+              <p class="text-caption mb-0" style="color:#6b7280;">Digite o código recebido pelo pastor</p>
+            </div>
+          </div>
+
+          <v-text-field
+            v-model="inviteCode"
+            label="Código de convite"
+            variant="outlined"
+            color="indigo-darken-2"
+            density="comfortable"
+            placeholder="Ex: A1B2C3D4"
+            hide-details="auto"
+            :error-messages="joinError ? [joinError] : []"
+            class="mb-3"
+            @keyup.enter="handleJoin"
+          />
+
+          <v-alert v-if="joinSuccess" type="success" variant="tonal" density="compact" class="mb-3">
+            Você entrou na igreja! Redirecionando…
+          </v-alert>
+
+          <v-btn
+            color="indigo-darken-2"
+            block
+            class="text-none font-weight-bold rounded-lg"
+            size="large"
+            :loading="joiningChurch"
+            :disabled="!inviteCode.trim() || joiningChurch"
+            @click="handleJoin"
+          >
+            Entrar na igreja
+          </v-btn>
+        </v-card>
+      </template>
 
       <v-card
         v-if="user?.role === 'PASTOR'"
@@ -129,19 +167,26 @@
 
 <script setup lang="ts">
 import { reactive, ref } from "vue";
+import { QrCode } from "lucide-vue-next";
 import { useAuth } from "../../../composables/useAuth";
 import { useChurch } from "../../../composables/useChurch";
+import { useChurchInvite } from "../../../composables/useChurchInvite";
 
 definePageMeta({
   layout: "not-app-bottom",
 });
 
 const router = useRouter();
-const { user, logout } = useAuth();
+const { user, logout, fetchMe } = useAuth();
 const { createOwnChurch } = useChurch();
+const { joinByCode } = useChurchInvite();
 
 const loading = ref(false);
 const errorMessage = ref("");
+const inviteCode = ref("");
+const joiningChurch = ref(false);
+const joinError = ref("");
+const joinSuccess = ref(false);
 
 const form = reactive({
   name: "",
@@ -186,5 +231,17 @@ const handleCreateChurch = async () => {
 const handleLogout = async () => {
   await logout();
   await router.push("/login");
+};
+
+const handleJoin = async () => {
+  if (!inviteCode.value.trim()) return;
+  joinError.value = "";
+  joiningChurch.value = true;
+  const { error } = await joinByCode(inviteCode.value.trim().toUpperCase());
+  joiningChurch.value = false;
+  if (error) { joinError.value = error; return; }
+  await fetchMe();
+  joinSuccess.value = true;
+  setTimeout(() => router.replace("/"), 1800);
 };
 </script>

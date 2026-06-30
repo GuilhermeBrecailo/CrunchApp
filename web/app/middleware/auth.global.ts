@@ -2,7 +2,7 @@ import { defineNuxtRouteMiddleware, navigateTo, useCookie, useState } from "#app
 
 const publicRoutes = ["/login", "/register", "/forgot-password"];
 const onboardingRoutes = ["/onboarding/church"];
-const noChurchAllowedRoutes = ["/", "/user", "/admin", ...onboardingRoutes];
+const noChurchAllowedRoutes = ["/", "/user", "/admin", "/join", ...onboardingRoutes];
 const refreshCookieName = "refresh_token";
 
 export default defineNuxtRouteMiddleware(async (to) => {
