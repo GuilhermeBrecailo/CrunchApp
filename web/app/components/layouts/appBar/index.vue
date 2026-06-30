@@ -112,6 +112,16 @@
               </div>
             </div>
 
+            <v-btn
+              block
+              variant="text"
+              size="small"
+              class="text-none"
+              @click="router.push('/notifications')"
+            >
+              Ver todas as notificações
+            </v-btn>
+
             <div class="notification-settings">
               <p class="notification-settings-title">{{ notificationTitle }}</p>
               <p class="notification-description">{{ notificationDescription }}</p>
