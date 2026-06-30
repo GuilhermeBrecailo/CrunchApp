@@ -2,6 +2,7 @@
   <v-app :theme="themeName" :class="themeClass">
     <v-locale-provider>
       <LayoutsMain>
+        <OnboardingModal />
         <div v-if="user?.isDemoUser" class="demo-banner">
           <v-icon size="15" class="mr-1">mdi-test-tube</v-icon>
           Você está no <strong>modo demo</strong> — os dados são resetados diariamente
