@@ -1,6 +1,6 @@
 ## Why
 
-O AppQuadrangular tem uma base visual sólida, mas acumulou inconsistências que degradam a percepção de qualidade: um avatar hardcoded que exibe iniciais erradas para todos os usuários, ausência de ícones em cards informativos, paleta roxa fragmentada em três formas diferentes no código, e empty states sem direcionamento. Essas falhas são visíveis no uso diário e prejudicam a confiança no produto.
+O AppChurch tem uma base visual sólida, mas acumulou inconsistências que degradam a percepção de qualidade: um avatar hardcoded que exibe iniciais erradas para todos os usuários, ausência de ícones em cards informativos, paleta roxa fragmentada em três formas diferentes no código, e empty states sem direcionamento. Essas falhas são visíveis no uso diário e prejudicam a confiança no produto.
 
 ## What Changes
 

@@ -1,6 +1,6 @@
 ## Why
 
-Membros que querem acompanhar a leitura bíblica durante o culto ou no dia a dia precisam sair do app para abrir o YouVersion ou outro leitor. O AppQuadrangular já tem uma aba "Conteúdo" — integrar a Bíblia mantém o usuário no contexto do app e agrega valor espiritual diário sem custo de backend próprio.
+Membros que querem acompanhar a leitura bíblica durante o culto ou no dia a dia precisam sair do app para abrir o YouVersion ou outro leitor. O AppChurch já tem uma aba "Conteúdo" — integrar a Bíblia mantém o usuário no contexto do app e agrega valor espiritual diário sem custo de backend próprio.
 
 ## What Changes
 

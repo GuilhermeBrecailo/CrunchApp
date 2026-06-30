@@ -230,7 +230,7 @@ onMounted(() => {
 .bible-verse-num {
   font-size: 0.65rem;
   font-weight: 700;
-  color: #A855F7;
+  color: var(--app-color-accent);
   vertical-align: super;
   margin-right: 3px;
   line-height: 0;

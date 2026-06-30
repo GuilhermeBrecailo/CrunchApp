@@ -321,35 +321,63 @@
 
             <div class="scale-song-list">
               <article
-                v-for="song in selectedDetailSongs"
+                v-for="(song, songIndex) in selectedDetailSongs"
                 :key="song.id"
                 class="scale-song-card"
                 :class="{ 'scale-song-card-active': activeDetailSong?.id === song.id }"
-                role="button"
-                tabindex="0"
-                @click="openSongFullscreen(song)"
-                @keydown.enter="openSongFullscreen(song)"
-                @keydown.space.prevent="openSongFullscreen(song)"
               >
-                <div class="scale-song-header">
-                  <div class="min-w-0">
-                    <p class="scale-song-category mb-1">
-                      {{ song.metadata?.songCategory || "Música" }}
-                    </p>
-                    <h4 class="scale-song-title mb-1">{{ song.title }}</h4>
-                    <p class="scale-song-artist mb-0">
-                      {{ song.metadata?.artist || "Artista não informado" }}
-                    </p>
+                <div class="scale-song-row">
+                  <div
+                    class="scale-song-info"
+                    role="button"
+                    tabindex="0"
+                    @click="openSongFullscreen(song)"
+                    @keydown.enter="openSongFullscreen(song)"
+                    @keydown.space.prevent="openSongFullscreen(song)"
+                  >
+                    <div class="scale-song-header">
+                      <div class="min-w-0">
+                        <p class="scale-song-category mb-1">
+                          {{ song.metadata?.songCategory || "Música" }}
+                        </p>
+                        <h4 class="scale-song-title mb-1">{{ song.title }}</h4>
+                        <p class="scale-song-artist mb-0">
+                          {{ song.metadata?.artist || "Artista não informado" }}
+                        </p>
+                      </div>
+                    </div>
+                    <div class="scale-song-meta">
+                      <v-chip v-if="song.metadata?.key" size="small" variant="tonal">
+                        Tom {{ song.metadata.key }}
+                      </v-chip>
+                      <v-chip v-if="song.metadata?.bpm" size="small" variant="tonal">
+                        {{ song.metadata.bpm }} BPM
+                      </v-chip>
+                    </div>
                   </div>
-                </div>
 
-                <div class="scale-song-meta">
-                  <v-chip v-if="song.metadata?.key" size="small" variant="tonal">
-                    Tom {{ song.metadata.key }}
-                  </v-chip>
-                  <v-chip v-if="song.metadata?.bpm" size="small" variant="tonal">
-                    {{ song.metadata.bpm }} BPM
-                  </v-chip>
+                  <div v-if="selectedDetailEvent?.canManage" class="scale-song-order-btns">
+                    <v-btn
+                      icon
+                      size="x-small"
+                      variant="text"
+                      :disabled="songIndex === 0"
+                      aria-label="Mover para cima"
+                      @click.stop="moveSong(songIndex, -1)"
+                    >
+                      <ChevronUp size="16" />
+                    </v-btn>
+                    <v-btn
+                      icon
+                      size="x-small"
+                      variant="text"
+                      :disabled="songIndex === selectedDetailSongs.length - 1"
+                      aria-label="Mover para baixo"
+                      @click.stop="moveSong(songIndex, 1)"
+                    >
+                      <ChevronDown size="16" />
+                    </v-btn>
+                  </div>
                 </div>
               </article>
             </div>
@@ -1136,6 +1164,8 @@ import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from
 import {
   Calendar,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Clock,
   Eye,
   EyeOff,
@@ -1172,6 +1202,7 @@ const {
   updateScheduleAssignmentAttendance,
   getDepartmentResources,
   getDepartmentSongs,
+  reorderScheduleMediaItems,
 } = useDepartments();
 const { getMembers } = useMembers();
 const { can } = usePermissions();
@@ -1453,6 +1484,8 @@ type ScheduleEvent = {
   } | null;
   mediaItems: {
     id: string;
+    scheduleMediaItemId: string;
+    order: number;
     title: string;
     category: string;
     url?: string;
@@ -1575,6 +1608,8 @@ const toScheduleEvent = (schedule: DepartmentSchedule): ScheduleEvent => {
     mediaItems:
       schedule.mediaItems?.map((item) => ({
         id: item.mediaItem.id,
+        scheduleMediaItemId: item.id,
+        order: item.order ?? 0,
         title: item.mediaItem.title,
         category: item.mediaItem.category,
         url: item.mediaItem.url,
@@ -1620,6 +1655,31 @@ const selectDetailSong = (song: ScheduleEvent["mediaItems"][number]) => {
   if (!["lyrics", "chords"].includes(songTabs[song.id])) {
     songTabs[song.id] = defaultSongTab(song);
   }
+};
+
+const moveSong = async (index: number, direction: -1 | 1) => {
+  const event = selectedDetailEvent.value;
+  if (!event) return;
+
+  const songs = event.mediaItems.filter((item) => item.category === "MUSIC");
+  const targetIndex = index + direction;
+  if (targetIndex < 0 || targetIndex >= songs.length) return;
+
+  const reordered = [...songs];
+  [reordered[index], reordered[targetIndex]] = [reordered[targetIndex], reordered[index]];
+
+  const items = reordered.map((song, i) => ({
+    id: song.scheduleMediaItemId,
+    order: i,
+  }));
+
+  event.mediaItems = [
+    ...reordered,
+    ...event.mediaItems.filter((item) => item.category !== "MUSIC"),
+  ];
+
+  const { error } = await reorderScheduleMediaItems(event.id, items);
+  if (error) await loadSchedules();
 };
 
 const addFormVolunteer = () => {
@@ -2634,7 +2694,7 @@ watch(schedules, async () => {
 }
 
 .scale-details-person-role {
-  color: #6d28d9;
+  color: var(--app-color-accent);
   font-size: 0.78rem;
   font-weight: 750;
 }
@@ -2661,35 +2721,52 @@ watch(schedules, async () => {
 }
 
 .scale-song-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .scale-song-card {
-  display: grid;
-  gap: 12px;
   border: 1px solid #ede9fe;
   border-radius: 8px;
   background: #fdfcff;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.scale-song-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.scale-song-info {
+  flex: 1;
+  min-width: 0;
   padding: 14px;
   cursor: pointer;
   text-align: left;
-  transition:
-    border-color 0.16s ease,
-    box-shadow 0.16s ease,
-    transform 0.16s ease;
 }
 
-.scale-song-card:hover {
+.scale-song-order-btns {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 6px 4px 0;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.scale-song-card:has(.scale-song-info:hover) {
   border-color: #c084fc;
-  box-shadow: 0 10px 22px rgba(126, 34, 206, 0.08);
-  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(126, 34, 206, 0.08);
 }
 
-.scale-song-card:focus-visible {
+.scale-song-info:focus-visible {
   outline: 3px solid rgba(168, 85, 247, 0.28);
-  outline-offset: 2px;
+  outline-offset: -3px;
+  border-radius: 8px;
 }
 
 .scale-song-card-active {

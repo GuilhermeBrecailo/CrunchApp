@@ -1,4 +1,4 @@
-# Documentacao do AppQuadrangular
+# Documentacao do AppChurch
 
 Esta pasta separa a documentacao por contexto da aplicacao.
 

@@ -1,6 +1,6 @@
 ## Context
 
-O AppQuadrangular é um PWA mobile-first construído com Nuxt 3 + Vuetify 3 + Tailwind CSS. O sistema de temas usa CSS custom properties em `theme.css` como fonte de verdade (`--app-color-accent`, `--app-color-background`, etc.), mas partes do código ainda usam valores inline (`#A855F7`, `#6d28d9`) ou classes Vuetify (`purple-darken-3`) para a mesma cor de accent — criando três representações da mesma decisão de design.
+O AppChurch é um PWA mobile-first construído com Nuxt 3 + Vuetify 3 + Tailwind CSS. O sistema de temas usa CSS custom properties em `theme.css` como fonte de verdade (`--app-color-accent`, `--app-color-background`, etc.), mas partes do código ainda usam valores inline (`#A855F7`, `#6d28d9`) ou classes Vuetify (`purple-darken-3`) para a mesma cor de accent — criando três representações da mesma decisão de design.
 
 O AppBar (`web/app/components/layouts/appBar/index.vue`) exibe iniciais hardcoded `"GB"` no avatar do usuário. O composable `useAuth` já expõe `user.value.name`, então a correção é puramente de template. Não há state novo necessário.
 

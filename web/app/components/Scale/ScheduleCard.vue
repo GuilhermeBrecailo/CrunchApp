@@ -331,7 +331,7 @@ const userAssignmentStatusLabel = computed(() => {
 }
 
 .schedule-media-summary {
-  color: #6d28d9;
+  color: var(--app-color-accent);
 }
 
 .assignment-summary {

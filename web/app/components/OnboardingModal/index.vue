@@ -232,7 +232,7 @@ onMounted(() => {
 }
 
 .onboarding-dot.active {
-  background: #A855F7;
+  background: var(--app-color-accent);
   transform: scale(1.3);
 }
 

@@ -4167,7 +4167,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #6d28d9;
+  color: var(--app-color-accent);
 }
 
 .report-panel-title h3 {

@@ -257,7 +257,7 @@ const handleLogin = async () => {
 
 .auth-link {
   font-size: 0.875rem;
-  color: #6d28d9;
+  color: var(--app-color-accent);
   text-decoration: none;
   transition: color 0.15s ease;
 }

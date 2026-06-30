@@ -3725,7 +3725,7 @@ onMounted(async () => {
   font-weight: 700;
 }
 .schedule-assignment-role {
-  color: #6d28d9;
+  color: var(--app-color-accent);
   font-size: 0.78rem;
   font-weight: 800;
 }
@@ -3807,7 +3807,7 @@ onMounted(async () => {
   padding-top: 12px;
 }
 .personal-chords-editor summary {
-  color: #6d28d9;
+  color: var(--app-color-accent);
   cursor: pointer;
   font-size: 0.86rem;
   font-weight: 800;

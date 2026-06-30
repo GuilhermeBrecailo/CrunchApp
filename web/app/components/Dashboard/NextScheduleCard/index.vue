@@ -118,7 +118,7 @@ const goToSchedule = () => {
 
 <style scoped>
 .scale-card {
-  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%) !important;
+  background: linear-gradient(135deg, var(--app-color-accent-soft) 0%, var(--app-color-accent) 100%) !important;
   position: relative;
   overflow: hidden;
   cursor: pointer;

@@ -688,6 +688,20 @@ export const useDepartments = () => {
     );
   };
 
+  const reorderScheduleMediaItems = async (
+    scheduleId: string,
+    items: { id: string; order: number }[],
+  ): Promise<ApiResponse<{ ok: boolean }>> => {
+    return await $customFetch<{ ok: boolean }>(
+      `${config.public.URL_BACKEND}/api/church/schedules/${scheduleId}/media-items/order`,
+      {
+        method: "PATCH",
+        headers: authHeaders(),
+        body: { items },
+      },
+    );
+  };
+
   return {
     getDepartments,
     createDepartment,
@@ -719,5 +733,6 @@ export const useDepartments = () => {
     deleteDepartmentSong,
     getSongPreference,
     updateSongPreference,
+    reorderScheduleMediaItems,
   };
 };

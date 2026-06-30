@@ -223,12 +223,6 @@ export function useBible() {
     error.value = "";
     verses.value = [];
 
-    if (selectedVersion.value === "nvt") {
-      error.value = "NVT não está disponível na API bíblica pública usada pelo app. Use NVI, ACF ou ARA.";
-      loading.value = false;
-      return;
-    }
-
     try {
       const url = `https://www.abibliadigital.com.br/api/verses/${selectedVersion.value}/${encodeURIComponent(book.abbrev)}/${selectedChapter.value}`;
       const response = await $fetch<BibliaDigitalChapterResponse>(url);

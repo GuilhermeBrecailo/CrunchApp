@@ -21,5 +21,5 @@
 
 ## 5. Documentação do Padrão de Design Tokens (próximos passos)
 
-- [ ] 5.1 Ao criar novos componentes com cor de accent em CSS customizado, usar sempre `var(--app-color-accent)` em vez de hex inline — conforme spec `ui-design-tokens`
-- [ ] 5.2 Em um change futuro dedicado, varrer o codebase e migrar os usos de `#A855F7` e `#6d28d9` em `<style scoped>` para `var(--app-color-accent)` onde não há restrição de props Vuetify
+- [x] 5.1 Ao criar novos componentes com cor de accent em CSS customizado, usar sempre `var(--app-color-accent)` em vez de hex inline — conforme spec `ui-design-tokens`
+- [x] 5.2 Em um change futuro dedicado, varrer o codebase e migrar os usos de `#A855F7` e `#6d28d9` em `<style scoped>` para `var(--app-color-accent)` onde não há restrição de props Vuetify

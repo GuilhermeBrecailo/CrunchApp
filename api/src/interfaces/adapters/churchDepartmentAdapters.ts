@@ -134,11 +134,12 @@ export class ChurchDepartmentAdapters {
     },
     mediaItems: {
       orderBy: {
-        createdAt: "asc" as const,
+        order: "asc" as const,
       },
       select: {
         id: true,
         mediaItemId: true,
+        order: true,
         mediaItem: {
           select: {
             id: true,
@@ -1197,9 +1198,10 @@ export class ChurchDepartmentAdapters {
         rehearsalAt: this.getOptionalDateTime(body.rehearsalDate, body.rehearsalTime),
         rehearsalNotes: body.rehearsalNotes?.trim() || null,
         mediaItems: {
-          create: mediaItemIds.map((mediaItemId) => ({
+          create: mediaItemIds.map((mediaItemId, index) => ({
             id: crypto.randomUUID(),
             mediaItemId,
+            order: index,
           })),
         },
       },
@@ -1311,12 +1313,13 @@ export class ChurchDepartmentAdapters {
             scheduleId: id,
           },
         }),
-        ...mediaItemIds.map((mediaItemId) =>
+        ...mediaItemIds.map((mediaItemId, index) =>
           $prismaClient.scheduleMediaItem.create({
             data: {
               id: crypto.randomUUID(),
               scheduleId: id,
               mediaItemId,
+              order: index,
             },
           }),
         ),
@@ -1746,6 +1749,31 @@ export class ChurchDepartmentAdapters {
         },
       },
     });
+  }
+
+  async reorderScheduleMediaItems(request: FastifyRequest) {
+    const user = await this.getCurrentUser(request);
+    const { id } = request.params as { id?: string };
+    const body = request.body as { items?: { id: string; order: number }[] };
+
+    if (!id) throw new DomainError("Escala nao informada");
+    if (!Array.isArray(body.items) || body.items.length === 0) {
+      throw new DomainError("Lista de itens invalida");
+    }
+
+    const schedule = await this.getScheduleFromCurrentChurch(id, user.crunchId!);
+    await this.assertCanManageScheduleDepartment(user, schedule.departmentId);
+
+    await $prismaClient.$transaction(
+      body.items.map(({ id: itemId, order }) =>
+        $prismaClient.scheduleMediaItem.updateMany({
+          where: { id: itemId, scheduleId: id },
+          data: { order },
+        }),
+      ),
+    );
+
+    return { ok: true };
   }
 
   async getChurchDepartmentResources(request: FastifyRequest) {

@@ -102,6 +102,11 @@ export async function ChurchDepartmentRoutes(app: FastifyInstance) {
     ),
   );
 
+  app.patch(
+    "/api/church/schedules/:id/media-items/order",
+    controllerHandler(adapters.reorderScheduleMediaItems.bind(adapters)),
+  );
+
   app.get(
     "/api/church/departments/:id/resources",
     controllerHandler(adapters.getChurchDepartmentResources.bind(adapters)),

@@ -1,6 +1,6 @@
-# AppQuadrangular
+# AppChurch
 
-AppQuadrangular e um MVP fullstack para gestao de igrejas, ministerios, membros e escalas. A ideia do projeto e resolver uma dor real de organizacao interna: centralizar cadastro de igreja, membros, liderancas, ministerios, escalas de servico, disponibilidade dos voluntarios, tarefas e administracao.
+AppChurch e um MVP fullstack para gestao de igrejas, ministerios, membros e escalas. A ideia do projeto e resolver uma dor real de organizacao interna: centralizar cadastro de igreja, membros, liderancas, ministerios, escalas de servico, disponibilidade dos voluntarios, tarefas e administracao.
 
 O projeto foi construido como uma aplicacao real, com autenticacao, permissoes, banco relacional, frontend responsivo, API estruturada, integracao com Keycloak e ambiente local via Docker Compose.
 
@@ -393,4 +393,4 @@ Observacao: dependendo do ambiente, o build do Nuxt pode exibir warnings de CSS 
 
 Este projeto demonstra uma aplicacao fullstack em TypeScript com frontend moderno em Nuxt/Vue, backend em Fastify, ORM com Prisma, banco PostgreSQL, autenticacao externa com Keycloak, controle de permissoes, Docker Compose, testes automatizados e uma estrutura de codigo organizada por responsabilidades.
 
-Mais do que uma tela bonita, o AppQuadrangular mostra regras reais de produto: pastor administra a propria igreja, lider gerencia apenas o ministerio dele, membro comum nao altera escalas, usuarios criados pelo pastor precisam redefinir senha no primeiro acesso e a experiencia funciona em desktop e mobile.
+Mais do que uma tela bonita, o AppChurch mostra regras reais de produto: pastor administra a propria igreja, lider gerencia apenas o ministerio dele, membro comum nao altera escalas, usuarios criados pelo pastor precisam redefinir senha no primeiro acesso e a experiencia funciona em desktop e mobile.
