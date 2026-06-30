@@ -30,6 +30,8 @@ export interface JwtDecoded extends JwtPayload {
 export class JwtValidationUseCase {
   private cache: Record<string, ReturnType<typeof jwksClient>> = {};
   private allowedAlgorithms: string[] = ["RS256"];
+  private demoIssuer = "appquadrangular-demo";
+  private demoAudience = "appquadrangular";
 
   constructor() {}
 
@@ -37,6 +39,10 @@ export class JwtValidationUseCase {
     if (!token) throw new DomainToken("Token inválido");
 
     const { header, payload } = this.decodeToken(token);
+    if (this.isDemoToken(header, payload)) {
+      return this.verifyDemoToken(token);
+    }
+
     const client = this.getJwksClient(payload.iss!);
     const publicKey = await this.getPublicKey(client, header.kid!);
 
@@ -56,16 +62,54 @@ export class JwtValidationUseCase {
   private decodeToken(token: string): DecodedHeader {
     const decoded = jwt.decode(token, { complete: true }) as DecodedHeader;
 
-    if (
-      !decoded ||
-      decoded.header.alg !== "RS256" ||
-      !decoded.header.kid ||
-      !decoded.payload.iss
-    ) {
+    if (!decoded || !decoded.payload.iss) {
+      throw new DomainToken("Token inválido");
+    }
+
+    if (this.isDemoToken(decoded.header, decoded.payload)) {
+      return decoded;
+    }
+
+    if (decoded.header.alg !== "RS256" || !decoded.header.kid) {
       throw new DomainToken("Token inválido");
     }
 
     return decoded;
+  }
+
+  private isDemoLoginEnabled() {
+    return (
+      process.env.DEMO_LOGIN_ENABLED === "true" ||
+      process.env.NODE_ENV !== "production"
+    );
+  }
+
+  private getDemoJwtSecret() {
+    return (
+      process.env.DEMO_JWT_SECRET ||
+      process.env.KEYCLOAK_SECRET_KEY ||
+      "appquadrangular-demo-local-secret"
+    );
+  }
+
+  private isDemoToken(header: JwtHeader, payload: JwtPayload & { iss?: string }) {
+    return (
+      this.isDemoLoginEnabled() &&
+      header.alg === "HS256" &&
+      payload.iss === this.demoIssuer
+    );
+  }
+
+  private verifyDemoToken(token: string): JwtDecoded {
+    try {
+      return jwt.verify(token, this.getDemoJwtSecret(), {
+        algorithms: ["HS256"],
+        issuer: this.demoIssuer,
+        audience: this.demoAudience,
+      }) as JwtDecoded;
+    } catch {
+      throw new DomainToken("Token inválido");
+    }
   }
 
   private getJwksClient(issuer: string) {

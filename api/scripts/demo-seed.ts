@@ -11,6 +11,10 @@ import {
   createDemoSongs,
   createDemoSchedules,
   createDemoMembers,
+  createDemoDepartmentResources,
+  createDemoTasks,
+  createDemoContent,
+  createDemoUserState,
 } from "./demo-data.ts";
 
 async function seed() {
@@ -115,18 +119,37 @@ async function seed() {
   const members = await createDemoMembers(demoCrunch.id);
 
   // 6. Departamentos
-  const { louvor } = await createDemoDepartments(demoCrunch.id, pastorDemo.id);
+  const departments = await createDemoDepartments(demoCrunch.id, pastorDemo.id);
+  const { louvor } = departments;
 
   // 7. Músicas
   const songItems = await createDemoSongs(louvor.id);
   const songIds = songItems.map((s) => s.id);
 
-  // 8. Escalas
+  // 8. Recursos, tarefas e escalas
+  await createDemoDepartmentResources(departments);
+  await createDemoTasks(departments, [
+    demoUser.id,
+    ...members.map((m) => m.id),
+  ]);
+
   await createDemoSchedules(
     louvor.id,
     demoUser.id,
     members.map((m) => m.id),
     songIds,
+  );
+
+  // 9. Conteúdo, pedidos e estado do usuário
+  await createDemoContent(demoCrunch.id, pastorDemo.id, [
+    demoUser.id,
+    ...members.map((m) => m.id),
+  ]);
+  await createDemoUserState(
+    demoUser.id,
+    members.map((m) => m.id),
+    songIds,
+    [louvor.id, departments.diaconato.id, departments.midia.id],
   );
 
   console.log(`
@@ -136,8 +159,13 @@ async function seed() {
 
    Igreja: ${demoCrunch.name} (ID: ${demoCrunch.id})
    Membros fictícios: ${members.length}
+   Ministérios: 4
    Músicas: ${songItems.length}
    Escalas: 3
+   Devocionais: 1
+   Versículos: 3
+   Avisos: 2
+   Pedidos de oração: 3
 
 ℹ️  Para reset diário, adicione ao crontab (crontab -e):
    0 0 * * * cd ${process.cwd()} && npm run demo:reset >> /tmp/demo-reset.log 2>&1

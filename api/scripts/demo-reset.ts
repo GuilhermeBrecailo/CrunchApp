@@ -11,6 +11,10 @@ import {
   createDemoSongs,
   createDemoSchedules,
   createDemoMembers,
+  createDemoDepartmentResources,
+  createDemoTasks,
+  createDemoContent,
+  createDemoUserState,
 } from "./demo-data.ts";
 
 async function reset() {
@@ -26,22 +30,59 @@ async function reset() {
     process.exit(0);
   }
 
-  // 1. Deletar escalas (cascade deleta assignments e schedule media items)
+  // 1. Deletar conteúdo e estado do usuário demo
+  await $prismaClient.prayerRequest.deleteMany({
+    where: { crunchId: demoCrunch.id },
+  });
+
+  await $prismaClient.devotional.deleteMany({
+    where: { crunchId: demoCrunch.id },
+  });
+
+  await $prismaClient.announcement.deleteMany({
+    where: { crunchId: demoCrunch.id },
+  });
+
+  await $prismaClient.dailyVerse.deleteMany({
+    where: { crunchId: demoCrunch.id },
+  });
+
+  await $prismaClient.appNotification.deleteMany({
+    where: { user: { crunchId: demoCrunch.id } },
+  });
+
+  await $prismaClient.userUnavailableDate.deleteMany({
+    where: { user: { crunchId: demoCrunch.id } },
+  });
+
+  await $prismaClient.userSongPreference.deleteMany({
+    where: { user: { crunchId: demoCrunch.id } },
+  });
+
+  // 2. Deletar escalas (cascade deleta assignments e schedule media items)
   await $prismaClient.schedule.deleteMany({
     where: { department: { crunchId: demoCrunch.id } },
   });
 
-  // 2. Deletar músicas e recursos
+  // 3. Deletar tarefas, vínculos, músicas e recursos
+  await $prismaClient.departmentTask.deleteMany({
+    where: { department: { crunchId: demoCrunch.id } },
+  });
+
+  await $prismaClient.userDepartmentMembership.deleteMany({
+    where: { department: { crunchId: demoCrunch.id } },
+  });
+
   await $prismaClient.mediaItem.deleteMany({
     where: { department: { crunchId: demoCrunch.id } },
   });
 
-  // 3. Deletar departamentos
+  // 4. Deletar departamentos
   await $prismaClient.department.deleteMany({
     where: { crunchId: demoCrunch.id },
   });
 
-  // 4. Deletar membros fictícios (preserva usuário demo e pastor demo)
+  // 5. Deletar membros fictícios (preserva usuário demo e pastor demo)
   await $prismaClient.user.deleteMany({
     where: {
       crunchId: demoCrunch.id,
@@ -67,15 +108,33 @@ async function reset() {
 
   // Recriar dados
   const members = await createDemoMembers(demoCrunch.id);
-  const { louvor } = await createDemoDepartments(demoCrunch.id, pastorDemo.id);
+  const departments = await createDemoDepartments(demoCrunch.id, pastorDemo.id);
+  const { louvor } = departments;
   const songItems = await createDemoSongs(louvor.id);
   const songIds = songItems.map((s) => s.id);
+
+  await createDemoDepartmentResources(departments);
+  await createDemoTasks(departments, [
+    demoUser.id,
+    ...members.map((m) => m.id),
+  ]);
 
   await createDemoSchedules(
     louvor.id,
     demoUser.id,
     members.map((m) => m.id),
     songIds,
+  );
+
+  await createDemoContent(demoCrunch.id, pastorDemo.id, [
+    demoUser.id,
+    ...members.map((m) => m.id),
+  ]);
+  await createDemoUserState(
+    demoUser.id,
+    members.map((m) => m.id),
+    songIds,
+    [louvor.id, departments.diaconato.id, departments.midia.id],
   );
 
   console.log(`✅ Reset completo! [${new Date().toISOString()}]`);
