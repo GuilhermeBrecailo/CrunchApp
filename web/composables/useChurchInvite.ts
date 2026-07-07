@@ -6,7 +6,14 @@ import { useAuth } from "./useAuth";
 export function useChurchInvite() {
   const { $customFetch } = useNuxtApp() as unknown as { $customFetch: CustomFetch };
   const config = useRuntimeConfig();
-  const { authHeaders } = useAuth();
+  const { access_token } = useAuth();
+
+  const authHeaders = () => ({
+    "Content-Type": "application/json",
+    ...(access_token.value
+      ? { Authorization: `Bearer ${access_token.value}` }
+      : {}),
+  });
 
   const getInviteCode = async (): Promise<ApiResponse<{ inviteCode: string }>> => {
     return await $customFetch<{ inviteCode: string }>(

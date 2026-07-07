@@ -23,7 +23,14 @@ export interface PrayerRequestsPage {
 export function usePrayerRequests() {
   const { $customFetch } = useNuxtApp() as unknown as { $customFetch: CustomFetch };
   const config = useRuntimeConfig();
-  const { authHeaders } = useAuth();
+  const { access_token } = useAuth();
+
+  const authHeaders = () => ({
+    "Content-Type": "application/json",
+    ...(access_token.value
+      ? { Authorization: `Bearer ${access_token.value}` }
+      : {}),
+  });
 
   const getPrayerRequests = async (page = 1): Promise<ApiResponse<PrayerRequestsPage>> => {
     return await $customFetch<PrayerRequestsPage>(

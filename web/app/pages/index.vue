@@ -1,31 +1,45 @@
 <template>
   <div class="pa-4 pb-8 page-wrapper">
     <template v-if="hasChurch">
-      <DashboardTodayCard />
+      <v-skeleton-loader
+        v-if="!setupStateLoaded"
+        type="card"
+        class="rounded-xl mb-6"
+      />
 
-      <DashboardMyNextAssignmentCard />
+      <DashboardGettingStartedCard
+        v-else-if="needsSetup"
+        :members-count="churchMembersCount"
+        :departments-count="churchDepartmentsCount"
+      />
 
-      <DashboardNextScheduleCard :schedule="nextSchedule" />
+      <template v-else>
+        <DashboardTodayCard />
 
-      <DashboardDailyVerseCard />
+        <DashboardMyNextAssignmentCard />
 
-      <DashboardAnnouncementsSection />
+        <DashboardNextScheduleCard :schedule="nextSchedule" />
 
-      <DashboardQuickAccess />
+        <DashboardDailyVerseCard />
 
-      <DashboardPrayerPreviewCard />
+        <DashboardAnnouncementsSection />
 
-      <v-alert
-        v-if="schedulesError"
-        type="error"
-        variant="tonal"
-        density="compact"
-        class="mb-4"
-      >
-        {{ schedulesError }}
-      </v-alert>
+        <DashboardQuickAccess />
 
-      <DashboardUpcomingEvents :schedules="upcomingSchedules" />
+        <DashboardPrayerPreviewCard />
+
+        <v-alert
+          v-if="schedulesError"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="mb-4"
+        >
+          {{ schedulesError }}
+        </v-alert>
+
+        <DashboardUpcomingEvents :schedules="upcomingSchedules" />
+      </template>
     </template>
 
     <template v-else-if="isPastorWithoutChurch">
@@ -166,12 +180,14 @@ import {
   useDepartments,
   type DepartmentSchedule,
 } from "../../composables/useDepartments";
+import { useMembers } from "../../composables/useMembers";
 
 const router = useRouter();
 const { user } = useAuth();
 const { isDark } = useThemeMode();
 const { createOwnChurch } = useChurch();
-const { getChurchSchedules } = useDepartments();
+const { getChurchSchedules, getDepartments } = useDepartments();
+const { getMembers } = useMembers();
 
 const hasChurch = computed(() => user.value?.hasChurch === true);
 const isPastorWithoutChurch = computed(
@@ -185,6 +201,16 @@ const loading = ref(false);
 const errorMessage = ref("");
 const schedules = ref<DepartmentSchedule[]>([]);
 const schedulesError = ref("");
+const churchMembersCount = ref(0);
+const churchDepartmentsCount = ref(0);
+const setupStateLoaded = ref(false);
+
+const needsSetup = computed(
+  () =>
+    setupStateLoaded.value &&
+    churchMembersCount.value <= 1 &&
+    churchDepartmentsCount.value === 0,
+);
 
 const churchForm = reactive({
   name: "",
@@ -263,13 +289,30 @@ const loadSchedules = async () => {
   schedules.value = data ?? [];
 };
 
+const loadSetupState = async () => {
+  if (!hasChurch.value) return;
+
+  const [membersResult, departmentsResult] = await Promise.all([
+    getMembers(),
+    getDepartments(),
+  ]);
+
+  churchMembersCount.value = membersResult.data?.length ?? 0;
+  churchDepartmentsCount.value = departmentsResult.data?.length ?? 0;
+  setupStateLoaded.value = true;
+};
+
 watch(hasChurch, (value) => {
   if (value) {
     loadSchedules();
+    loadSetupState();
   }
 });
 
-onMounted(loadSchedules);
+onMounted(() => {
+  loadSchedules();
+  loadSetupState();
+});
 </script>
 
 <style scoped>
