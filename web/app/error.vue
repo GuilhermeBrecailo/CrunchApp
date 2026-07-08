@@ -1,41 +1,73 @@
 <template>
   <div class="auth-page flex items-center justify-center min-h-screen p-4">
     <v-card class="auth-card w-full max-w-md" elevation="0">
-      <div class="auth-card-inner">
-        <div class="flex flex-col items-center mb-8 text-center">
-          <div class="auth-icon-circle mb-4">
-            <v-icon size="40" color="purple-darken-3">mdi-lock-reset</v-icon>
-          </div>
-          <h1 class="auth-title">Recuperar senha</h1>
-          <p class="auth-subtitle mt-2">
-            Fale com a liderança da sua igreja para redefinir seu acesso.
-          </p>
+      <div class="auth-card-inner text-center">
+        <div class="auth-icon-circle mb-4 mx-auto">
+          <v-icon size="40" :color="isDark ? 'accent-soft' : 'purple-darken-3'">
+            {{ isNotFound ? "mdi-map-marker-question-outline" : "mdi-alert-circle-outline" }}
+          </v-icon>
         </div>
 
-        <v-alert type="info" variant="tonal" density="comfortable" class="mb-6">
-          A recuperação automática de senha ainda não está disponível neste ambiente.
-        </v-alert>
+        <h1 class="auth-title">{{ title }}</h1>
+        <p class="auth-subtitle mt-2 mb-6">{{ description }}</p>
 
-        <v-btn
-          to="/login"
-          block
-          color="purple-darken-3"
-          size="x-large"
-          class="auth-btn text-none font-bold"
-          rounded="xl"
-          elevation="2"
-        >
-          Voltar para login
-        </v-btn>
+        <div class="d-flex flex-column ga-3">
+          <v-btn
+            block
+            color="purple-darken-3"
+            size="large"
+            class="auth-btn text-none font-bold"
+            rounded="xl"
+            elevation="2"
+            @click="goHome"
+          >
+            Voltar para o início
+          </v-btn>
+
+          <v-btn
+            block
+            variant="text"
+            color="grey-darken-1"
+            class="text-none"
+            @click="reset"
+          >
+            Tentar novamente
+          </v-btn>
+        </div>
       </div>
     </v-card>
   </div>
 </template>
 
 <script setup lang="ts">
-definePageMeta({
-  layout: "not-app-bottom",
-});
+import { computed } from "vue";
+import type { NuxtError } from "#app";
+
+const props = defineProps<{
+  error: NuxtError;
+}>();
+
+const { isDark } = useThemeMode();
+
+const isNotFound = computed(() => props.error?.statusCode === 404);
+
+const title = computed(() =>
+  isNotFound.value ? "Página não encontrada" : "Algo deu errado",
+);
+
+const description = computed(() =>
+  isNotFound.value
+    ? "O endereço que você tentou acessar não existe ou foi removido."
+    : "Não foi possível carregar esta página. Tente novamente em instantes.",
+);
+
+const goHome = () => {
+  clearError({ redirect: "/" });
+};
+
+const reset = () => {
+  clearError();
+};
 </script>
 
 <style scoped>
@@ -66,7 +98,7 @@ definePageMeta({
 }
 
 .auth-card-inner {
-  padding: 40px 32px 32px;
+  padding: 36px 32px 32px;
 }
 
 .auth-icon-circle {
@@ -84,11 +116,11 @@ definePageMeta({
 }
 
 .auth-title {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 800;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   color: #7c2d12;
-  margin: 0 0 6px;
+  margin: 0;
 }
 
 :global(.app-theme-dark) .auth-title {
@@ -98,12 +130,13 @@ definePageMeta({
 .auth-subtitle {
   font-size: 1rem;
   font-weight: 500;
-  color: var(--app-color-accent);
+  color: #6b7280;
   margin: 0;
+  line-height: 1.5;
 }
 
 :global(.app-theme-dark) .auth-subtitle {
-  color: var(--app-color-accent-soft);
+  color: var(--app-color-text-muted);
 }
 
 .auth-btn {

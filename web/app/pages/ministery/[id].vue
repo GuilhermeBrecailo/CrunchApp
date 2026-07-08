@@ -58,7 +58,7 @@
           v-for="tab in tabs"
           :key="tab.value"
           :variant="activeTab === tab.value ? 'flat' : 'outlined'"
-          :color="activeTab === tab.value ? '#A855F7' : 'grey-darken-1'"
+          :color="activeTab === tab.value ? 'purple-darken-3' : 'grey-darken-1'"
           class="tab-chip font-weight-medium cursor-pointer"
           @click="activeTab = tab.value"
         >
@@ -178,7 +178,7 @@
 
           <v-card class="ministery-content-card pa-4 elevation-1 bg-white">
             <div class="leader-card-title mb-3">
-              <BarChart3 size="18" color="#4F46E5" />
+              <BarChart3 size="18" :color="isDark ? '#f0975a' : '#B5472A'" />
               <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
                 Relatório rápido
               </h3>
@@ -204,7 +204,7 @@
 
         <v-card class="ministery-content-card pa-4 elevation-1 bg-white mb-4">
           <div class="leader-card-title mb-3">
-            <BellRing size="18" color="#9333EA" />
+            <BellRing size="18" :color="isDark ? '#f0975a' : '#B5472A'" />
             <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
               Lembretes de escala
             </h3>
@@ -262,7 +262,7 @@
         <div class="ministery-section-actions mb-4">
           <v-btn
             v-if="canManageSchedules"
-            color="#A855F7"
+            color="purple-darken-3"
             class="rounded-lg text-none"
             @click="isScheduleDialogOpen = true"
           >
@@ -383,7 +383,7 @@
         <div class="ministery-section-actions mb-4">
           <v-btn
             v-if="canManageSongs"
-            color="#A855F7"
+            color="purple-darken-3"
             class="rounded-lg text-none"
             @click="isTaskDialogOpen = true"
           >
@@ -464,7 +464,7 @@
         <div class="ministery-section-actions mb-4">
           <v-btn
             v-if="canManageDepartment"
-            color="#A855F7"
+            color="purple-darken-3"
             class="rounded-lg text-none"
             @click="isResourceDialogOpen = true"
           >
@@ -550,7 +550,7 @@
         <div class="ministery-section-actions mb-4">
           <v-btn
             v-if="canManageDepartment"
-            color="#A855F7"
+            color="purple-darken-3"
             class="rounded-lg text-none"
             @click="isSongDialogOpen = true"
           >
@@ -734,7 +734,7 @@
         <div class="ministery-section-actions mb-4">
           <v-btn
             v-if="canManageDepartment"
-            color="#A855F7"
+            color="purple-darken-3"
             class="rounded-lg text-none"
             @click="isActivityDialogOpen = true"
           >
@@ -816,8 +816,8 @@
     <UtilsResponsiveOverlay v-model="isScheduleDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="d-flex align-center mb-5">
-          <v-avatar color="#FAF5FF" size="44" class="mr-3">
-            <Calendar size="20" color="#A855F7" />
+          <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
+            <Calendar size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
           </v-avatar>
           <div>
             <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
@@ -987,8 +987,8 @@
     <UtilsResponsiveOverlay v-model="isResourceDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="d-flex align-center mb-5">
-          <v-avatar color="#FAF5FF" size="44" class="mr-3">
-            <FileText size="20" color="#A855F7" />
+          <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
+            <FileText size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
           </v-avatar>
           <div>
             <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
@@ -1091,8 +1091,8 @@
     <UtilsResponsiveOverlay v-model="isSongDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="d-flex align-center mb-5">
-          <v-avatar color="#FAF5FF" size="44" class="mr-3">
-            <Music size="20" color="#A855F7" />
+          <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
+            <Music size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
           </v-avatar>
           <div>
             <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
@@ -1507,8 +1507,8 @@
     <UtilsResponsiveOverlay v-model="isActivityDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="d-flex align-center mb-5">
-          <v-avatar color="#FAF5FF" size="44" class="mr-3">
-            <BookOpen size="20" color="#A855F7" />
+          <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
+            <BookOpen size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
           </v-avatar>
           <div>
             <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
@@ -1600,8 +1600,8 @@
     <UtilsResponsiveOverlay v-model="isAssignmentsDialogOpen" max-width="560">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="d-flex align-center mb-5">
-          <v-avatar color="#FAF5FF" size="44" class="mr-3">
-            <UserPlus size="20" color="#A855F7" />
+          <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
+            <UserPlus size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
           </v-avatar>
           <div>
             <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
@@ -1645,7 +1645,7 @@
         </div>
 
         <v-btn
-          color="#A855F7"
+          color="purple-darken-3"
           variant="tonal"
           class="text-none mb-4"
           :disabled="isSavingAssignments"
@@ -1783,8 +1783,8 @@
     <UtilsResponsiveOverlay v-model="isTaskDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="d-flex align-center mb-5">
-          <v-avatar color="#FAF5FF" size="44" class="mr-3">
-            <CheckSquare size="20" color="#A855F7" />
+          <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3">
+            <CheckSquare size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
           </v-avatar>
           <div>
             <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
@@ -1938,6 +1938,7 @@ import { usePermissions } from "../../../composables/usePermissions";
 
 const route = useRoute();
 const router = useRouter();
+const { isDark } = useThemeMode();
 const departmentId = String(route.params.id);
 const {
   getDepartmentById,
@@ -3584,8 +3585,8 @@ onMounted(async () => {
   color: #b91c1c;
 }
 .leader-metric-indigo {
-  background: #eef2ff;
-  color: #4f46e5;
+  background: var(--app-color-accent-tint, #F7E2D3);
+  color: var(--app-color-accent, #B5472A);
 }
 .leader-metric-teal {
   background: #f0fdfa;
@@ -3630,7 +3631,7 @@ onMounted(async () => {
   justify-content: space-between;
 }
 .report-row-top strong {
-  color: #111827;
+  color: var(--app-color-text, #111827);
 }
 .report-track {
   background: #f3f4f6;
@@ -3639,7 +3640,7 @@ onMounted(async () => {
   overflow: hidden;
 }
 .report-track span {
-  background: #4f46e5;
+  background: var(--app-color-accent, #B5472A);
   border-radius: inherit;
   display: block;
   height: 100%;
@@ -3660,9 +3661,9 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border: 1px solid #ede9fe;
+  border: 1px solid var(--app-color-accent-tint, #F7E2D3);
   border-radius: 8px;
-  background: #faf5ff;
+  background: var(--app-color-accent-tint, #F7E2D3);
   padding: 11px 12px;
 }
 .schedule-media-list {
@@ -3695,7 +3696,7 @@ onMounted(async () => {
   gap: 2px;
 }
 .song-click-card:focus-visible {
-  outline: 3px solid rgba(168, 85, 247, 0.28);
+  outline: 3px solid rgba(181, 71, 42, 0.32);
   outline-offset: 2px;
 }
 .schedule-assignment-list {

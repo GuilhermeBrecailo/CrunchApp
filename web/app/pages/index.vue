@@ -45,8 +45,8 @@
     <template v-else-if="isPastorWithoutChurch">
       <v-card class="rounded-xl pa-6 elevation-1 border-subtle">
         <div class="d-flex align-center mb-4">
-          <v-avatar :color="isDark ? 'rgba(129,140,248,0.14)' : '#EEF2FF'" size="48" class="mr-3">
-            <Church size="24" :color="isDark ? '#818cf8' : '#6366F1'" />
+          <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="48" class="mr-3">
+            <Church size="24" :color="isDark ? '#f0975a' : '#B5472A'" />
           </v-avatar>
           <div>
             <h1 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
@@ -142,8 +142,8 @@
     <template v-else-if="isMemberWithoutChurch">
       <v-card class="rounded-xl pa-6 elevation-1 border-subtle">
         <div class="d-flex align-center mb-4">
-          <v-avatar :color="isDark ? 'rgba(129,140,248,0.14)' : '#EEF2FF'" size="48" class="mr-3">
-            <Church size="24" :color="isDark ? '#818cf8' : '#6366F1'" />
+          <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="48" class="mr-3">
+            <Church size="24" :color="isDark ? '#f0975a' : '#B5472A'" />
           </v-avatar>
           <div>
             <h1 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">

@@ -1,8 +1,8 @@
 <template>
   <v-card class="rounded-xl pa-5 mb-6 elevation-1 setup-card">
     <div class="d-flex align-center mb-1">
-      <v-avatar :color="isDark ? 'rgba(129,140,248,0.14)' : '#EEF2FF'" size="40" class="mr-3">
-        <Sparkles size="20" :color="isDark ? '#818cf8' : '#6366F1'" />
+      <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="40" class="mr-3">
+        <Sparkles size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
       </v-avatar>
       <div>
         <h2 class="setup-title mb-0">Primeiros passos</h2>
@@ -24,12 +24,12 @@
 
           <template v-if="membersCount <= 1">
             <div v-if="inviteCodeLoading" class="d-flex justify-center pa-2">
-              <v-progress-circular indeterminate size="22" color="indigo-darken-2" />
+              <v-progress-circular indeterminate size="22" color="purple-darken-3" />
             </div>
             <div v-else class="setup-invite-row">
               <span class="setup-invite-code">{{ inviteCodeValue || "—" }}</span>
               <v-btn
-                color="indigo-darken-2"
+                color="purple-darken-3"
                 variant="flat"
                 size="small"
                 class="text-none font-weight-bold"
@@ -58,7 +58,7 @@
 
           <v-btn
             v-if="departmentsCount === 0"
-            color="#A855F7"
+            color="#B5472A"
             variant="flat"
             size="small"
             class="text-none font-weight-bold"

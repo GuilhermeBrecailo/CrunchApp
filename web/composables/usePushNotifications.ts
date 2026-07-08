@@ -168,7 +168,7 @@ export const usePushNotifications = () => {
 
     upsertNotification({
       id: payload.notificationId,
-      title: payload.title || "App Quadrangular",
+      title: payload.title || "AppChurch",
       body: payload.body || "Você recebeu uma nova notificação.",
       url: payload.url || "/user",
       type: payload.type,

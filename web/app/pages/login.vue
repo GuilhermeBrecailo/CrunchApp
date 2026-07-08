@@ -4,9 +4,9 @@
       <div class="auth-card-inner">
         <div class="flex flex-col items-center mb-8">
           <div class="auth-icon-circle mb-4">
-            <v-icon size="40" :color="isDark ? 'accent-soft' : 'purple-darken-3'">mdi-account-lock</v-icon>
+            <v-icon size="40" color="purple-darken-3">mdi-account-lock</v-icon>
           </div>
-          <h1 class="auth-title">Church</h1>
+          <h1 class="auth-title">AppChurch</h1>
           <p class="auth-subtitle">Acesse sua conta para continuar</p>
         </div>
 
@@ -163,7 +163,7 @@ const handleLogin = async () => {
   width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
-  background: linear-gradient(150deg, #eef2ff 0%, #f5f3ff 60%, #fdf4ff 100%);
+  background: linear-gradient(150deg, #fdf3ec 0%, #fbe8da 55%, #f7e2d3 100%);
 }
 
 :global(.app-theme-dark) .auth-page {
@@ -174,7 +174,7 @@ const handleLogin = async () => {
 .auth-card {
   border-radius: 28px !important;
   border: 1px solid rgba(229, 231, 235, 0.9) !important;
-  box-shadow: 0 8px 40px rgba(79, 70, 229, 0.1), 0 2px 8px rgba(17, 24, 39, 0.06) !important;
+  box-shadow: 0 8px 40px rgba(181, 71, 42, 0.12), 0 2px 8px rgba(17, 24, 39, 0.06) !important;
   background: #ffffff;
   overflow: hidden;
 }
@@ -186,29 +186,29 @@ const handleLogin = async () => {
 }
 
 .auth-card-inner {
-  padding: 36px 32px 32px;
+  padding: 40px 32px 32px;
 }
 
 .auth-icon-circle {
-  width: 72px;
-  height: 72px;
+  width: 76px;
+  height: 76px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #eef2ff 0%, #ede9fe 100%);
+  background: linear-gradient(135deg, #fdf3ec 0%, #f7e2d3 100%);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 :global(.app-theme-dark) .auth-icon-circle {
-  background: rgba(129, 140, 248, 0.15) !important;
+  background: rgba(240, 151, 90, 0.16) !important;
 }
 
 .auth-title {
-  font-size: 1.875rem;
+  font-size: 2.125rem;
   font-weight: 800;
   letter-spacing: -0.03em;
-  color: #3730a3;
-  margin: 0 0 4px;
+  color: #7c2d12;
+  margin: 0 0 6px;
 }
 
 :global(.app-theme-dark) .auth-title {
@@ -216,9 +216,9 @@ const handleLogin = async () => {
 }
 
 .auth-subtitle {
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 500;
-  color: #7c3aed;
+  color: var(--app-color-accent);
   margin: 0;
 }
 
@@ -231,9 +231,14 @@ const handleLogin = async () => {
 }
 
 .auth-input :deep(.v-field__input) {
-  min-height: 48px;
-  padding-top: 10px;
-  padding-bottom: 10px;
+  min-height: 52px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  font-size: 1rem;
+}
+
+.auth-input :deep(.v-label) {
+  font-size: 0.95rem;
 }
 
 :global(.app-theme-dark) .auth-input :deep(input:-webkit-autofill),
@@ -245,25 +250,25 @@ const handleLogin = async () => {
 }
 
 .auth-btn {
-  height: 52px !important;
-  font-size: 1rem !important;
+  height: 54px !important;
+  font-size: 1.05rem !important;
   letter-spacing: 0.01em !important;
 }
 
 :global(.app-theme-dark) .auth-btn.bg-purple-darken-3 {
-  background: #6366f1 !important;
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35) !important;
+  box-shadow: 0 4px 16px rgba(240, 151, 90, 0.3) !important;
 }
 
 .auth-link {
-  font-size: 0.875rem;
+  font-size: 0.95rem;
+  font-weight: 600;
   color: var(--app-color-accent);
   text-decoration: none;
   transition: color 0.15s ease;
 }
 
 .auth-link:hover {
-  color: #4c1d95;
+  color: #7c2d12;
 }
 
 :global(.app-theme-dark) .auth-link {
@@ -275,7 +280,7 @@ const handleLogin = async () => {
 }
 
 .auth-meta {
-  font-size: 0.875rem;
+  font-size: 0.95rem;
   color: #6b7280;
   margin: 0;
 }
@@ -285,8 +290,8 @@ const handleLogin = async () => {
 }
 
 .auth-hint {
-  font-size: 0.75rem;
-  color: #9ca3af;
+  font-size: 0.85rem;
+  color: #6b7280;
   text-align: center;
   margin: 0;
   line-height: 1.5;

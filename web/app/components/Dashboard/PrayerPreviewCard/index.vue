@@ -2,13 +2,13 @@
   <div v-if="hasChurch" class="mb-6">
     <div class="d-flex align-center justify-space-between mb-3">
       <div class="d-flex align-center gap-2">
-        <Heart size="16" :color="isDark ? '#818cf8' : '#4f46e5'" />
+        <Heart size="16" :color="isDark ? '#f0975a' : '#B5472A'" />
         <span class="preview-title">Pedidos de Oração</span>
       </div>
       <v-btn
         variant="text"
         size="x-small"
-        color="indigo-darken-2"
+        color="purple-darken-3"
         class="text-none"
         to="/prayer"
       >
@@ -34,8 +34,8 @@
         to="/prayer"
       >
         <div class="d-flex align-center gap-3">
-          <v-avatar size="32" :color="isDark ? 'rgba(129,140,248,0.14)' : '#eef2ff'">
-            <Heart size="14" :color="isDark ? '#818cf8' : '#4f46e5'" />
+          <v-avatar size="32" :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'">
+            <Heart size="14" :color="isDark ? '#f0975a' : '#B5472A'" />
           </v-avatar>
           <div class="flex-1 min-w-0">
             <p class="prayer-item-title mb-0 text-truncate">{{ item.title }}</p>
@@ -55,7 +55,7 @@
 
       <v-btn
         variant="tonal"
-        color="indigo-darken-2"
+        color="purple-darken-3"
         size="small"
         block
         class="text-none mt-1 rounded-xl"

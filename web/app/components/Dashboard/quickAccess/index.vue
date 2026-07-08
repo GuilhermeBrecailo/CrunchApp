@@ -5,12 +5,17 @@
         v-for="(item, index) in menuItems"
         :key="index"
         color="white"
-        min-width="100"
-        class="quick-access-card rounded-xl pa-3 d-flex flex-column align-center justify-center flex-grow-1 elevation-1 cursor-pointer"
+        min-width="104"
+        class="quick-access-card rounded-xl pa-4 d-flex flex-column align-center justify-center flex-grow-1 elevation-1 cursor-pointer"
+        role="button"
+        tabindex="0"
+        :aria-label="item.title"
         @click="goToRoute(item.route)"
+        @keydown.enter="goToRoute(item.route)"
+        @keydown.space.prevent="goToRoute(item.route)"
       >
-        <v-avatar size="40" class="mb-2" :color="isDark ? item.bgColorDark : item.bgColor">
-          <component :is="item.icon" size="20" :color="isDark ? item.iconColorDark : item.iconColor" />
+        <v-avatar size="42" class="mb-2" :color="isDark ? item.bgColorDark : item.bgColor">
+          <component :is="item.icon" size="21" :color="isDark ? item.iconColorDark : item.iconColor" />
         </v-avatar>
         <span class="quick-access-label">{{ item.title }}</span>
       </v-card>
@@ -29,19 +34,19 @@ const menuItems = [
   {
     title: "Escalas",
     icon: CalendarDays,
-    iconColor: "#6366F1",
-    bgColor: "#EEF2FF",
-    iconColorDark: "#818cf8",
-    bgColorDark: "rgba(129,140,248,0.14)",
+    iconColor: "#B5472A",
+    bgColor: "#F7E2D3",
+    iconColorDark: "#f0975a",
+    bgColorDark: "rgba(240,151,90,0.16)",
     route: "/scale",
   },
   {
     title: "Ministérios",
     icon: Church,
-    iconColor: "#A855F7",
-    bgColor: "#FAF5FF",
-    iconColorDark: "#c084fc",
-    bgColorDark: "rgba(192,132,252,0.13)",
+    iconColor: "#B5472A",
+    bgColor: "#F7E2D3",
+    iconColorDark: "#f0975a",
+    bgColorDark: "rgba(240,151,90,0.16)",
     route: "/ministery",
   },
   {
@@ -100,7 +105,7 @@ const goToRoute = (route: string) => {
 }
 
 .quick-access-label {
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   font-weight: 700;
   color: #1f2937;
 }
@@ -117,10 +122,15 @@ const goToRoute = (route: string) => {
 .cursor-pointer:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(17, 24, 39, 0.09) !important;
-  border-color: #e0e7ff !important;
+  border-color: #f2d3bd !important;
 }
 
 .cursor-pointer:active {
   transform: scale(0.95);
+}
+
+.cursor-pointer:focus-visible {
+  outline: 3px solid rgba(181, 71, 42, 0.32);
+  outline-offset: 2px;
 }
 </style>

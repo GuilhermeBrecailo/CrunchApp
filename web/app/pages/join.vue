@@ -2,7 +2,7 @@
   <div class="join-page pa-4">
     <div class="join-card-wrap">
       <div class="join-icon-wrap mb-5">
-        <Church size="32" :color="isDark ? '#818cf8' : '#4f46e5'" />
+        <Church size="32" :color="isDark ? '#f0975a' : '#B5472A'" />
       </div>
 
       <h1 class="join-title mb-1">Entrar em uma igreja</h1>
@@ -120,7 +120,7 @@ async function submit() {
   width: 72px;
   height: 72px;
   border-radius: 22px;
-  background: var(--app-color-surface-muted, #eef2ff);
+  background: var(--app-color-surface-muted, #f7e2d3);
   display: flex;
   align-items: center;
   justify-content: center;

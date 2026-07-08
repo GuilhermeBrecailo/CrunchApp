@@ -75,7 +75,7 @@
     <template v-else>
       <section class="profile-overview mb-4">
         <div class="profile-info-tile">
-          <Church size="18" color="#4F46E5" />
+          <Church size="18" color="#B5472A" />
           <div class="min-w-0">
             <span>{{ churchDisplayName }}</span>
             <small>Igreja</small>
@@ -139,7 +139,7 @@
           placeholder="Selecione seu ministério"
           variant="outlined"
           density="comfortable"
-          color="indigo-darken-2"
+          color="purple-darken-3"
           bg-color="white"
           class="profile-input mb-3"
           hide-details="auto"
@@ -153,7 +153,7 @@
           placeholder="Ex.: vocal, mídia, recepção, intercessão"
           variant="outlined"
           density="comfortable"
-          color="indigo-darken-2"
+          color="purple-darken-3"
           bg-color="white"
           class="profile-input"
           hide-details="auto"
@@ -489,7 +489,7 @@ import { useThemeMode } from "../../../composables/useThemeMode";
 const router = useRouter();
 const { logout, user, fetchMe } = useAuth();
 const { isDark } = useThemeMode();
-const accentColor = computed(() => isDark.value ? "#818cf8" : "#A855F7");
+const accentColor = computed(() => isDark.value ? "#f0975a" : "#B5472A");
 const { getMyProfile, updateMyProfile, updateMyPassword } = useUser();
 const { getDepartments } = useDepartments();
 
@@ -787,7 +787,7 @@ onMounted(loadPageData);
 .profile-hero-banner {
   position: relative;
   height: 80px;
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 60%, #a855f7 100%);
+  background: linear-gradient(135deg, #b5472a 0%, #c2542c 60%, #e07a45 100%);
   overflow: hidden;
 }
 
@@ -827,9 +827,9 @@ onMounted(loadPageData);
 
 .profile-avatar {
   flex: 0 0 auto;
-  background: linear-gradient(135deg, #4f46e5, #7c3aed) !important;
+  background: linear-gradient(135deg, #b5472a, #e07a45) !important;
   border: 3px solid #ffffff !important;
-  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.35) !important;
+  box-shadow: 0 4px 16px rgba(181, 71, 42, 0.3) !important;
 }
 
 .profile-initials {
@@ -932,8 +932,8 @@ onMounted(loadPageData);
 }
 
 .section-icon-indigo {
-  background: #eef2ff;
-  color: #4f46e5;
+  background: #f7e2d3;
+  color: #b5472a;
 }
 
 .section-icon-amber {
@@ -947,8 +947,8 @@ onMounted(loadPageData);
 }
 
 .section-icon-purple {
-  background: #faf5ff;
-  color: #9333ea;
+  background: #f7e2d3;
+  color: #b5472a;
 }
 
 .profile-input :deep(.v-field) {
@@ -1111,8 +1111,8 @@ onMounted(loadPageData);
 
 /* Dark mode overrides */
 :global(.app-theme-dark) .section-icon-indigo {
-  background: rgba(79, 70, 229, 0.16);
-  color: #818cf8;
+  background: rgba(240, 151, 90, 0.16);
+  color: #f0975a;
 }
 
 :global(.app-theme-dark) .section-icon-amber {
@@ -1126,8 +1126,8 @@ onMounted(loadPageData);
 }
 
 :global(.app-theme-dark) .section-icon-purple {
-  background: rgba(147, 51, 234, 0.16);
-  color: #c084fc;
+  background: rgba(240, 151, 90, 0.16);
+  color: #f0975a;
 }
 
 :global(.app-theme-dark) .readiness-item {
@@ -1149,17 +1149,25 @@ onMounted(loadPageData);
 }
 
 :global(.app-theme-dark) .profile-hero-banner {
-  background: linear-gradient(135deg, #312e81 0%, #3b0764 60%, #4a044e 100%);
+  background: linear-gradient(135deg, #3a2a20 0%, #7c2d12 60%, #f0975a 100%);
 }
 
 :global(.app-theme-dark) .profile-avatar {
   border-color: var(--app-color-surface) !important;
-  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.25) !important;
+  box-shadow: 0 4px 16px rgba(240, 151, 90, 0.25) !important;
 }
 
 :global(.app-theme-dark) .profile-info-tile {
   background: var(--app-color-surface-soft);
   border-color: var(--app-color-border);
+}
+
+:global(.app-theme-dark) .profile-info-tile span {
+  color: var(--app-color-text);
+}
+
+:global(.app-theme-dark) .profile-info-tile small {
+  color: var(--app-color-text-muted);
 }
 
 :global(.app-theme-dark) .border-subtle {

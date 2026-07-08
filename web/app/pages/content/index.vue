@@ -41,10 +41,10 @@ const contentItems = [
     title: "Versículo do Dia",
     description: "Palavra diária compartilhada pela liderança",
     icon: BookMarked,
-    iconColor: "#6366F1",
-    bgColor: "#EEF2FF",
-    iconColorDark: "#818cf8",
-    bgColorDark: "rgba(129,140,248,0.14)",
+    iconColor: "#B5472A",
+    bgColor: "#F7E2D3",
+    iconColorDark: "#f0975a",
+    bgColorDark: "rgba(240,151,90,0.16)",
     route: "/content/verse",
   },
   {
@@ -71,10 +71,10 @@ const contentItems = [
     title: "Minha Playlist",
     description: "Músicas do ministério com seu tom pessoal",
     icon: ListMusic,
-    iconColor: "#A855F7",
-    bgColor: "#FAF5FF",
-    iconColorDark: "#c084fc",
-    bgColorDark: "rgba(192,132,252,0.13)",
+    iconColor: "#B5472A",
+    bgColor: "#F7E2D3",
+    iconColorDark: "#f0975a",
+    bgColorDark: "rgba(240,151,90,0.16)",
     route: "/content/playlist",
   },
 ];
@@ -113,7 +113,7 @@ const contentItems = [
 .content-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(17, 24, 39, 0.09) !important;
-  border-color: #e0e7ff;
+  border-color: #f2d3bd;
 }
 
 .content-card:active {

@@ -1,6 +1,6 @@
 {
-  "name": "App Quadrangular",
-  "short_name": "Quadrangular",
+  "name": "AppChurch",
+  "short_name": "AppChurch",
   "description": "Gestão de igrejas, ministérios e escalas.",
   "start_url": "/",
   "scope": "/",

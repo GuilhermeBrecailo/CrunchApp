@@ -2,8 +2,8 @@
   <v-card class="daily-verse-card rounded-xl pa-5 mb-8 elevation-1 border-subtle">
     <div class="d-flex align-center justify-space-between mb-4">
       <div class="d-flex align-center min-w-0">
-        <v-avatar color="#EEF2FF" size="42" class="mr-3">
-          <BookMarked size="20" color="#6366F1" />
+        <v-avatar color="#F7E2D3" size="42" class="mr-3">
+          <BookMarked size="20" color="#B5472A" />
         </v-avatar>
         <div class="min-w-0">
           <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">
@@ -79,7 +79,7 @@ onMounted(loadVerse);
 .daily-verse-reference {
   font-size: 0.85rem;
   font-weight: 800;
-  color: #6366f1;
+  color: var(--app-color-accent);
 }
 
 .daily-verse-commentary {
@@ -96,7 +96,7 @@ onMounted(loadVerse);
 }
 
 .daily-verse-link {
-  color: #6366f1;
+  color: var(--app-color-accent);
   font-size: 0.78rem;
   font-weight: 700;
   text-decoration: none;

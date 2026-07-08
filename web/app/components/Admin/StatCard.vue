@@ -29,21 +29,20 @@ const props = defineProps({
 const { isDark } = useThemeMode();
 
 const darkBgMap = {
-  "#EEF2FF": "rgba(129,140,248,0.14)",
+  "#F7E2D3": "rgba(240,151,90,0.16)",
   "#F0FDFA": "rgba(45,212,191,0.12)",
-  "#FAF5FF": "rgba(192,132,252,0.13)",
   "#FEFCE8": "rgba(251,191,36,0.12)",
 };
 
 const darkIconMap = {
-  "#6366F1": "#818cf8",
+  "#B5472A": "#f0975a",
+  "#C2542C": "#f0975a",
   "#14B8A6": "#2dd4bf",
-  "#A855F7": "#c084fc",
   "#EAB308": "#fbbf24",
 };
 
 const computedBgColor = computed(() =>
-  isDark.value ? (darkBgMap[props.bgColor] ?? "rgba(129,140,248,0.14)") : props.bgColor,
+  isDark.value ? (darkBgMap[props.bgColor] ?? "rgba(240,151,90,0.16)") : props.bgColor,
 );
 
 const computedIconColor = computed(() =>

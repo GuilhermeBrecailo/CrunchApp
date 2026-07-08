@@ -197,7 +197,7 @@ onMounted(async () => {
 
 <style scoped>
 .my-assignment-card {
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+  background: linear-gradient(135deg, #b5472a 0%, #e07a45 100%) !important;
   color: #fff;
 }
 
@@ -206,7 +206,7 @@ onMounted(async () => {
 }
 
 .assignment-kicker {
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.7);
   text-transform: uppercase;
@@ -238,7 +238,7 @@ onMounted(async () => {
 }
 
 .confirm-btn {
-  color: #4f46e5 !important;
+  color: #b5472a !important;
   background: #fff !important;
   border-radius: 8px;
 }

@@ -14,7 +14,7 @@
       >
         <div class="d-flex align-center justify-space-between gap-3 mb-2">
           <div class="d-flex align-center min-w-0">
-            <Megaphone size="17" color="#6366F1" class="mr-2 flex-shrink-0" />
+            <Megaphone size="17" color="var(--app-color-accent)" class="mr-2 flex-shrink-0" />
             <h4 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
               {{ announcement.title }}
             </h4>

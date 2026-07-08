@@ -54,7 +54,7 @@ self.addEventListener("fetch", (event) => {
             cachedPage ||
             cachedLogin ||
             cachedHome ||
-            new Response("App Quadrangular offline", {
+            new Response("AppChurch offline", {
               status: 503,
               headers: {
                 "Content-Type": "text/plain; charset=utf-8",
@@ -83,7 +83,7 @@ self.addEventListener("fetch", (event) => {
 
 self.addEventListener("push", (event) => {
   let payload = {
-    title: "App Quadrangular",
+    title: "AppChurch",
     body: "Você recebeu uma nova notificação.",
     url: "/user",
   };

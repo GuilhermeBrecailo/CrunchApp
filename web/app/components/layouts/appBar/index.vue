@@ -1,7 +1,7 @@
 <template>
   <v-app-bar app class="appbar" elevation="1">
     <div class="d-flex align-center">
-      <v-btn icon variant="text">
+      <v-btn icon variant="text" aria-label="Abrir meu perfil" @click="router.push('/user')">
         <v-avatar class="user-avatar" size="40">
           <span class="avatar-text">{{ userInitials }}</span>
         </v-avatar>
@@ -287,8 +287,8 @@ onMounted(async () => {
 }
 
 .user-avatar {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+  background: linear-gradient(135deg, #b5472a, #e07a45);
+  box-shadow: 0 2px 8px rgba(181, 71, 42, 0.3);
 }
 
 .avatar-text {
@@ -299,8 +299,8 @@ onMounted(async () => {
 }
 
 :global(.app-theme-dark) .user-avatar {
-  background: linear-gradient(135deg, #818cf8, #a78bfa);
-  box-shadow: 0 2px 8px rgba(129, 140, 248, 0.35);
+  background: linear-gradient(135deg, #f0975a, #f0a875);
+  box-shadow: 0 2px 8px rgba(240, 151, 90, 0.3);
 }
 
 .greeting-text {
@@ -315,7 +315,7 @@ onMounted(async () => {
 }
 
 .church-icon {
-  color: #6366f1; /* Mesmo tom de roxo do avatar */
+  color: var(--app-color-accent);
 }
 
 :global(.app-theme-dark) .church-icon {
@@ -382,8 +382,8 @@ onMounted(async () => {
 }
 
 .notification-item-unread {
-  border-color: #c7d2fe;
-  background: #eef2ff;
+  border-color: #f2d3bd;
+  background: #f7e2d3;
 }
 
 .notification-item-dot {
@@ -395,7 +395,7 @@ onMounted(async () => {
 }
 
 .notification-item-unread .notification-item-dot {
-  background: #4f46e5;
+  background: var(--app-color-accent);
 }
 
 .notification-item-copy {
@@ -443,8 +443,8 @@ onMounted(async () => {
 }
 
 :global(.app-theme-dark) .notification-item-unread {
-  background: rgba(99, 102, 241, 0.16);
-  border-color: rgba(129, 140, 248, 0.5);
+  background: rgba(240, 151, 90, 0.16);
+  border-color: rgba(240, 151, 90, 0.42);
 }
 
 :global(.app-theme-dark) .notification-item-title {

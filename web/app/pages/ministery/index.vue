@@ -9,7 +9,7 @@
       </div>
       <v-btn
         v-if="canCreateDepartment"
-        color="#A855F7"
+        color="purple-darken-3"
         class="rounded-lg text-none px-4"
         elevation="2"
         @click="isDepartmentDialogOpen = true"
@@ -89,8 +89,8 @@
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="responsive-dialog-header mb-5">
           <div class="d-flex align-center min-w-0">
-            <v-avatar color="#FAF5FF" size="44" class="mr-3">
-              <Building size="20" color="#A855F7" />
+            <v-avatar color="#F7E2D3" size="44" class="mr-3">
+              <Building size="20" color="#B5472A" />
             </v-avatar>
             <div class="min-w-0">
               <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
@@ -410,23 +410,23 @@ onMounted(async () => {
 }
 .ministery-summary-item {
   display: grid;
-  min-height: 68px;
+  min-height: 72px;
   align-content: center;
-  gap: 4px;
+  gap: 5px;
   border: 1px solid #f3f4f6;
   border-radius: 8px;
   background: #ffffff;
-  padding: 12px;
+  padding: 14px;
 }
 .ministery-summary-item span {
   color: #111827;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   font-weight: 900;
   line-height: 1;
 }
 .ministery-summary-item small {
   color: #6b7280;
-  font-size: 0.76rem;
+  font-size: 0.82rem;
   font-weight: 750;
 }
 .ministery-grid {

@@ -52,8 +52,8 @@
       >
         <div class="playlist-card-main pa-4" @click="openSong(song)">
           <div class="d-flex align-start gap-3">
-            <v-avatar size="40" :color="isDark ? 'rgba(192,132,252,0.13)' : '#FAF5FF'">
-              <Music size="18" :color="isDark ? '#c084fc' : '#A855F7'" />
+            <v-avatar size="40" :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'">
+              <Music size="18" :color="isDark ? '#f0975a' : '#B5472A'" />
             </v-avatar>
             <div class="flex-1 min-w-0">
               <p class="playlist-card-title mb-0">{{ song.mediaItem.title }}</p>

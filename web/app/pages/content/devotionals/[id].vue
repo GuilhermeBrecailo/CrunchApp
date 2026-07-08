@@ -149,8 +149,8 @@ onMounted(loadDevotional);
 }
 
 .chapter-button-active {
-  background: #eef2ff;
-  color: #4f46e5;
+  background: var(--app-color-accent-tint, #F7E2D3);
+  color: var(--app-color-accent, #B5472A);
   font-weight: 700;
 }
 

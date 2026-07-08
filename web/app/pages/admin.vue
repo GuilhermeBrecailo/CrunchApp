@@ -11,7 +11,7 @@
         </p>
       </div>
       <div class="platform-hero-mark">
-        <Church size="26" color="#4F46E5" />
+        <Church size="26" :color="accentColor" />
       </div>
     </div>
 
@@ -45,8 +45,8 @@
         title="Igrejas"
         :value="adminChurches.length"
         :icon="Church"
-        iconColor="#6366F1"
-        bgColor="#EEF2FF"
+        iconColor="#B5472A"
+        bgColor="#F7E2D3"
       />
       <AdminStatCard
         title="Usuários"
@@ -59,8 +59,8 @@
         title="Ministérios"
         :value="platformTotals.departments"
         :icon="Building"
-        iconColor="#A855F7"
-        bgColor="#FAF5FF"
+        iconColor="#C2542C"
+        bgColor="#F7E2D3"
       />
       <AdminStatCard
         title="Ativas"
@@ -194,7 +194,7 @@
         >
           <span class="church-card-top">
             <span class="church-avatar">
-              <Church size="21" color="#4F46E5" />
+              <Church size="21" :color="accentColor" />
             </span>
             <span class="church-status-dot" :class="{ 'church-status-dot-muted': !church.isActive }" />
           </span>
@@ -235,8 +235,8 @@
       <v-card class="church-details-surface bg-white" elevation="0">
         <div class="church-details-header">
           <div class="d-flex align-center min-w-0">
-            <v-avatar color="#EEF2FF" size="52" class="mr-3">
-              <Church size="24" color="#4F46E5" />
+            <v-avatar :color="avatarBgIndigo" size="52" class="mr-3">
+              <Church size="24" :color="accentColor" />
             </v-avatar>
             <div class="min-w-0">
               <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
@@ -377,8 +377,8 @@
         <div class="sheet-handle" />
         <div class="church-details-header">
           <div class="d-flex align-center min-w-0">
-            <v-avatar color="#EEF2FF" size="44" class="mr-3">
-              <Church size="21" color="#4F46E5" />
+            <v-avatar :color="avatarBgIndigo" size="44" class="mr-3">
+              <Church size="21" :color="accentColor" />
             </v-avatar>
             <div class="min-w-0">
               <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
@@ -608,8 +608,8 @@
         elevation="0"
       >
         <div class="d-flex align-center mb-5">
-          <v-avatar color="#EEF2FF" size="48" class="mr-3">
-            <Users size="22" color="#6366F1" />
+          <v-avatar :color="avatarBgIndigo" size="48" class="mr-3">
+            <Users size="22" :color="accentColor" />
           </v-avatar>
           <div class="min-w-0">
             <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
@@ -714,8 +714,8 @@
       >
         <div class="responsive-dialog-header mb-5">
           <div class="d-flex align-center min-w-0">
-            <v-avatar color="#FAF5FF" size="48" class="mr-3">
-              <Building size="22" color="#A855F7" />
+            <v-avatar :color="avatarBgPurple" size="48" class="mr-3">
+              <Building size="22" :color="purpleAccent" />
             </v-avatar>
             <div class="min-w-0">
               <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
@@ -857,15 +857,15 @@
         title="Membros"
         :value="members.length"
         :icon="Users"
-        iconColor="#6366F1"
-        bgColor="#EEF2FF"
+        iconColor="#B5472A"
+        bgColor="#F7E2D3"
       />
       <AdminStatCard
         title="Ministérios"
         :value="departments.length"
         :icon="Building"
-        iconColor="#A855F7"
-        bgColor="#FAF5FF"
+        iconColor="#C2542C"
+        bgColor="#F7E2D3"
       />
       <AdminStatCard
         title="Escalas"
@@ -902,7 +902,7 @@
       <div class="content-admin-grid mb-4">
         <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
           <div class="d-flex align-center mb-4">
-            <BookMarked size="18" color="#6366F1" class="mr-2" />
+            <BookMarked size="18" :color="accentColor" class="mr-2" />
             <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
               Versículo
             </h3>
@@ -947,7 +947,7 @@
 
         <v-card class="rounded-xl pa-4 elevation-1 bg-white border-subtle">
           <div class="d-flex align-center mb-4">
-            <Megaphone size="18" color="#6366F1" class="mr-2" />
+            <Megaphone size="18" :color="accentColor" class="mr-2" />
             <h3 class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
               Avisos
             </h3>
@@ -1346,10 +1346,15 @@
           v-for="member in filteredMembers"
           :key="member.id"
           class="member-card rounded-xl pa-4 elevation-1 bg-white border-subtle"
+          role="button"
+          tabindex="0"
+          :aria-label="`Ver detalhes de ${member.name}`"
           @click="openMemberDetails(member)"
+          @keydown.enter="openMemberDetails(member)"
+          @keydown.space.prevent="openMemberDetails(member)"
         >
-          <v-avatar color="#EEF2FF" size="44" class="member-avatar">
-            <Users size="20" color="#6366F1" />
+          <v-avatar :color="avatarBgIndigo" size="44" class="member-avatar">
+            <Users size="20" :color="accentColor" />
           </v-avatar>
 
           <div class="member-copy">
@@ -1403,7 +1408,7 @@
         </h2>
         <v-btn
           v-if="canManageDepartments"
-          color="#A855F7"
+          color="purple-darken-3"
           class="rounded-lg text-none px-4"
           size="small"
           elevation="1"
@@ -1523,7 +1528,7 @@
           </p>
         </div>
         <v-btn
-          color="#A855F7"
+          color="purple-darken-3"
           class="rounded-lg text-none px-4"
           size="small"
           elevation="1"
@@ -1642,8 +1647,8 @@
     <UtilsResponsiveOverlay v-model="isMemberDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="d-flex align-center mb-5">
-          <v-avatar color="#EEF2FF" size="44" class="mr-3">
-            <UserPlus size="20" color="#6366F1" />
+          <v-avatar :color="avatarBgIndigo" size="44" class="mr-3">
+            <UserPlus size="20" :color="accentColor" />
           </v-avatar>
           <div>
             <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
@@ -1756,8 +1761,8 @@
     <UtilsResponsiveOverlay v-model="isDepartmentDialogOpen" max-width="520">
       <v-card class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="d-flex align-center mb-5">
-          <v-avatar color="#FAF5FF" size="44" class="mr-3">
-            <Building size="20" color="#A855F7" />
+          <v-avatar :color="avatarBgPurple" size="44" class="mr-3">
+            <Building size="20" :color="purpleAccent" />
           </v-avatar>
           <div>
             <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0">
@@ -1853,8 +1858,8 @@
     <UtilsResponsiveOverlay v-model="isMemberDetailsOpen" max-width="520">
       <v-card v-if="selectedMember" class="rounded-xl pa-6 bg-white" elevation="0">
         <div class="d-flex align-center mb-5">
-          <v-avatar color="#EEF2FF" size="48" class="mr-3">
-            <Users size="22" color="#6366F1" />
+          <v-avatar :color="avatarBgIndigo" size="48" class="mr-3">
+            <Users size="22" :color="accentColor" />
           </v-avatar>
           <div class="min-w-0">
             <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
@@ -2011,8 +2016,8 @@
       >
         <div class="responsive-dialog-header mb-5">
           <div class="d-flex align-center min-w-0">
-            <v-avatar color="#FAF5FF" size="48" class="mr-3">
-              <Building size="22" color="#A855F7" />
+            <v-avatar :color="avatarBgPurple" size="48" class="mr-3">
+              <Building size="22" :color="purpleAccent" />
             </v-avatar>
             <div class="min-w-0">
               <h2 class="text-h6 font-weight-bold text-grey-darken-4 mb-0 text-truncate">
@@ -2272,10 +2277,10 @@ import { useChurchInvite } from "../../composables/useChurchInvite";
 
 const { user } = useAuth();
 const { isDark } = useThemeMode();
-const accentColor = computed(() => isDark.value ? "#818cf8" : "#6366F1");
-const purpleAccent = computed(() => isDark.value ? "#c084fc" : "#A855F7");
-const avatarBgIndigo = computed(() => isDark.value ? "rgba(129,140,248,0.14)" : "#EEF2FF");
-const avatarBgPurple = computed(() => isDark.value ? "rgba(192,132,252,0.13)" : "#FAF5FF");
+const accentColor = computed(() => isDark.value ? "#f0975a" : "#B5472A");
+const purpleAccent = computed(() => isDark.value ? "#f0975a" : "#C2542C");
+const avatarBgIndigo = computed(() => isDark.value ? "rgba(240,151,90,0.16)" : "#F7E2D3");
+const avatarBgPurple = computed(() => isDark.value ? "rgba(240,151,90,0.16)" : "#F7E2D3");
 const {
   getMembers,
   createMember,
@@ -3622,7 +3627,7 @@ onMounted(async () => {
 
 .platform-admin-page {
   background:
-    linear-gradient(180deg, #eef2ff 0, rgba(238, 242, 255, 0) 260px),
+    linear-gradient(180deg, #F7E2D3 0, rgba(247, 226, 211, 0) 260px),
     #f9fafb;
   max-width: 1180px;
   margin: 0 auto;
@@ -3636,7 +3641,7 @@ onMounted(async () => {
 }
 
 .platform-kicker {
-  color: #4f46e5;
+  color: var(--app-color-accent, #B5472A);
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0;
@@ -3655,10 +3660,10 @@ onMounted(async () => {
 .platform-hero-mark {
   width: 54px;
   height: 54px;
-  border: 1px solid #dbeafe;
+  border: 1px solid var(--app-color-accent-tint, #F7E2D3);
   border-radius: 8px;
   background: #ffffff;
-  box-shadow: 0 12px 28px rgba(79, 70, 229, 0.12);
+  box-shadow: 0 12px 28px rgba(181, 71, 42, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3683,11 +3688,11 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #4f46e5;
+  color: var(--app-color-accent, #B5472A);
 }
 
 .master-panel-heading h2 {
-  color: #111827;
+  color: var(--app-color-text, #111827);
   font-size: 0.94rem;
   font-weight: 850;
   margin: 0;
@@ -3710,15 +3715,20 @@ onMounted(async () => {
   padding: 10px;
 }
 
+:global(.app-theme-dark) .master-summary-grid div {
+  border-color: var(--app-color-border);
+  background: var(--app-color-surface-soft);
+}
+
 .master-summary-grid strong {
-  color: #111827;
+  color: var(--app-color-text, #111827);
   font-size: 1.18rem;
   font-weight: 900;
   line-height: 1;
 }
 
 .master-summary-grid span {
-  color: #6b7280;
+  color: var(--app-color-text-muted, #6b7280);
   font-size: 0.72rem;
   font-weight: 750;
 }
@@ -3752,9 +3762,15 @@ onMounted(async () => {
 }
 
 .master-ranking strong {
-  color: #4f46e5;
+  color: var(--app-color-accent, #B5472A);
   font-size: 0.82rem;
   font-weight: 900;
+}
+
+:global(.app-theme-dark) .master-ranking button {
+  background: var(--app-color-surface);
+  border-color: var(--app-color-border);
+  color: var(--app-color-text);
 }
 
 .admin-filter-bar {
@@ -3809,7 +3825,7 @@ onMounted(async () => {
 }
 
 .church-directory-card:hover {
-  border-color: #c7d2fe;
+  border-color: var(--app-color-accent-muted, #E07A45);
   box-shadow: 0 14px 36px rgba(31, 41, 55, 0.08);
   transform: translateY(-1px);
 }
@@ -3819,8 +3835,8 @@ onMounted(async () => {
 }
 
 .church-directory-card-active {
-  border-color: #6366f1;
-  box-shadow: 0 14px 32px rgba(99, 102, 241, 0.14);
+  border-color: var(--app-color-accent, #B5472A);
+  box-shadow: 0 14px 32px rgba(181, 71, 42, 0.14);
 }
 
 .church-card-top {
@@ -3833,7 +3849,7 @@ onMounted(async () => {
   width: 44px;
   height: 44px;
   border-radius: 8px;
-  background: #eef2ff;
+  background: var(--app-color-accent-tint, #F7E2D3);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3901,8 +3917,12 @@ onMounted(async () => {
   font-size: 0.875rem;
 }
 
+:global(.app-theme-dark) .church-metrics strong {
+  color: var(--app-color-text);
+}
+
 .church-open-action {
-  color: #4f46e5;
+  color: var(--app-color-accent, #B5472A);
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
@@ -3974,12 +3994,12 @@ onMounted(async () => {
 
 .sheet-summary-tile svg {
   grid-area: icon;
-  color: #4f46e5;
+  color: var(--app-color-accent, #B5472A);
 }
 
 .sheet-summary-tile span {
   grid-area: value;
-  color: #111827;
+  color: var(--app-color-text, #111827);
   font-size: 1rem;
   font-weight: 900;
   line-height: 1.1;
@@ -3990,7 +4010,7 @@ onMounted(async () => {
 
 .sheet-summary-tile small {
   grid-area: label;
-  color: #6b7280;
+  color: var(--app-color-text-muted, #6b7280);
   font-size: 0.75rem;
   font-weight: 700;
 }
@@ -4215,7 +4235,7 @@ onMounted(async () => {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: #a855f7;
+  background: var(--app-color-accent, #B5472A);
 }
 
 .report-row small,
@@ -4287,6 +4307,11 @@ onMounted(async () => {
   min-height: 48px;
   padding-top: 10px;
   padding-bottom: 10px;
+}
+
+.member-card:focus-visible {
+  outline: 3px solid rgba(181, 71, 42, 0.32);
+  outline-offset: 2px;
 }
 
 .member-card {
@@ -4426,20 +4451,20 @@ onMounted(async () => {
 }
 
 .permission-module-title strong {
-  color: #111827;
+  color: var(--app-color-text, #111827);
   font-size: 0.86rem;
   font-weight: 850;
 }
 
 .permission-module-title span {
-  color: #6b7280;
+  color: var(--app-color-text-muted, #6b7280);
   font-size: 0.74rem;
   font-weight: 650;
 }
 
 .ministry-item:focus-visible,
 .clickable-row:focus-visible {
-  outline: 3px solid rgba(168, 85, 247, 0.28);
+  outline: 3px solid rgba(181, 71, 42, 0.32);
   outline-offset: 2px;
 }
 
@@ -4702,11 +4727,11 @@ onMounted(async () => {
 
 :global(.app-theme-dark) .church-directory-card-active {
   border-color: var(--app-color-accent);
-  box-shadow: 0 14px 32px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 14px 32px rgba(240, 151, 90, 0.2);
 }
 
 :global(.app-theme-dark) .church-avatar {
-  background: rgba(129, 140, 248, 0.14);
+  background: rgba(240, 151, 90, 0.16);
   color: var(--app-color-accent);
 }
 

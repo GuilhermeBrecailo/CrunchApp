@@ -22,8 +22,8 @@
     <v-card class="settings-card pa-4 elevation-1">
       <v-form @submit.prevent="handleSaveChurch">
         <div class="d-flex align-center mb-5">
-          <v-avatar :color="isDark ? 'rgba(129,140,248,0.14)' : '#EEF2FF'" size="48" class="mr-3">
-            <Church size="23" :color="isDark ? '#818cf8' : '#6366F1'" />
+          <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="48" class="mr-3">
+            <Church size="23" :color="isDark ? '#f0975a' : '#B5472A'" />
           </v-avatar>
           <div class="min-w-0">
             <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0 text-truncate">

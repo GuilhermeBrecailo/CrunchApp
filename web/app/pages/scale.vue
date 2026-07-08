@@ -1208,8 +1208,8 @@ const { getMembers } = useMembers();
 const { can } = usePermissions();
 const { user } = useAuth();
 const { isDark } = useThemeMode();
-const accentColor = computed(() => isDark.value ? "#818cf8" : "#A855F7");
-const avatarBgColor = computed(() => isDark.value ? "rgba(129,140,248,0.14)" : "#FAF5FF");
+const accentColor = computed(() => isDark.value ? "#f0975a" : "#B5472A");
+const avatarBgColor = computed(() => isDark.value ? "rgba(240,151,90,0.16)" : "#F7E2D3");
 const route = useRoute();
 
 const activeFilter = ref("Todos");
@@ -2564,8 +2564,8 @@ watch(schedules, async () => {
 
 .scale-details-kicker,
 .scale-song-category {
-  color: #7e22ce;
-  font-size: 0.72rem;
+  color: var(--app-color-accent, #B5472A);
+  font-size: 0.76rem;
   font-weight: 850;
   letter-spacing: 0;
   text-transform: uppercase;
@@ -2629,9 +2629,9 @@ watch(schedules, async () => {
 .scale-response-panel {
   display: grid;
   gap: 14px;
-  border: 1px solid #ede9fe;
+  border: 1px solid #f2d3bd;
   border-radius: 8px;
-  background: #faf5ff;
+  background: var(--app-color-accent-tint, #F7E2D3);
   padding: 14px;
 }
 
@@ -2727,9 +2727,9 @@ watch(schedules, async () => {
 }
 
 .scale-song-card {
-  border: 1px solid #ede9fe;
+  border: 1px solid #f2d3bd;
   border-radius: 8px;
-  background: #fdfcff;
+  background: #fdfaf8;
   transition:
     border-color 0.16s ease,
     box-shadow 0.16s ease;
@@ -2759,19 +2759,19 @@ watch(schedules, async () => {
 }
 
 .scale-song-card:has(.scale-song-info:hover) {
-  border-color: #c084fc;
-  box-shadow: 0 4px 14px rgba(126, 34, 206, 0.08);
+  border-color: var(--app-color-accent, #B5472A);
+  box-shadow: 0 4px 14px rgba(181, 71, 42, 0.1);
 }
 
 .scale-song-info:focus-visible {
-  outline: 3px solid rgba(168, 85, 247, 0.28);
+  outline: 3px solid rgba(181, 71, 42, 0.32);
   outline-offset: -3px;
   border-radius: 8px;
 }
 
 .scale-song-card-active {
-  border-color: #a855f7;
-  background: #faf5ff;
+  border-color: var(--app-color-accent, #B5472A);
+  background: var(--app-color-accent-tint, #F7E2D3);
 }
 
 .scale-song-header {
@@ -2805,23 +2805,23 @@ watch(schedules, async () => {
 .scale-song-reader {
   display: grid;
   gap: 12px;
-  border: 1px solid #ede9fe;
+  border: 1px solid #f2d3bd;
   border-radius: 8px;
   background: #ffffff;
   padding: 14px;
 }
 
 :global(.app-theme-dark) .scale-song-reader {
-  background: #1e1b2e;
-  border-color: #3d3752;
+  background: var(--app-color-surface);
+  border-color: var(--app-color-border);
 }
 
 :global(.app-theme-dark) .scale-song-title {
-  color: #f1f5f9 !important;
+  color: var(--app-color-text) !important;
 }
 
 :global(.app-theme-dark) .scale-song-category {
-  color: #a78bfa !important;
+  color: var(--app-color-accent) !important;
 }
 
 .scale-song-reader-header {

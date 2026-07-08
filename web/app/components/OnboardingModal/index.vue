@@ -42,7 +42,7 @@
         <v-spacer />
         <v-btn
           v-if="!isLast"
-          color="#A855F7"
+          color="purple-darken-3"
           variant="flat"
           class="text-none onboarding-btn-next"
           rounded="lg"
@@ -52,7 +52,7 @@
         </v-btn>
         <v-btn
           v-else
-          color="#A855F7"
+          color="purple-darken-3"
           variant="flat"
           class="text-none onboarding-btn-next"
           rounded="lg"
@@ -85,15 +85,15 @@ let touchStartX = 0;
 const slides = [
   {
     icon: Church,
-    bg: "#EEF2FF",
-    color: "#6366F1",
+    bg: "#F7E2D3",
+    color: "#B5472A",
     title: "Bem-vindo ao app da igreja!",
     desc: "Aqui você gerencia sua participação nas escalas, lê a Bíblia, acompanha devocionais e muito mais.",
   },
   {
     icon: CalendarDays,
-    bg: "#FAF5FF",
-    color: "#A855F7",
+    bg: "#FBE8DA",
+    color: "#C2542C",
     title: "Suas escalas",
     desc: "Confirme sua presença, veja datas e funções. Líderes podem montar equipes e acompanhar a frequência.",
   },

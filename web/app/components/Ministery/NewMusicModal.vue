@@ -50,7 +50,7 @@
         class="mb-4"
       />
       <v-btn
-        color="#A855F7"
+        color="purple-darken-3"
         block
         class="text-none rounded-lg"
         @click="isOpen = false"

@@ -14,8 +14,13 @@
         v-for="(event, index) in eventsList"
         :key="event.id || index"
         color="white"
-        class="rounded-xl pa-3 d-flex align-center elevation-1 flex-shrink-0 event-card"
+        class="rounded-xl pa-4 d-flex align-center elevation-1 flex-shrink-0 event-card"
+        role="button"
+        tabindex="0"
+        :aria-label="`Ver escala: ${event.title}`"
         @click="goToSchedule(event.id)"
+        @keydown.enter="goToSchedule(event.id)"
+        @keydown.space.prevent="goToSchedule(event.id)"
       >
         <div
           class="date-badge rounded-lg d-flex flex-column align-center justify-center mr-4"
@@ -98,9 +103,9 @@ const goToSchedule = (id: string) => {
 .upcoming-link {
   display: inline-flex;
   align-items: center;
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   font-weight: 700;
-  color: #6366f1;
+  color: var(--app-color-accent);
   text-decoration: none;
   gap: 2px;
   letter-spacing: 0.01em;
@@ -108,26 +113,26 @@ const goToSchedule = (id: string) => {
 }
 
 .upcoming-link:hover {
-  color: #4f46e5;
+  color: #7c2d12;
 }
 
 .date-badge {
   width: 52px;
   height: 52px;
-  background: linear-gradient(135deg, #ede9fe, #f3e8ff);
-  color: #7c3aed;
+  background: linear-gradient(135deg, #fdf3ec, #f7e2d3);
+  color: var(--app-color-accent);
   border-radius: 12px !important;
   flex: 0 0 auto;
 }
 
 .date-day {
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   font-weight: 800;
   line-height: 1;
 }
 
 .date-month {
-  font-size: 0.58rem;
+  font-size: 0.65rem;
   font-weight: 700;
   line-height: 1;
   margin-top: 2px;
@@ -147,11 +152,16 @@ const goToSchedule = (id: string) => {
 .event-card:hover {
   transform: translateY(-1px);
   box-shadow: 0 8px 20px rgba(17, 24, 39, 0.08) !important;
-  border-color: #e0e7ff !important;
+  border-color: #f2d3bd !important;
 }
 
 .event-card:active {
   transform: scale(0.99);
+}
+
+.event-card:focus-visible {
+  outline: 3px solid rgba(181, 71, 42, 0.32);
+  outline-offset: 2px;
 }
 
 :global(.app-theme-dark) .upcoming-link {
@@ -163,7 +173,7 @@ const goToSchedule = (id: string) => {
 }
 
 :global(.app-theme-dark) .date-badge {
-  background: rgba(129, 140, 248, 0.16);
+  background: rgba(240, 151, 90, 0.18);
   color: var(--app-color-accent);
 }
 

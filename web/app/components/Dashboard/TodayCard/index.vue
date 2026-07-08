@@ -10,7 +10,12 @@
         v-for="item in todayItems"
         :key="item.id"
         class="today-card rounded-xl pa-4 elevation-1 mb-3 cursor-pointer"
+        role="button"
+        tabindex="0"
+        :aria-label="`Ver escala: ${item.description}`"
         @click="router.push({ path: '/scale', query: { schedule: item.id } })"
+        @keydown.enter="router.push({ path: '/scale', query: { schedule: item.id } })"
+        @keydown.space.prevent="router.push({ path: '/scale', query: { schedule: item.id } })"
       >
         <div class="d-flex align-center justify-space-between mb-2">
           <div class="d-flex align-center gap-2">
@@ -26,7 +31,7 @@
             <v-chip
               v-else
               size="x-small"
-              color="indigo-darken-2"
+              color="purple-darken-3"
               variant="flat"
               class="text-none font-weight-bold"
             >
@@ -166,6 +171,11 @@ onMounted(async () => {
   transform: scale(0.98);
 }
 
+.today-card:focus-visible {
+  outline: 3px solid rgba(181, 71, 42, 0.32);
+  outline-offset: 2px;
+}
+
 .today-time {
   font-size: 0.8rem;
   font-weight: 600;
@@ -184,7 +194,7 @@ onMounted(async () => {
 }
 
 .today-dept {
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   color: var(--app-color-text-muted);
   margin: 0;
 }

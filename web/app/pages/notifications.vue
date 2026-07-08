@@ -29,7 +29,7 @@
 
     <div v-else-if="notifications.length === 0" class="notif-empty">
       <div class="notif-empty-icon">
-        <Bell size="36" :color="isDark ? '#818cf8' : '#4f46e5'" />
+        <Bell size="36" :color="isDark ? '#f0975a' : '#B5472A'" />
       </div>
       <h3 class="notif-empty-title">Nenhuma notificação ainda</h3>
       <p class="notif-empty-body">Quando algo acontecer, aparece aqui.</p>
@@ -127,7 +127,7 @@ onMounted(() => startInboxSync());
   width: 64px;
   height: 64px;
   border-radius: 20px;
-  background: var(--app-color-surface-muted, #eef2ff);
+  background: var(--app-color-accent-tint, #f7e2d3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -170,13 +170,13 @@ onMounted(() => startInboxSync());
 }
 
 .notif-item--unread {
-  border-color: rgba(129, 140, 248, 0.5);
-  background: rgba(99, 102, 241, 0.06);
+  border-color: rgba(181, 71, 42, 0.32);
+  background: rgba(181, 71, 42, 0.08);
 }
 
 :global(.app-theme-dark) .notif-item--unread {
-  background: rgba(99, 102, 241, 0.14);
-  border-color: rgba(129, 140, 248, 0.4);
+  background: rgba(240, 151, 90, 0.16);
+  border-color: rgba(240, 151, 90, 0.42);
 }
 
 .notif-dot {
@@ -189,7 +189,7 @@ onMounted(() => startInboxSync());
 }
 
 .notif-item--unread .notif-dot {
-  background: var(--app-color-accent, #4f46e5);
+  background: var(--app-color-accent, #b5472a);
 }
 
 .notif-copy {
@@ -206,7 +206,7 @@ onMounted(() => startInboxSync());
 }
 
 .notif-item--unread .notif-title {
-  color: var(--app-color-accent, #4f46e5);
+  color: var(--app-color-accent, #b5472a);
 }
 
 :global(.app-theme-dark) .notif-item--unread .notif-title {
@@ -222,7 +222,7 @@ onMounted(() => startInboxSync());
 
 .notif-date {
   font-size: 0.75rem;
-  color: var(--app-color-text-muted, #9ca3af);
+  color: var(--app-color-text-muted, #6b7280);
   margin-top: 2px;
 }
 

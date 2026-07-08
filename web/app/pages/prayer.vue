@@ -6,7 +6,7 @@
         <p class="text-body-2 text-grey-darken-1 mb-0">Interceda pelos irmãos da sua igreja</p>
       </div>
       <v-btn
-        color="indigo-darken-2"
+        color="purple-darken-3"
         class="text-none font-weight-bold rounded-lg"
         size="small"
         elevation="1"
@@ -26,12 +26,12 @@
 
     <div v-else-if="items.length === 0" class="prayer-empty-state">
       <div class="prayer-empty-icon-wrap">
-        <Heart size="36" :color="isDark ? '#818cf8' : '#4f46e5'" />
+        <Heart size="36" :color="isDark ? '#f0975a' : '#B5472A'" />
       </div>
       <h3 class="prayer-empty-title">Nenhum pedido ainda</h3>
       <p class="prayer-empty-body">Seja o primeiro a compartilhar um pedido de oração com a comunidade.</p>
       <v-btn
-        color="indigo-darken-2"
+        color="purple-darken-3"
         variant="tonal"
         class="text-none mt-2"
         @click="showNewDialog = true"
@@ -48,8 +48,8 @@
         :class="{ 'prayer-card--answered': item.isAnswered }"
       >
         <div class="d-flex align-start gap-3">
-          <v-avatar size="38" :color="isDark ? 'rgba(129,140,248,0.14)' : '#eef2ff'" class="flex-shrink-0 mt-1">
-            <Heart size="18" :color="isDark ? '#818cf8' : '#4f46e5'" />
+          <v-avatar size="38" :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" class="flex-shrink-0 mt-1">
+            <Heart size="18" :color="isDark ? '#f0975a' : '#B5472A'" />
           </v-avatar>
           <div class="flex-1 min-w-0">
             <div class="d-flex align-center gap-2 mb-1 flex-wrap">
@@ -92,8 +92,8 @@
       <v-card class="rounded-xl pa-5" elevation="0">
         <div class="responsive-dialog-header mb-4">
           <div class="d-flex align-center gap-3">
-            <v-avatar size="40" :color="isDark ? 'rgba(129,140,248,0.14)' : '#eef2ff'">
-              <Heart size="20" :color="isDark ? '#818cf8' : '#4f46e5'" />
+            <v-avatar size="40" :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'">
+              <Heart size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
             </v-avatar>
             <div>
               <h2 class="text-subtitle-1 font-weight-bold text-grey-darken-4 mb-0">Novo pedido</h2>
@@ -109,7 +109,7 @@
           v-model="form.title"
           label="Título"
           variant="outlined"
-          color="indigo-darken-2"
+          color="purple-darken-3"
           density="comfortable"
           class="mb-3"
           hide-details="auto"
@@ -120,7 +120,7 @@
           v-model="form.body"
           label="Descreva seu pedido"
           variant="outlined"
-          color="indigo-darken-2"
+          color="purple-darken-3"
           density="comfortable"
           rows="3"
           auto-grow
@@ -131,7 +131,7 @@
         <v-checkbox
           v-model="form.isAnonymous"
           label="Publicar como anônimo"
-          color="indigo-darken-2"
+          color="purple-darken-3"
           hide-details
           class="mb-4"
         />
@@ -145,7 +145,7 @@
             Cancelar
           </v-btn>
           <v-btn
-            color="indigo-darken-2"
+            color="purple-darken-3"
             class="text-none font-weight-bold"
             :loading="saving"
             @click="submitPrayer"
@@ -260,7 +260,7 @@ onMounted(loadPrayers);
   width: 64px;
   height: 64px;
   border-radius: 20px;
-  background: var(--app-color-surface-muted, #eef2ff);
+  background: var(--app-color-accent-tint, #f7e2d3);
   display: flex;
   align-items: center;
   justify-content: center;

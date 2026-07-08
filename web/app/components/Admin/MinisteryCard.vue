@@ -2,8 +2,8 @@
   <v-card
     class="ministry-card rounded-xl pa-3 mb-3 elevation-1 bg-white cursor-pointer"
   >
-    <v-avatar size="48" color="#EEF2FF" class="ministry-avatar rounded-lg">
-      <Users size="20" color="#6366F1" />
+    <v-avatar size="48" color="#F7E2D3" class="ministry-avatar rounded-lg">
+      <Users size="20" color="#B5472A" />
     </v-avatar>
 
     <div class="ministry-copy">
@@ -22,7 +22,7 @@
       <v-chip
         v-if="ministry.status === 'Ativo'"
         size="small"
-        color="#6366F1"
+        color="#B5472A"
         variant="flat"
         class="font-weight-bold px-3 mr-2"
       >
@@ -97,7 +97,7 @@ defineProps({
 }
 
 :global(.app-theme-dark) .ministry-avatar {
-  background: rgba(129, 140, 248, 0.14) !important;
-  color: #818cf8 !important;
+  background: rgba(240, 151, 90, 0.16) !important;
+  color: #f0975a !important;
 }
 </style>

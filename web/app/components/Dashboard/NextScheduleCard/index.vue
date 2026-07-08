@@ -2,7 +2,12 @@
   <v-card
     v-if="schedule"
     class="scale-card rounded-xl pa-5 mb-8 elevation-4"
+    role="button"
+    tabindex="0"
+    aria-label="Ver detalhes da próxima escala"
     @click="goToSchedule"
+    @keydown.enter="goToSchedule"
+    @keydown.space.prevent="goToSchedule"
   >
     <div class="circle-decoration top-right"></div>
     <div class="circle-decoration bottom-left"></div>
@@ -43,8 +48,8 @@
   <v-card v-else class="rounded-xl pa-5 mb-8 elevation-1 border-subtle">
     <div class="d-flex align-center flex-wrap gap-3">
       <div class="d-flex align-center flex-grow-1" style="min-width: 0">
-        <v-avatar :color="isDark ? 'rgba(129,140,248,0.14)' : '#EEF2FF'" size="44" class="mr-3 flex-shrink-0">
-          <Calendar size="20" :color="isDark ? '#818cf8' : '#6366F1'" />
+        <v-avatar :color="isDark ? 'rgba(240,151,90,0.16)' : '#F7E2D3'" size="44" class="mr-3 flex-shrink-0">
+          <Calendar size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
         </v-avatar>
         <div style="min-width: 0">
           <p class="text-subtitle-2 font-weight-bold text-grey-darken-4 mb-0">
@@ -122,6 +127,11 @@ const goToSchedule = () => {
   position: relative;
   overflow: hidden;
   cursor: pointer;
+}
+
+.scale-card:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.65);
+  outline-offset: 3px;
 }
 
 .icon-wrapper {

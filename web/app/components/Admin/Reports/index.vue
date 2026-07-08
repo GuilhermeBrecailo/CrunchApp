@@ -199,7 +199,7 @@ onMounted(loadReports);
   display: block;
   font-size: 1.35rem;
   font-weight: 800;
-  color: #4f46e5;
+  color: var(--app-color-accent, #B5472A);
 }
 
 .border-subtle {

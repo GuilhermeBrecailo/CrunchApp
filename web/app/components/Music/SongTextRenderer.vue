@@ -192,17 +192,17 @@ onBeforeUnmount(stopAutoScroll);
 }
 
 :global(.app-theme-dark) .song-text-renderer {
-  background: #1a1625;
-  border-color: #2d2640;
-  color: #e2e8f0;
+  background: var(--app-color-surface);
+  border-color: var(--app-color-border);
+  color: var(--app-color-text-soft);
 }
 
 :global(.app-theme-dark) .song-text-renderer--lyrics {
-  color: #e2e8f0;
+  color: var(--app-color-text-soft);
 }
 
 :global(.app-theme-dark) .song-section {
-  color: #c4b5fd;
+  color: var(--app-color-accent);
 }
 
 :global(.app-theme-dark) .song-chord {

@@ -41,7 +41,7 @@
           </p>
           <v-progress-linear
             :model-value="devotional.progresses?.length ? 50 : 0"
-            color="rose"
+            color="pink-darken-1"
             height="6"
             rounded
           />

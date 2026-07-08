@@ -1,19 +1,26 @@
 /*
  * DESIGN TOKENS — Padrão de uso:
  * - Em <style scoped> custom: usar var(--app-color-accent) para cor de destaque
- * - Em props Vuetify (color="..."): usar "purple-darken-3" (Vuetify não resolve CSS vars em props)
- * - NÃO introduzir hex inline (#A855F7, #6d28d9) em novos componentes
+ * - Em props Vuetify (color="..."): usar "purple-darken-3" (Vuetify não resolve CSS vars em props) —
+ *   esse nome fica mapeado abaixo (ver bloco "ACCENT — PONTE COM VUETIFY") para var(--app-color-accent),
+ *   então trocar o token aqui também troca a cor de quem usa o prop Vuetify.
+ * - NÃO introduzir hex inline fora da paleta terracota/âmbar em novos componentes
  * - Ver spec: openspec/changes/frontend-visual-polish/specs/ui-design-tokens/spec.md
+ *
+ * DIREÇÃO VISUAL: paleta terracota/âmbar (substitui o indigo/violeta
+ * original) aplicada no app inteiro — ver openspec/changes se existir
+ * changelog, ou histórico de commits "redesign visual".
  */
 :root {
   color-scheme: light;
-  --app-color-accent: #4f46e5;
-  --app-color-accent-soft: #6366f1;
-  --app-color-accent-muted: #818cf8;
+  --app-color-accent: #b5472a;
+  --app-color-accent-soft: #c2542c;
+  --app-color-accent-muted: #e07a45;
+  --app-color-accent-tint: #f7e2d3;
   --app-color-background: #f3f4f8;
   --app-color-surface: #ffffff;
   --app-color-surface-soft: #f8fafc;
-  --app-color-surface-muted: #eef2ff;
+  --app-color-surface-muted: #f7e2d3;
   --app-color-border: #e5e7eb;
   --app-color-border-strong: #d1d5db;
   --app-color-text: #111827;
@@ -22,7 +29,7 @@
   --app-shadow-sm: 0 1px 3px rgba(17,24,39,0.06), 0 1px 2px rgba(17,24,39,0.04);
   --app-shadow-md: 0 4px 16px rgba(17,24,39,0.08), 0 2px 6px rgba(17,24,39,0.04);
   --app-shadow-lg: 0 12px 32px rgba(17,24,39,0.1), 0 4px 12px rgba(17,24,39,0.06);
-  --app-shadow-accent: 0 8px 24px rgba(79,70,229,0.18);
+  --app-shadow-accent: 0 8px 24px rgba(181,71,42,0.22);
 }
 
 /* Tipografia global */
@@ -57,27 +64,70 @@ body {
    ============================================================ */
 .app-theme-dark {
   color-scheme: dark;
-  --app-color-accent: #818cf8;
-  --app-color-accent-soft: #a5b4fc;
-  --app-color-accent-muted: #c7d2fe;
+  --app-color-accent: #f0975a;
+  --app-color-accent-soft: #f0a875;
+  --app-color-accent-muted: #f6c7a1;
+  --app-color-accent-tint: #3a2a20;
   --app-color-background: #0d1117;
   --app-color-surface: #161b22;
   --app-color-surface-soft: #1c2433;
-  --app-color-surface-muted: #21293b;
-  --app-color-border: #30363d;
-  --app-color-border-strong: #484f58;
+  --app-color-surface-muted: #33241a;
+  /*
+   * border/border-strong originais (#30363d / #484f58) mediam ~1.4:1 e ~2.1:1
+   * de contraste contra --app-color-surface — abaixo do que um olho humano
+   * percebe como "borda visível". Cartões e campos de formulário ficavam
+   * praticamente sem contorno no dark mode. Valores abaixo miram ~2.3:1
+   * (separação sutil de cartão) e ~3.5-4:1 (contorno de input, precisa
+   * ser percebido para operar o campo).
+   */
+  --app-color-border: #4a5461;
+  --app-color-border-strong: #6a7786;
   --app-color-text: #e6edf3;
   --app-color-text-soft: #b1bac4;
   --app-color-text-muted: #8b949e;
-  --app-shadow-sm: 0 1px 3px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.22);
-  --app-shadow-md: 0 4px 16px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.28);
-  --app-shadow-lg: 0 12px 32px rgba(0,0,0,0.55), 0 4px 12px rgba(0,0,0,0.35);
-  --app-shadow-accent: 0 8px 24px rgba(99,102,241,0.28);
+  /*
+   * Sombra preta sobre fundo quase preto (#0d1117) não cria profundidade
+   * perceptível — por isso a elevação aqui depende principalmente do
+   * degradê surface > surface-soft > background e das bordas acima; a
+   * sombra é só um reforço, com opacidade um pouco maior que o padrão
+   * do Vuetify para ainda contribuir com alguma leitura de profundidade.
+   */
+  --app-shadow-sm: 0 1px 3px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.26);
+  --app-shadow-md: 0 4px 16px rgba(0,0,0,0.52), 0 2px 6px rgba(0,0,0,0.32);
+  --app-shadow-lg: 0 12px 32px rgba(0,0,0,0.62), 0 4px 12px rgba(0,0,0,0.4);
+  --app-shadow-accent: 0 8px 24px rgba(240,151,90,0.3);
 }
 
 .app-theme-light,
 .app-theme-dark {
   min-height: 100%;
+}
+
+/* ============================================================
+   ACCENT — PONTE COM VUETIFY (funciona em light e dark)
+   ============================================================
+   Vuetify não resolve CSS vars em props color="...", então o app usa o
+   nome fixo "purple-darken-3" como "cor de destaque" (ver comentário no
+   topo do arquivo). Esta ponte faz esse nome (e variantes próximas)
+   resolverem sempre para var(--app-color-accent) — funciona nos dois
+   temas porque a variável já muda de valor sozinha dentro de
+   .app-theme-dark. Trocar o accent aqui vira a cor de botão/link/ícone
+   "de marca" do app inteiro sem precisar tocar em cada componente. */
+.text-purple-700,
+.hover\:text-purple-900:hover,
+.text-purple-darken-3,
+.text-purple-darken-4 {
+  color: var(--app-color-accent) !important;
+}
+
+.text-purple-400 {
+  color: var(--app-color-accent-soft) !important;
+}
+
+.bg-purple-darken-3,
+.bg-purple-darken-4 {
+  background-color: var(--app-color-accent) !important;
+  color: #ffffff !important;
 }
 
 /* ============================================================
@@ -122,7 +172,7 @@ body {
 }
 
 .app-theme-dark .auth-icon-circle {
-  background: rgba(129, 140, 248, 0.14) !important;
+  background: rgba(240, 151, 90, 0.16) !important;
 }
 
 /* ============================================================
@@ -186,31 +236,51 @@ body {
   color: var(--app-color-text-muted) !important;
 }
 
-.app-theme-dark .text-purple-700,
-.app-theme-dark .hover\:text-purple-900:hover {
+/*
+ * Cores de status (chips/botões tonal de confirmação, troca, presença,
+ * etc.) usam nomes fixos do Vuetify (indigo-darken-2, teal-darken-2,
+ * red-darken-2) pensados para fundo claro. Em variant="tonal" o Vuetify
+ * usa a própria cor como texto E como fundo (via currentColor), então
+ * sem este ajuste esses estados ficam quase ilegíveis no dark
+ * (indigo-darken-2 cai para ~2:1 de contraste contra o surface escuro).
+ * Mapeamos para tons já usados em outras partes do app no dark mode,
+ * em vez de inventar cores novas.
+ */
+.app-theme-dark .text-indigo-darken-2,
+.app-theme-dark .text-deep-purple-darken-2 {
   color: var(--app-color-accent) !important;
 }
 
-.app-theme-dark .text-purple-400 {
-  color: var(--app-color-accent-soft) !important;
+.app-theme-dark .text-teal-darken-2 {
+  color: #2dd4bf !important;
 }
 
-.app-theme-dark .text-purple-darken-3,
-.app-theme-dark .text-purple-darken-4 {
-  color: var(--app-color-accent) !important;
+.app-theme-dark .text-red-darken-2,
+.app-theme-dark .text-red-darken-3 {
+  color: #f87171 !important;
 }
 
 /* ============================================================
    DARK — BUTTONS
    ============================================================ */
-.app-theme-dark .bg-purple-darken-3,
-.app-theme-dark .bg-purple-darken-4 {
-  background-color: #6366f1 !important;
-  color: #ffffff !important;
-}
-
-.app-theme-dark .v-btn--variant-tonal {
-  background-color: rgba(129, 140, 248, 0.14) !important;
+/*
+ * CAUSA RAIZ do bug "todo tonal vira a mesma cor no dark": esta regra
+ * usava só `.v-btn--variant-tonal` (2 classes) — especificidade IGUAL às
+ * regras de status acima (`.text-red-darken-2` etc., também 2 classes),
+ * então o desempate ia pra ordem de declaração no arquivo, e como esta
+ * regra vem DEPOIS, ela vencia e forçava toda cor de status pra accent.
+ * Pior ainda: o `background-color` aqui é aplicado no elemento raiz,
+ * enquanto o Vuetify já pinta o tom "tonal" certo via `currentColor` num
+ * ::underlay separado por cima — as duas camadas se somavam e "sujavam"
+ * a cor mesmo quando o texto estava certo.
+ * Fix: (1) excluir via :not() toda classe de status/marca que já tem
+ * regra própria acima, então esta vira um fallback que só se aplica a
+ * tonal SEM cor de status (ex.: chips de tom/BPM da música, sem prop
+ * color) — passa a ser exclusão por seletor, não corrida de especificidade;
+ * (2) tirar o background-color, que é redundante — o Vuetify já deriva o
+ * tom do fundo a partir do `color` via currentColor no ::underlay.
+ */
+.app-theme-dark .v-btn--variant-tonal:not(.text-indigo-darken-2):not(.text-deep-purple-darken-2):not(.text-teal-darken-2):not(.text-red-darken-2):not(.text-red-darken-3):not(.text-purple-darken-3):not(.text-purple-darken-4) {
   color: var(--app-color-accent) !important;
 }
 
@@ -222,8 +292,8 @@ body {
 /* ============================================================
    DARK — CHIPS
    ============================================================ */
-.app-theme-dark .v-chip.v-chip--variant-tonal {
-  background-color: rgba(129, 140, 248, 0.14) !important;
+/* Mesma causa raiz e mesmo fix do bloco DARK — BUTTONS acima. */
+.app-theme-dark .v-chip.v-chip--variant-tonal:not(.text-indigo-darken-2):not(.text-deep-purple-darken-2):not(.text-teal-darken-2):not(.text-red-darken-2):not(.text-red-darken-3):not(.text-purple-darken-3):not(.text-purple-darken-4) {
   color: var(--app-color-accent) !important;
 }
 
@@ -231,7 +301,7 @@ body {
    DARK — ICON BACKGROUNDS (bg-purple-100, EEF2FF, etc.)
    ============================================================ */
 .app-theme-dark .bg-purple-100 {
-  background-color: rgba(129, 140, 248, 0.14) !important;
+  background-color: rgba(240, 151, 90, 0.16) !important;
 }
 
 /* ============================================================
@@ -314,7 +384,7 @@ body {
 }
 
 .app-theme-dark .quick-access-card .v-avatar {
-  background: rgba(129, 140, 248, 0.14) !important;
+  background: rgba(240, 151, 90, 0.16) !important;
   box-shadow: none !important;
 }
 
@@ -323,7 +393,7 @@ body {
    ============================================================ */
 .app-theme-dark .music-icon-wrapper,
 .app-theme-dark .date-badge {
-  background-color: rgba(129, 140, 248, 0.15) !important;
+  background-color: rgba(240, 151, 90, 0.18) !important;
   color: var(--app-color-accent) !important;
 }
 
@@ -472,14 +542,14 @@ body {
    DARK — THEME TOGGLE BUTTON
    ============================================================ */
 .theme-toggle-btn {
-  border: 1px solid rgba(99, 102, 241, 0.18);
-  background: #f5f7ff;
-  color: #4f46e5 !important;
+  border: 1px solid rgba(181, 71, 42, 0.2);
+  background: #fdf3ec;
+  color: var(--app-color-accent, #B5472A) !important;
 }
 
 .app-theme-dark .theme-toggle-btn {
-  border-color: rgba(129, 140, 248, 0.28);
-  background: rgba(129, 140, 248, 0.1);
+  border-color: rgba(240, 151, 90, 0.3);
+  background: rgba(240, 151, 90, 0.12);
   color: var(--app-color-accent) !important;
 }
 
@@ -492,7 +562,7 @@ body {
 
 .app-theme-dark .v-overlay__content .v-card,
 .app-theme-dark .responsive-bottom-sheet .v-bottom-sheet__content {
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.58) !important;
 }
 
 /* ============================================================
@@ -511,11 +581,15 @@ body {
    DARK — CARD SHADOWS
    ============================================================ */
 .app-theme-dark .v-card.elevation-1 {
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2) !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.38), 0 1px 2px rgba(0,0,0,0.26) !important;
+}
+
+.app-theme-dark .v-card.elevation-2 {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.26) !important;
 }
 
 .app-theme-dark .v-card.elevation-4 {
-  box-shadow: 0 4px 20px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.28) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.35) !important;
 }
 
 /* ============================================================

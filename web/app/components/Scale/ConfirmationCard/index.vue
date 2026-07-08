@@ -145,7 +145,7 @@ const statusBg = computed(() => {
   if (s === "CONFIRMED") return "#dcfce7";
   if (s === "DECLINED") return "#fee2e2";
   if (s === "MAYBE") return "#fef3c7";
-  return "#eef2ff";
+  return "#f3f4f6";
 });
 
 const statusIconColor = computed(() => {
@@ -153,7 +153,7 @@ const statusIconColor = computed(() => {
   if (s === "CONFIRMED") return "#16a34a";
   if (s === "DECLINED") return "#dc2626";
   if (s === "MAYBE") return "#d97706";
-  return "#6366f1";
+  return "#6b7280";
 });
 
 const statusIcon = computed(() => {

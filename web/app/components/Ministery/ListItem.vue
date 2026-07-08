@@ -1,6 +1,6 @@
 <template>
   <v-card
-    class="ministery-card rounded-lg pa-4 elevation-1 cursor-pointer"
+    class="ministery-card rounded-lg pa-5 elevation-1 cursor-pointer"
     role="button"
     tabindex="0"
     @click="$emit('click')"
@@ -78,7 +78,7 @@ const stats = computed(() =>
 .ministery-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 14px;
+  gap: 16px;
   align-items: center;
   border: 1px solid #eef2f7;
   background-color: var(--app-color-surface);
@@ -86,13 +86,13 @@ const stats = computed(() =>
 }
 
 .ministery-card:hover {
-  border-color: #e9d5ff;
+  border-color: #f2d3bd;
   box-shadow: 0 12px 26px rgba(17, 24, 39, 0.07) !important;
   transform: translateY(-1px);
 }
 
 .ministery-card:focus-visible {
-  outline: 3px solid rgba(168, 85, 247, 0.28);
+  outline: 3px solid rgba(181, 71, 42, 0.32);
   outline-offset: 2px;
 }
 
@@ -126,28 +126,33 @@ const stats = computed(() =>
 .ministery-icon {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   flex: 0 0 auto;
-  border-radius: 8px;
-  color: #7e22ce;
-  background: #faf5ff;
+  border-radius: 9px;
+  color: #b5472a;
+  background: #f7e2d3;
+}
+
+:global(.app-theme-dark) .ministery-icon {
+  color: #f0975a;
+  background: rgba(240, 151, 90, 0.16);
 }
 
 .ministery-title {
   min-width: 0;
-  color: #111827;
-  font-size: 0.98rem;
+  color: var(--app-color-text, #111827);
+  font-size: 1.08rem;
   font-weight: 850;
-  line-height: 1.2;
+  line-height: 1.25;
   overflow-wrap: anywhere;
 }
 
 .ministery-leader {
-  color: #6b7280;
-  font-size: 0.78rem;
+  color: var(--app-color-text-muted, #6b7280);
+  font-size: 0.88rem;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1.3;
 }
 
 .ministery-stats {
@@ -162,11 +167,17 @@ const stats = computed(() =>
   border-radius: 999px;
   background: #fafafa;
   color: #6b7280;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   font-weight: 800;
   line-height: 1.1;
-  padding: 6px 8px;
+  padding: 7px 10px;
   white-space: nowrap;
+}
+
+:global(.app-theme-dark) .ministery-stats span {
+  border-color: var(--app-color-border);
+  background: var(--app-color-surface-soft);
+  color: var(--app-color-text-soft);
 }
 
 @media (max-width: 560px) {

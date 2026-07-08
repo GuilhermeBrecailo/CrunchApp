@@ -4,7 +4,7 @@
     class="music-card rounded-xl pa-4 mb-3 elevation-1 d-flex align-center"
   >
     <div class="music-icon-wrapper rounded-lg d-flex align-center justify-center mr-4 flex-shrink-0">
-      <Music size="20" :color="isDark ? '#818cf8' : '#6366F1'" />
+      <Music size="20" :color="isDark ? '#f0975a' : '#B5472A'" />
     </div>
 
     <div class="flex-grow-1">
@@ -50,15 +50,15 @@ const { isDark } = useThemeMode();
 const getBadgeColor = (categoria) => {
   if (isDark.value) {
     const dark = {
-      Adoração: "rgba(129,140,248,0.16)",
-      Louvor: "rgba(192,132,252,0.14)",
+      Adoração: "rgba(240,151,90,0.18)",
+      Louvor: "rgba(240,168,117,0.16)",
       Hino: "rgba(45,212,191,0.13)",
     };
-    return dark[categoria] || "rgba(129,140,248,0.1)";
+    return dark[categoria] || "rgba(240,151,90,0.12)";
   }
   const light = {
-    Adoração: "#EEF2FF",
-    Louvor: "#FAF5FF",
+    Adoração: "#F7E2D3",
+    Louvor: "#FBE8DA",
     Hino: "#F0FDFA",
   };
   return light[categoria] || "#F3F4F6";
@@ -69,7 +69,7 @@ const getBadgeColor = (categoria) => {
 .music-icon-wrapper {
   width: 48px;
   height: 48px;
-  background-color: #eef2ff;
+  background-color: #f7e2d3;
 }
 
 .music-card {
@@ -78,6 +78,6 @@ const getBadgeColor = (categoria) => {
 }
 
 :global(.app-theme-dark) .music-icon-wrapper {
-  background-color: rgba(129, 140, 248, 0.14) !important;
+  background-color: rgba(240, 151, 90, 0.16) !important;
 }
 </style>

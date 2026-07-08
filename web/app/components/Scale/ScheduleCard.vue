@@ -70,7 +70,7 @@
         <v-avatar
           v-if="extraVolunteerCount > 0"
           size="34"
-          color="#F3F4F6"
+          :color="isDark ? 'rgba(139,148,158,0.18)' : '#F3F4F6'"
           class="schedule-avatar schedule-avatar-extra"
         >
           +{{ extraVolunteerCount }}
@@ -154,15 +154,15 @@ const { isDark } = useThemeMode();
 const avatarColors = computed(() =>
   isDark.value
     ? [
-        { bg: "rgba(129,140,248,0.18)", text: "#818cf8" },
+        { bg: "rgba(240,151,90,0.2)", text: "#f0975a" },
         { bg: "rgba(45,212,191,0.16)", text: "#2dd4bf" },
-        { bg: "rgba(192,132,252,0.16)", text: "#c084fc" },
+        { bg: "rgba(240,168,117,0.18)", text: "#f0a875" },
         { bg: "rgba(251,191,36,0.14)", text: "#fbbf24" },
       ]
     : [
-        { bg: "#EEF2FF", text: "#4F46E5" },
+        { bg: "#F7E2D3", text: "#B5472A" },
         { bg: "#F0FDFA", text: "#0F766E" },
-        { bg: "#FAF5FF", text: "#9333EA" },
+        { bg: "#FBE8DA", text: "#C2542C" },
         { bg: "#FEFCE8", text: "#A16207" },
       ],
 );
@@ -242,8 +242,12 @@ const userAssignmentStatusLabel = computed(() => {
   transform: translateY(-1px);
 }
 
+:global(.app-theme-dark) .schedule-card:hover {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45) !important;
+}
+
 .schedule-card:focus-visible {
-  outline: 3px solid rgba(168, 85, 247, 0.32);
+  outline: 3px solid rgba(181, 71, 42, 0.32);
   outline-offset: 3px;
 }
 
@@ -276,7 +280,7 @@ const userAssignmentStatusLabel = computed(() => {
   align-items: center;
   min-width: 0;
   gap: 6px;
-  color: #6b7280;
+  color: var(--app-color-text-muted, #6b7280);
   font-size: 0.78rem;
   font-weight: 700;
   line-height: 1.25;
@@ -339,15 +343,15 @@ const userAssignmentStatusLabel = computed(() => {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border: 1px solid #ede9fe;
+  border: 1px solid #f2d3bd;
   border-radius: 8px;
-  background: #faf5ff;
+  background: var(--app-color-accent-tint, #F7E2D3);
   padding: 9px 10px;
 }
 
 .assignment-summary span {
   min-width: 0;
-  color: #4b5563;
+  color: var(--app-color-text-soft, #4b5563);
   font-size: 0.78rem;
   font-weight: 800;
 }
@@ -372,7 +376,7 @@ const userAssignmentStatusLabel = computed(() => {
 }
 
 .schedule-avatar-extra {
-  color: #4b5563 !important;
+  color: var(--app-color-text-soft, #4b5563) !important;
 }
 
 .empty-avatar {
@@ -410,8 +414,8 @@ const userAssignmentStatusLabel = computed(() => {
 }
 
 .schedule-card-selected {
-  border-color: #a855f7;
-  box-shadow: 0 10px 24px rgba(168, 85, 247, 0.14) !important;
+  border-color: var(--app-color-accent, #B5472A);
+  box-shadow: 0 10px 24px rgba(181, 71, 42, 0.14) !important;
 }
 
 .schedule-time-chip {

@@ -17,7 +17,7 @@
         v-for="tab in tabs"
         :key="tab.value"
         :variant="activeTab === tab.value ? 'flat' : 'outlined'"
-        :color="activeTab === tab.value ? '#A855F7' : 'grey-darken-1'"
+        :color="activeTab === tab.value ? 'purple-darken-3' : 'grey-darken-1'"
         class="font-weight-medium px-4 cursor-pointer"
         @click="activeTab = tab.value"
       >
@@ -28,7 +28,7 @@
     <div v-if="activeTab === 'escalas'">
       <div class="d-flex justify-end mb-4">
         <v-btn
-          color="#A855F7"
+          color="purple-darken-3"
           class="rounded-lg text-none"
           @click="dialogEscala = true"
         >
@@ -43,7 +43,7 @@
     <div v-if="activeTab === 'musicas'">
       <div class="d-flex justify-end mb-4">
         <v-btn
-          color="#A855F7"
+          color="purple-darken-3"
           class="rounded-lg text-none"
           @click="dialogMusica = true"
         >
@@ -62,7 +62,7 @@
     <div v-if="activeTab === 'tarefas'">
       <div class="d-flex justify-end mb-4">
         <v-btn
-          color="#A855F7"
+          color="purple-darken-3"
           class="rounded-lg text-none"
           @click="dialogTarefa = true"
         >
@@ -115,7 +115,7 @@
           class="mb-4"
         ></v-select>
         <v-btn
-          color="#A855F7"
+          color="purple-darken-3"
           block
           class="text-none rounded-lg"
           @click="dialogEscala = false"
@@ -175,7 +175,7 @@
           class="mb-4"
         ></v-text-field>
         <v-btn
-          color="#A855F7"
+          color="purple-darken-3"
           block
           class="text-none rounded-lg"
           @click="dialogMusica = false"
@@ -216,7 +216,7 @@
           class="mb-4"
         ></v-text-field>
         <v-btn
-          color="#A855F7"
+          color="purple-darken-3"
           block
           class="text-none rounded-lg"
           @click="dialogTarefa = false"

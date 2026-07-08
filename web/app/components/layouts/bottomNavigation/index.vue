@@ -102,7 +102,7 @@ const adminLabel = computed(() => "Admin");
   display: block;
   width: 100%;
   overflow: hidden;
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 600;
   line-height: 1.05;
   text-align: center;
@@ -126,7 +126,7 @@ const adminLabel = computed(() => "Admin");
   flex: 1 1 0;
   min-width: 0 !important;
   max-width: none;
-  color: #9ca3af !important;
+  color: #6b7280 !important;
   border-radius: 14px !important;
   margin: 0 2px;
   height: 58px !important;
@@ -159,7 +159,7 @@ const adminLabel = computed(() => "Admin");
 }
 
 .custom-btn.v-btn--active {
-  color: #4f46e5 !important;
+  color: var(--app-color-accent) !important;
   background-color: transparent !important;
 }
 
