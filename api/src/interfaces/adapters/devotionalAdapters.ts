@@ -2,6 +2,7 @@ import { FastifyRequest } from "fastify";
 import crypto from "node:crypto";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
+import { resolveActiveChurchContext } from "../utils/churchContext";
 
 function getAuthUserId(request: FastifyRequest): string {
   const authHeader = request.headers.authorization;
@@ -20,8 +21,15 @@ export class DevotionalAdapters {
       where: { id: getAuthUserId(request) },
     });
     if (!user) throw new DomainError("Usuário não encontrado");
-    if (!user.crunchId) throw new DomainError("Usuário não possui igreja vinculada");
-    return user;
+    const context =
+      request.churchContext ?? (await resolveActiveChurchContext(request, user.id));
+    if (!context.activeChurchId) throw new DomainError("Usuário não possui igreja vinculada");
+    return {
+      ...user,
+      crunchId: context.activeChurchId,
+      role: context.role,
+      canManageMembers: context.canManageMembers,
+    };
   }
 
   private assertChurchManager(user: { role: string }) {

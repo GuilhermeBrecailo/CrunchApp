@@ -1,6 +1,7 @@
 import "fastify";
 import { JwtDecoded } from "../application/use-cases/Auth/JwtValidationUseCase";
 import { User } from "../domain/entities/User";
+import { ActiveChurchContext } from "../interfaces/utils/churchContext";
 
 type UserContainer = {
   createUserUseCase: {
@@ -24,6 +25,7 @@ declare module "fastify" {
   // Isso adiciona user ao request
   interface FastifyRequest {
     user: Partial<JwtDecoded>;
+    churchContext?: ActiveChurchContext;
   }
 
   interface FastifyInstance {

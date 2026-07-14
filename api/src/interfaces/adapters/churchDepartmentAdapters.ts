@@ -6,11 +6,12 @@ import { Prisma } from "@prisma/client";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
 import { pushNotificationService } from "../../infrastructure/notifications/PushNotificationService";
+import { resolveActiveChurchContext } from "../utils/churchContext";
 
 type CurrentUser = Prisma.UserGetPayload<{
   include: {
     crunch: true;
-    churchRole: true;
+    churchRole: { select: { id: true; name: true; permissions: true } };
   };
 }> & {
   isPlatformAdmin: boolean;
@@ -281,7 +282,7 @@ export class ChurchDepartmentAdapters {
       },
       include: {
         crunch: true,
-        churchRole: true,
+        churchRole: { select: { id: true, name: true, permissions: true } },
       },
     });
 
@@ -289,12 +290,31 @@ export class ChurchDepartmentAdapters {
       throw new DomainError("Usuário não encontrado");
     }
 
-    if (!user.crunchId || !user.crunch) {
+    const context =
+      request.churchContext ?? (await resolveActiveChurchContext(request, user.id));
+
+    if (!context.activeChurchId) {
       throw new DomainError("Usuário não possui igreja vinculada");
+    }
+
+    const activeChurch =
+      user.crunchId === context.activeChurchId && user.crunch
+        ? user.crunch
+        : await $prismaClient.crunch.findUnique({
+            where: { id: context.activeChurchId },
+          });
+
+    if (!activeChurch) {
+      throw new DomainError("Igreja não encontrada");
     }
 
     return {
       ...user,
+      crunchId: context.activeChurchId,
+      crunch: activeChurch,
+      role: context.role,
+      canManageMembers: context.canManageMembers,
+      churchRole: context.churchRole,
       isPlatformAdmin: isPlatformAdminPayload(authPayload),
     };
   }

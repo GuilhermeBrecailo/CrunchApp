@@ -9,10 +9,33 @@
 
       <div class="ml-3 d-flex flex-column justify-center">
         <span class="greeting-text">Olá, {{ firstName }}</span>
-        <div class="d-flex align-center mt-n1">
+        <div v-if="!hasMultipleChurches" class="d-flex align-center mt-n1">
           <Church size="16" class="church-icon mr-1" />
           <span class="church-text">{{ churchName }}</span>
         </div>
+        <v-menu v-else location="bottom start">
+          <template #activator="{ props }">
+            <button v-bind="props" type="button" class="church-switcher mt-n1">
+              <Church size="16" class="church-icon mr-1" />
+              <span class="church-text">{{ churchName }}</span>
+              <ChevronDown size="14" class="church-icon ml-1" />
+            </button>
+          </template>
+
+          <v-list density="compact" min-width="240">
+            <v-list-item
+              v-for="membership in activeMemberships"
+              :key="membership.church.id"
+              :active="membership.church.id === user?.activeChurchId"
+              @click="handleChurchChange(membership.church.id)"
+            >
+              <v-list-item-title>{{ membership.church.name }}</v-list-item-title>
+              <v-list-item-subtitle>
+                {{ membership.church.city }}{{ membership.church.state ? `/${membership.church.state}` : "" }}
+              </v-list-item-subtitle>
+            </v-list-item>
+          </v-list>
+        </v-menu>
       </div>
     </div>
 
@@ -162,7 +185,7 @@
 </template>
 
 <script setup lang="ts">
-import { Bell, BellOff, BellRing, Church } from "lucide-vue-next";
+import { Bell, BellOff, BellRing, ChevronDown, Church } from "lucide-vue-next";
 import { Moon, Sun } from "lucide-vue-next";
 import { computed, onMounted } from "vue";
 import { useAuth } from "../../../../composables/useAuth";
@@ -171,7 +194,7 @@ import {
   type AppNotification,
 } from "../../../../composables/usePushNotifications";
 
-const { user } = useAuth();
+const { user, setActiveChurch } = useAuth();
 const { isDark, toggleTheme } = useThemeMode();
 const {
   status,
@@ -208,7 +231,13 @@ const userInitials = computed(() => {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 });
 
-const churchName = computed(() => user.value?.church?.name || "Sem igreja");
+const activeMemberships = computed(() =>
+  (user.value?.memberships ?? []).filter((membership) => membership.isActive),
+);
+const hasMultipleChurches = computed(() => activeMemberships.value.length > 1);
+const churchName = computed(
+  () => user.value?.activeChurch?.name || user.value?.church?.name || "Sem igreja",
+);
 const hasUnreadNotifications = computed(() => hasUnread.value);
 const themeToggleLabel = computed(() =>
   isDark.value ? "Ativar tema claro" : "Ativar tema escuro",
@@ -263,6 +292,13 @@ const openNotification = async (notification: AppNotification) => {
   await router.push(notification.url || "/user");
 };
 
+const handleChurchChange = async (churchId: string) => {
+  if (churchId === user.value?.activeChurchId) return;
+
+  await setActiveChurch(churchId);
+  await router.push("/");
+};
+
 onMounted(async () => {
   await refreshStatus();
   await startInboxSync();
@@ -277,6 +313,16 @@ onMounted(async () => {
   padding: 5px 20px;
   border-bottom: 1px solid rgba(229, 231, 235, 0.7) !important;
   box-shadow: 0 1px 0 rgba(17, 24, 39, 0.04) !important;
+}
+
+.church-switcher {
+  display: inline-flex;
+  align-items: center;
+  max-width: 190px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
 }
 
 :global(.app-theme-dark) .appbar {

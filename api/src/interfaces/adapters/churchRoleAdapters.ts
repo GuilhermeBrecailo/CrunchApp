@@ -1,6 +1,7 @@
 import { FastifyRequest } from "fastify";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
+import { resolveActiveChurchContext } from "../utils/churchContext";
 
 const VALID_PERMISSIONS = [
   "MANAGE_MEMBERS",
@@ -33,7 +34,15 @@ export class ChurchRoleAdapters {
       include: { churchRole: true },
     });
     if (!user) throw new DomainError("Usuário não encontrado");
-    return user;
+    const context =
+      request.churchContext ?? (await resolveActiveChurchContext(request, user.id));
+    return {
+      ...user,
+      crunchId: context.activeChurchId,
+      role: context.role,
+      canManageMembers: context.canManageMembers,
+      churchRole: context.churchRole,
+    };
   }
 
   private assertIsChurchManager(user: {
@@ -152,6 +161,10 @@ export class ChurchRoleAdapters {
       where: { churchRoleId: id },
       data: { churchRoleId: null },
     });
+    await $prismaClient.churchMembership.updateMany({
+      where: { churchRoleId: id },
+      data: { churchRoleId: null },
+    });
 
     await $prismaClient.churchRole.delete({ where: { id } });
 
@@ -167,22 +180,32 @@ export class ChurchRoleAdapters {
 
     const body = request.body as { churchRoleId?: string | null };
 
-    const member = await $prismaClient.user.findFirst({
-      where: { id, crunchId: user.crunchId! },
-      include: { crunch: true },
+    const membership = await $prismaClient.churchMembership.findUnique({
+      where: {
+        userId_crunchId: {
+          userId: id,
+          crunchId: user.crunchId!,
+        },
+      },
+      include: {
+        user: true,
+        crunch: true,
+      },
     });
 
-    if (!member) throw new DomainError("Membro não encontrado nesta igreja");
+    if (!membership) throw new DomainError("Membro não encontrado nesta igreja");
+
+    const member = membership.user;
 
     if (member.id === user.id) {
       throw new DomainError("Nao e possivel alterar o proprio cargo");
     }
 
-    if (member.crunch?.userMainId === member.id) {
+    if (membership.crunch?.userMainId === member.id) {
       throw new DomainError("Nao e possivel alterar o cargo do pastor titular");
     }
 
-    if (member.role === "SUPER_ADMIN" && user.role !== "SUPER_ADMIN") {
+    if (membership.role === "SUPER_ADMIN" && user.role !== "SUPER_ADMIN") {
       throw new DomainError("Nao e possivel alterar um usuario super admin");
     }
 
@@ -193,16 +216,28 @@ export class ChurchRoleAdapters {
       if (!role) throw new DomainError("Cargo não encontrado");
     }
 
-    const updated = await $prismaClient.user.update({
-      where: { id: member.id },
+    const updated = await $prismaClient.churchMembership.update({
+      where: { id: membership.id },
       data: { churchRoleId: body.churchRoleId ?? null },
       select: {
         id: true,
+        userId: true,
         churchRoleId: true,
         churchRole: { select: { id: true, name: true, permissions: true } },
       },
     });
 
-    return updated;
+    if (member.crunchId === user.crunchId) {
+      await $prismaClient.user.update({
+        where: { id: member.id },
+        data: { churchRoleId: body.churchRoleId ?? null },
+      });
+    }
+
+    return {
+      id: updated.userId,
+      churchRoleId: updated.churchRoleId,
+      churchRole: updated.churchRole,
+    };
   }
 }

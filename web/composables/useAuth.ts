@@ -1,6 +1,36 @@
 import type { CustomFetch } from "../types/nuxt";
-import { useNuxtApp, useRuntimeConfig, useState } from "#app";
+import { useCookie, useNuxtApp, useRuntimeConfig, useState } from "#app";
 import { jwtDecode } from "jwt-decode";
+
+interface AuthChurch {
+  id: string;
+  name: string;
+  city?: string;
+  road?: string;
+  number?: string | null;
+  localZipCode?: string;
+  state?: string;
+  complement?: string | null;
+  document?: string | null;
+  logo?: string | null;
+  isActive?: boolean;
+  userMainId?: string | null;
+}
+
+interface AuthMembership {
+  id: string;
+  role: string;
+  canManageMembers: boolean;
+  isPrimary: boolean;
+  isActive: boolean;
+  permissions?: string[];
+  churchRole?: {
+    id: string;
+    name: string;
+    permissions: string[];
+  } | null;
+  church: AuthChurch;
+}
 
 interface AuthUser {
   id: string;
@@ -14,6 +44,9 @@ interface AuthUser {
   mustChangePassword?: boolean;
   is_admin: boolean;
   role?: string;
+  activeChurchId?: string | null;
+  activeChurch?: AuthChurch | null;
+  memberships?: AuthMembership[];
   isDemoUser?: boolean;
   permissions?: string[];
   churchRole?: {
@@ -22,20 +55,7 @@ interface AuthUser {
     permissions: string[];
   } | null;
   phone?: string;
-  church?: {
-    id: string;
-    name: string;
-    city?: string;
-    road?: string;
-    number?: string | null;
-    localZipCode?: string;
-    state?: string;
-    complement?: string | null;
-    document?: string | null;
-    logo?: string | null;
-    isActive?: boolean;
-    userMainId?: string | null;
-  } | null;
+  church?: AuthChurch | null;
 }
 
 interface KeycloakPayload {
@@ -51,6 +71,9 @@ interface KeycloakPayload {
 
 export const useAuth = () => {
   const access_token = useState<string | null>("access_token", () => null);
+  const activeChurchId = useCookie<string | null>("active_church_id", {
+    sameSite: "lax",
+  });
   const config = useRuntimeConfig();
 
   const user = useState<AuthUser | null>("user", () => null);
@@ -77,6 +100,9 @@ export const useAuth = () => {
       role: payload.role,
       phone: user.value?.phone,
       church: null,
+      activeChurchId: activeChurchId.value ?? null,
+      activeChurch: null,
+      memberships: [],
     };
   };
 
@@ -95,11 +121,40 @@ export const useAuth = () => {
 
     if (error || !data) return null;
 
-    const role = data.role || user.value?.role;
+    const memberships = data.memberships ?? [];
+    const storedActiveChurchIsValid = memberships.some(
+      (membership) => membership.church.id === activeChurchId.value,
+    );
+    const nextActiveChurchId =
+      (storedActiveChurchIsValid ? activeChurchId.value : null) ||
+      data.activeChurchId ||
+      data.church?.id ||
+      memberships[0]?.church.id ||
+      null;
+    const activeMembership =
+      memberships.find((membership) => membership.church.id === nextActiveChurchId) ??
+      null;
+    const role = activeMembership?.role || data.role || user.value?.role;
+
+    activeChurchId.value = nextActiveChurchId;
 
     user.value = {
       ...user.value,
       ...data,
+      activeChurchId: nextActiveChurchId,
+      activeChurch: activeMembership?.church ?? data.activeChurch ?? data.church ?? null,
+      church: activeMembership?.church ?? data.church ?? null,
+      memberships,
+      role,
+      canManageMembers:
+        activeMembership?.canManageMembers ?? data.canManageMembers ?? false,
+      churchRole: activeMembership?.churchRole ?? data.churchRole ?? null,
+      permissions:
+        activeMembership?.permissions ??
+        activeMembership?.churchRole?.permissions ??
+        data.permissions ??
+        [],
+      hasChurch: memberships.length > 0 || data.hasChurch === true,
       is_admin:
         data.is_admin === true ||
         role === "ADMIN" ||
@@ -174,8 +229,14 @@ export const useAuth = () => {
 
     user.value = null;
     access_token.value = null;
+    activeChurchId.value = null;
 
     return response;
+  };
+
+  const setActiveChurch = async (churchId: string) => {
+    activeChurchId.value = churchId;
+    await fetchMe();
   };
 
   const should_refresh = () => {
@@ -201,5 +262,7 @@ export const useAuth = () => {
     should_refresh,
     setSessionFromToken,
     fetchMe,
+    setActiveChurch,
+    activeChurchId,
   };
 };

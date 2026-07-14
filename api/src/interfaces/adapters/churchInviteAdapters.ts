@@ -2,6 +2,7 @@ import { FastifyRequest } from "fastify";
 import crypto from "node:crypto";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
+import { resolveActiveChurchContext } from "../utils/churchContext";
 
 function getAuthPayload(request: FastifyRequest) {
   const token = request.headers.authorization?.replace("Bearer ", "");
@@ -47,16 +48,24 @@ export class ChurchInviteAdapters {
 
   async getInviteCode(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
-    this.assertManager(user);
-    if (!user.crunchId || !user.crunch) throw new DomainError("Usuário não possui igreja vinculada");
+    const context =
+      request.churchContext ?? (await resolveActiveChurchContext(request, user.id));
+    this.assertManager({ role: context.role });
+    if (!context.activeChurchId) throw new DomainError("Usuário não possui igreja vinculada");
 
-    if (user.crunch.inviteCode) {
-      return { inviteCode: user.crunch.inviteCode };
+    const church = await $prismaClient.crunch.findUnique({
+      where: { id: context.activeChurchId },
+    });
+
+    if (!church) throw new DomainError("Igreja não encontrada");
+
+    if (church.inviteCode) {
+      return { inviteCode: church.inviteCode };
     }
 
     const inviteCode = await this.generateUniqueCode();
     await $prismaClient.crunch.update({
-      where: { id: user.crunchId },
+      where: { id: context.activeChurchId },
       data: { inviteCode },
     });
 
@@ -65,13 +74,15 @@ export class ChurchInviteAdapters {
 
   async regenerateInviteCode(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
-    if (!user.crunchId) throw new DomainError("Usuário não possui igreja vinculada");
+    const context =
+      request.churchContext ?? (await resolveActiveChurchContext(request, user.id));
+    if (!context.activeChurchId) throw new DomainError("Usuário não possui igreja vinculada");
 
-    this.assertManager(user);
+    this.assertManager({ role: context.role });
 
     const inviteCode = await this.generateUniqueCode();
     await $prismaClient.crunch.update({
-      where: { id: user.crunchId },
+      where: { id: context.activeChurchId },
       data: { inviteCode },
     });
 
@@ -80,7 +91,6 @@ export class ChurchInviteAdapters {
 
   async joinByCode(request: FastifyRequest) {
     const user = await this.getCurrentUser(request);
-    if (user.crunchId) throw new DomainError("Você já está vinculado a uma igreja");
 
     const body = request.body as { inviteCode?: string };
     if (!body.inviteCode?.trim()) throw new DomainError("Código de convite é obrigatório");
@@ -94,11 +104,58 @@ export class ChurchInviteAdapters {
 
     if (!church) throw new DomainError("Código de convite inválido ou expirado");
 
-    await $prismaClient.user.update({
-      where: { id: user.id },
-      data: { crunchId: church.id },
+    const result = await $prismaClient.$transaction(async (tx) => {
+      const existingMembership = await tx.churchMembership.findUnique({
+        where: {
+          userId_crunchId: {
+            userId: user.id,
+            crunchId: church.id,
+          },
+        },
+      });
+
+      if (existingMembership) {
+        return { membership: existingMembership, alreadyMember: true };
+      }
+
+      const hasMembership = await tx.churchMembership.findFirst({
+        where: {
+          userId: user.id,
+          isActive: true,
+        },
+      });
+
+      const createdMembership = await tx.churchMembership.create({
+        data: {
+          userId: user.id,
+          crunchId: church.id,
+          role: "MEMBER",
+          canManageMembers: false,
+          isPrimary: !hasMembership && !user.crunchId,
+        },
+      });
+
+      if (!user.crunchId) {
+        await tx.user.update({
+          where: { id: user.id },
+          data: {
+            crunchId: church.id,
+            role: "MEMBER",
+            canManageMembers: false,
+            churchRoleId: null,
+          },
+        });
+      }
+
+      return { membership: createdMembership, alreadyMember: false };
     });
 
-    return { success: true, churchName: church.name };
+    return {
+      success: true,
+      churchId: church.id,
+      churchName: church.name,
+      membershipId: result.membership.id,
+      alreadyMember: result.alreadyMember,
+    };
   }
 }

@@ -31,6 +31,9 @@ export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig();
   const access_token = useState<string | null>("access_token", () => null);
   const user = useState<AuthUser | null>("user", () => null);
+  const activeChurchId = useCookie<string | null>("active_church_id", {
+    sameSite: "lax",
+  });
   let refreshPromise: Promise<string | null> | null = null;
 
   const isBackendUrl = (url: string) =>
@@ -123,6 +126,13 @@ export default defineNuxtPlugin(() => {
         "Authorization",
         `Bearer ${access_token.value}`,
       );
+
+      if (activeChurchId.value) {
+        (nextOptions.headers as Headers).set(
+          "X-Church-Id",
+          activeChurchId.value,
+        );
+      }
     }
 
     return nextOptions;

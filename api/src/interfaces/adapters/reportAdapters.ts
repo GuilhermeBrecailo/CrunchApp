@@ -1,6 +1,7 @@
 import { FastifyRequest } from "fastify";
 import { $prismaClient } from "../../../config/database";
 import { DomainError } from "../../domain/value-objects/utils/DomainError";
+import { resolveActiveChurchContext } from "../utils/churchContext";
 
 function getAuthUserId(request: FastifyRequest): string {
   const authHeader = request.headers.authorization;
@@ -24,11 +25,18 @@ export class ReportAdapters {
       where: { id: getAuthUserId(request) },
     });
     if (!user) throw new DomainError("Usuário não encontrado");
-    if (!user.crunchId) throw new DomainError("Usuário não possui igreja vinculada");
-    if (!["PASTOR", "ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+    const context =
+      request.churchContext ?? (await resolveActiveChurchContext(request, user.id));
+    if (!context.activeChurchId) throw new DomainError("Usuário não possui igreja vinculada");
+    if (!["PASTOR", "ADMIN", "SUPER_ADMIN"].includes(context.role)) {
       throw new DomainError("Acesso restrito a pastores ou admins");
     }
-    return user;
+    return {
+      ...user,
+      crunchId: context.activeChurchId,
+      role: context.role,
+      canManageMembers: context.canManageMembers,
+    };
   }
 
   private getFilters(request: FastifyRequest, crunchId: string) {
